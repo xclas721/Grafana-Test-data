@@ -2,6 +2,6 @@
 
 <template>
   <router-view />
-  </template>
+</template>
 
 <style scoped></style>
