@@ -364,15 +364,12 @@ body {
 .log-entry.success {
   color: #28a745;
 }
-
 .log-entry.error {
   color: #dc3545;
 }
-
 .log-entry.info {
   color: #17a2b8;
 }
-
 .log-entry.warning {
   color: #ffc107;
 }
@@ -565,29 +562,26 @@ body {
   font-size: 10px;
   font-weight: bold;
 }
-
 .mode-indicator.acs {
   background: #e74c3c;
 }
-
 .mode-indicator.unified {
   background: #9b59b6;
 }
 .mode-indicator.dss {
   background: #27ae60;
 }
+
 .bilingual-label {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-
 .bilingual-label .en {
   font-size: 0.8em;
   color: #7f8c8d;
   font-weight: 400;
 }
-
 .bilingual-label .zh {
   font-weight: 600;
   color: #34495e;
