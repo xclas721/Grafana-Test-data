@@ -51,7 +51,13 @@ async function calculateAcctNumberHashed(acctNumber: string) {
     const encoder = new TextEncoder()
     const keyData = encoder.encode('default_hmac_key')
     const messageData = encoder.encode(acctNumber)
-    const key = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+    const key = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    )
     const signature = await crypto.subtle.sign('HMAC', key, messageData)
     const hashArray = new Uint8Array(signature)
     let binary = ''
@@ -107,8 +113,11 @@ function wireStatusLinks() {
 
 function updateTimeRangeDisplay() {
   const currentDate = (document.getElementById('currentDate') as HTMLInputElement | null)?.value
-  const timezone = ((document.getElementById('timezone') as HTMLSelectElement | null)?.value ?? 'browser') as string
-  const batchDays = parseInt(((document.getElementById('batchDays') as HTMLInputElement | null)?.value ?? '1') as string)
+  const timezone = ((document.getElementById('timezone') as HTMLSelectElement | null)?.value ??
+    'browser') as string
+  const batchDays = parseInt(
+    ((document.getElementById('batchDays') as HTMLInputElement | null)?.value ?? '1') as string
+  )
   const textEl = document.getElementById('timeRangeText')
   if (!currentDate || !textEl) return
   const now = new Date()
@@ -142,10 +151,9 @@ function updateTimeRangeDisplay() {
   const endLocal =
     currentDate === today
       ? new Date(
-          `${currentDate}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(
-            2,
-            '0'
-          )}:${String(now.getSeconds()).padStart(2, '0')}`
+          `${currentDate}T${String(now.getHours()).padStart(2, '0')}:${String(
+            now.getMinutes()
+          ).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
         )
       : new Date(`${currentDate}T23:59:59`)
   const utcStart = toUTC(startLocal).toISOString()
@@ -167,9 +175,10 @@ function updateTimeRangeDisplay() {
   }
   const tzName = timezoneNames[timezone] || timezone
   if (batchDays === 1) {
-    const note = currentDate === today
-      ? '<small>注意：時間範圍限制在當前時間之前</small>'
-      : '<small>注意：可以生成全天24小時的任意時間</small>'
+    const note =
+      currentDate === today
+        ? '<small>注意：時間範圍限制在當前時間之前</small>'
+        : '<small>注意：可以生成全天24小時的任意時間</small>'
     textEl.innerHTML = `<div style="font-size: 0.9em;">
       <div><strong>選擇時區：</strong>${tzName}</div>
       <div><strong>UTC 時間範圍：</strong>${utcStart} ~ ${utcEnd}</div>
@@ -185,9 +194,10 @@ function updateTimeRangeDisplay() {
     )
     const multiEndUTC = toUTC(endOfEnd).toISOString()
     const dateRangeText = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')} ~ ${currentDate}`
-    const note = currentDate === today
-      ? '<small>注意：第1天限制在當前時間之前，其他天為全天24小時</small>'
-      : '<small>注意：所有天都可以生成全天24小時的任意時間</small>'
+    const note =
+      currentDate === today
+        ? '<small>注意：第1天限制在當前時間之前，其他天為全天24小時</small>'
+        : '<small>注意：所有天都可以生成全天24小時的任意時間</small>'
     textEl.innerHTML = `<div style="font-size: 0.9em;">
       <div><strong>選擇時區：</strong>${tzName}</div>
       <div><strong>生成天數：</strong>${batchDays} 天 (${dateRangeText})</div>
@@ -259,10 +269,13 @@ function generateRandom() {
   set('acsTransId', cryptoRandomUUID())
   set('threeDSServerTransId', cryptoRandomUUID().toLowerCase())
   // 金額
-  const enableAmt = (document.getElementById('enablePurchaseAmountRandom') as HTMLInputElement | null)?.checked
+  const enableAmt = (
+    document.getElementById('enablePurchaseAmountRandom') as HTMLInputElement | null
+  )?.checked
   if (enableAmt) set('purchaseAmount', (Math.random() * 990 + 10).toFixed(2))
   // 執行時間
-  const enableExec = (document.getElementById('enableExecTimeRandom') as HTMLInputElement | null)?.checked
+  const enableExec = (document.getElementById('enableExecTimeRandom') as HTMLInputElement | null)
+    ?.checked
   if (enableExec) set('execTime', String(Math.floor(Math.random() * 5000 + 1000)))
   // 狀態
   const statuses = ['Y', 'N', 'C', 'D', 'R', 'A', 'I', 'S', 'U']
@@ -302,7 +315,9 @@ function generateRandom() {
     generateRandomAcctNumber()
   }
   // acquirerMerchantID 隨機（僅在勾選時）
-  const acqToggle = document.getElementById('enableAcquirerMerchantIdRandom') as HTMLInputElement | null
+  const acqToggle = document.getElementById(
+    'enableAcquirerMerchantIdRandom'
+  ) as HTMLInputElement | null
   if (acqToggle?.checked) {
     const len = 7
     let rnd = ''
@@ -319,8 +334,11 @@ function generateRandom() {
     if (scheme) scheme.value = 'V'
   }
   // Mastercard 擴展 Score/Decision 隨機（僅在啟用且勾選隨機時）
-  const mcEnable = (document.getElementById('enableMastercardExtension') as HTMLInputElement | null)?.checked
-  const mcRand = (document.getElementById('enableMastercardExtensionRandom') as HTMLInputElement | null)?.checked
+  const mcEnable = (document.getElementById('enableMastercardExtension') as HTMLInputElement | null)
+    ?.checked
+  const mcRand = (
+    document.getElementById('enableMastercardExtensionRandom') as HTMLInputElement | null
+  )?.checked
   if (mcEnable && mcRand) {
     const scoreEl = document.getElementById('mastercardScore') as HTMLInputElement | null
     const decisionEl = document.getElementById('mastercardDecision') as HTMLSelectElement | null
@@ -349,12 +367,14 @@ function generateRandom() {
     set('deviceChannel', ch)
   }
   // threeDSRequestorChallengeInd 隨機（僅在勾選時）- Visa 才包含 80/82
-  const ciToggle = document.getElementById('enableThreeDSRequestorChallengeInd') as HTMLInputElement | null
+  const ciToggle = document.getElementById(
+    'enableThreeDSRequestorChallengeInd'
+  ) as HTMLInputElement | null
   if (ciToggle?.checked) {
     const schemeEl = document.getElementById('cardScheme') as HTMLSelectElement | null
     const scheme = (schemeEl?.value ?? 'V') as string
-    let cis = ['01','02','03','04','05','06','07','08','09','10','11','12','13','14']
-    if (scheme === 'V') cis = cis.concat(['80','82'])
+    let cis = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14']
+    if (scheme === 'V') cis = cis.concat(['80', '82'])
     const ci = cis[Math.floor(Math.random() * cis.length)] as string
     set('threeDSRequestorChallengeInd', ci)
   }
@@ -387,7 +407,10 @@ function cryptoRandomUUID(): string {
   interface MinimalCrypto {
     randomUUID?: () => string
   }
-  const w = typeof window !== 'undefined' ? (window as unknown as { crypto?: MinimalCrypto }) : { crypto: undefined }
+  const w =
+    typeof window !== 'undefined'
+      ? (window as unknown as { crypto?: MinimalCrypto })
+      : { crypto: undefined }
   const uuid = w.crypto?.randomUUID?.()
   if (uuid) return uuid
   const s: string[] = []
@@ -422,19 +445,31 @@ onMounted(() => {
   updateTimeRangeDisplay()
 
   // 初始化 Visa/MC 互斥與顯示/禁用（還原舊版行為）
-  const visaScoreCheckbox = document.getElementById('enableVisaScoreRandom') as HTMLInputElement | null
-  const mcEnableCheckbox = document.getElementById('enableMastercardExtension') as HTMLInputElement | null
+  const visaScoreCheckbox = document.getElementById(
+    'enableVisaScoreRandom'
+  ) as HTMLInputElement | null
+  const mcEnableCheckbox = document.getElementById(
+    'enableMastercardExtension'
+  ) as HTMLInputElement | null
   const cardSchemeSelect = document.getElementById('cardScheme') as HTMLSelectElement | null
-  const mcContainer = document.getElementById('mastercardExtensionContainer') as HTMLDivElement | null
+  const mcContainer = document.getElementById(
+    'mastercardExtensionContainer'
+  ) as HTMLDivElement | null
   function applyVisaMcRules() {
     const visaOn = !!visaScoreCheckbox?.checked
     const mcOn = !!mcEnableCheckbox?.checked
     if (visaOn) {
-      if (cardSchemeSelect) { cardSchemeSelect.value = 'V'; cardSchemeSelect.disabled = true }
+      if (cardSchemeSelect) {
+        cardSchemeSelect.value = 'V'
+        cardSchemeSelect.disabled = true
+      }
       if (mcEnableCheckbox) mcEnableCheckbox.disabled = true
       setStatus('Visa Score 已開啟，卡別鎖定為 Visa，Mastercard 已禁用', 'info')
     } else if (mcOn) {
-      if (cardSchemeSelect) { cardSchemeSelect.value = 'M'; cardSchemeSelect.disabled = true }
+      if (cardSchemeSelect) {
+        cardSchemeSelect.value = 'M'
+        cardSchemeSelect.disabled = true
+      }
       if (visaScoreCheckbox) visaScoreCheckbox.disabled = true
       if (mcContainer) mcContainer.style.display = 'block'
       setStatus('Mastercard 擴展已開啟，卡別鎖定為 Mastercard，Visa Score 已禁用', 'info')
@@ -456,7 +491,6 @@ watch(
     updateModeIndicator()
   }
 )
-
 
 type FormMap = Record<string, string>
 
@@ -482,10 +516,9 @@ function convertToUTC(date: Date, timezone: string): Date {
   try {
     const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
       date.getDate()
-    ).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(
-      2,
-      '0'
-    )}:${String(date.getSeconds()).padStart(2, '0')}`
+    ).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(
+      date.getMinutes()
+    ).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`
     const test = new Date(iso + 'Z')
     const fmt = new Intl.DateTimeFormat('en', { timeZone: timezone, timeZoneName: 'longOffset' })
     const parts = fmt.formatToParts(test)
@@ -512,19 +545,32 @@ function generateSharedTimestamp(form: FormMap) {
   let hh: number, mm: number, ss: number
   if (currentDate === today) {
     hh = Math.floor(Math.random() * (now.getHours() + 1))
-    mm = hh === now.getHours() ? Math.floor(Math.random() * (now.getMinutes() + 1)) : Math.floor(Math.random() * 60)
-    ss = hh === now.getHours() && mm === now.getMinutes() ? Math.floor(Math.random() * (now.getSeconds() + 1)) : Math.floor(Math.random() * 60)
+    mm =
+      hh === now.getHours()
+        ? Math.floor(Math.random() * (now.getMinutes() + 1))
+        : Math.floor(Math.random() * 60)
+    ss =
+      hh === now.getHours() && mm === now.getMinutes()
+        ? Math.floor(Math.random() * (now.getSeconds() + 1))
+        : Math.floor(Math.random() * 60)
   } else {
     hh = Math.floor(Math.random() * 24)
     mm = Math.floor(Math.random() * 60)
     ss = Math.floor(Math.random() * 60)
   }
-  const local = new Date(`${currentDate}T${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`)
+  const local = new Date(
+    `${currentDate}T${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`
+  )
   const utc = convertToUTC(local, tz)
   return utc.toISOString()
 }
 
-function buildDocument(form: FormMap, mode: 'unified' | 'acs' | 'dss', indexName: string, sharedTimestamp?: string) {
+function buildDocument(
+  form: FormMap,
+  mode: 'unified' | 'acs' | 'dss',
+  indexName: string,
+  sharedTimestamp?: string
+) {
   const currentDate = form.currentDate
   const tz = form.timezone || 'browser'
   const now = new Date()
@@ -534,8 +580,14 @@ function buildDocument(form: FormMap, mode: 'unified' | 'acs' | 'dss', indexName
   let hh: number, mm: number, ss: number
   if (!sharedTimestamp && currentDate === today) {
     hh = Math.floor(Math.random() * (now.getHours() + 1))
-    mm = hh === now.getHours() ? Math.floor(Math.random() * (now.getMinutes() + 1)) : Math.floor(Math.random() * 60)
-    ss = hh === now.getHours() && mm === now.getMinutes() ? Math.floor(Math.random() * (now.getSeconds() + 1)) : Math.floor(Math.random() * 60)
+    mm =
+      hh === now.getHours()
+        ? Math.floor(Math.random() * (now.getMinutes() + 1))
+        : Math.floor(Math.random() * 60)
+    ss =
+      hh === now.getHours() && mm === now.getMinutes()
+        ? Math.floor(Math.random() * (now.getSeconds() + 1))
+        : Math.floor(Math.random() * 60)
   } else if (!sharedTimestamp) {
     hh = Math.floor(Math.random() * 24)
     mm = Math.floor(Math.random() * 60)
@@ -610,41 +662,43 @@ function buildDocument(form: FormMap, mode: 'unified' | 'acs' | 'dss', indexName
     acctNumberMask: form.acctNumberMask,
     cardbin6: form.cardbin6,
     cardbin8: form.cardbin8,
-    performance_metrics: [
-      { path: form.performancePath, execTime: Number(form.execTime || 0) }
-    ],
+    performance_metrics: [{ path: form.performancePath, execTime: Number(form.execTime || 0) }],
     errorComponent: form.errorComponent,
     errorDescription: form.errorDescription,
     errorCode: form.errorCode,
     errorDetail: form.errorDetail,
-    errorMessageType: form.errorMessageType,
+    errorMessageType: form.errorMessageType
   }
   // 擴充：貨幣/國家巢狀資訊
   ;(doc as unknown as Record<string, unknown>)['purchaseCurrency-country_info'] = {
     'ISO4217-currency_minor_unit': form.currencyMinorUnit,
     'ISO4217-currency_name': form.currencyName,
     'ISO4217-currency_alphabetic_code': form.currencyAlphabeticCode,
-    'ISO4217-currency_numeric_code': form.currencyNumericCode,
+    'ISO4217-currency_numeric_code': form.currencyNumericCode
   }
   ;(doc as unknown as Record<string, unknown>).merchantCountryCode_country_info = {
     'ISO3166-1-Alpha-2': form.countryAlpha2,
     'ISO3166-1-numeric': form.countryNumeric,
     'ISO3166-1-Alpha-3': form.countryAlpha3,
-    official_name_en: form.countryName,
+    official_name_en: form.countryName
   }
   ;(doc as unknown as Record<string, unknown>).purchaseCurrencyStr = form.purchaseCurrency
-  ;(doc as unknown as Record<string, unknown>).exchangeKey = `${form.currencyCodeForRate}-${currentDateTime.split('T')[0]}`
+  ;(doc as unknown as Record<string, unknown>).exchangeKey =
+    `${form.currencyCodeForRate}-${currentDateTime.split('T')[0]}`
   ;(doc as unknown as Record<string, unknown>).exchange_rate = {
     date: `${historicalDateStr}T00:00:00.000Z`,
     '@timestamp': `${historicalDateStr}T00:00:02.000Z`,
     rate: form.exchangeRate,
     target: form.exchangeTarget,
-    base: form.exchangeBase,
+    base: form.exchangeBase
   }
   // Visa 分數擴展
-  if (form.visaRiskBasedAuthenticationScore && String(form.visaRiskBasedAuthenticationScore).trim() !== '') {
+  if (
+    form.visaRiskBasedAuthenticationScore &&
+    String(form.visaRiskBasedAuthenticationScore).trim() !== ''
+  ) {
     ;(doc as unknown as Record<string, unknown>).visaScoreMessageExtension = {
-      visaRiskBasedAuthenticationScore: parseInt(form.visaRiskBasedAuthenticationScore),
+      visaRiskBasedAuthenticationScore: parseInt(form.visaRiskBasedAuthenticationScore)
     }
   } else {
     ;(doc as unknown as Record<string, unknown>).visaScoreMessageExtension = null
@@ -653,7 +707,9 @@ function buildDocument(form: FormMap, mode: 'unified' | 'acs' | 'dss', indexName
   if (form.enableMastercardExtension === 'on') {
     if (form.mastercardMessageExtension && form.mastercardMessageExtension.startsWith('{')) {
       try {
-        ;(doc as unknown as Record<string, unknown>).mastercardMessageExtension = JSON.parse(form.mastercardMessageExtension)
+        ;(doc as unknown as Record<string, unknown>).mastercardMessageExtension = JSON.parse(
+          form.mastercardMessageExtension
+        )
       } catch {
         ;(doc as unknown as Record<string, unknown>).mastercardMessageExtension = null
       }
@@ -663,7 +719,7 @@ function buildDocument(form: FormMap, mode: 'unified' | 'acs' | 'dss', indexName
         reasonCode2: form.mastercardReasonCode2 || '',
         reasonCode1: form.mastercardReasonCode1 || 'A',
         decision: form.mastercardDecision || 'Not Low Risk',
-        status: form.mastercardStatus || 'success',
+        status: form.mastercardStatus || 'success'
       }
     }
   } else {
@@ -679,7 +735,14 @@ function buildDocument(form: FormMap, mode: 'unified' | 'acs' | 'dss', indexName
   return { document: doc, utcDateStr: currentDateTime.split('T')[0] }
 }
 
-defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generateSharedTimestamp, setStatus })
+defineExpose({
+  loadDefaults,
+  generateRandom,
+  getFormData,
+  buildDocument,
+  generateSharedTimestamp,
+  setStatus
+})
 </script>
 
 <template>
@@ -719,7 +782,10 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
           </label>
           <input type="date" id="currentDate" required />
           <small>交易日期 (YYYY-MM-DD-HH:MM:SS)</small>
-          <small style="color: red">HH:MM:SS將自動生成隨機時間，並依據時區轉換為 UTC 時間，根據UTC時間決定儲存的索引名稱</small>
+          <small style="color: red"
+            >HH:MM:SS將自動生成隨機時間，並依據時區轉換為 UTC
+            時間，根據UTC時間決定儲存的索引名稱</small
+          >
         </div>
         <div class="form-group">
           <label for="timezone" class="bilingual-label">
@@ -771,7 +837,12 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
             <span class="zh">ACS 交易 ID</span>
             <span class="en">acsTransID</span>
           </label>
-          <input type="text" id="acsTransId" value="17616cb5-96d5-42cb-990a-08b28ff72874" required />
+          <input
+            type="text"
+            id="acsTransId"
+            value="17616cb5-96d5-42cb-990a-08b28ff72874"
+            required
+          />
           <small style="color: red">可隨機生成</small>
         </div>
         <div class="form-group">
@@ -779,7 +850,12 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
             <span class="zh">3DS Server 交易 ID</span>
             <span class="en">threeDSServerTransID</span>
           </label>
-          <input type="text" id="threeDSServerTransId" value="79c42c48-b25a-49f1-a791-fb45123cd944" required />
+          <input
+            type="text"
+            id="threeDSServerTransId"
+            value="79c42c48-b25a-49f1-a791-fb45123cd944"
+            required
+          />
           <small style="color: red">可隨機生成</small>
         </div>
       </div>
@@ -857,14 +933,27 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
             <option value="20">20 - Non-Payment transaction not supported</option>
             <option value="21">21 - 3RI transaction not supported</option>
             <option value="22">22 - ACS technical issue</option>
-            <option value="23">23 - Decoupled Authentication required by ACS but not requested by 3DS Requestor</option>
+            <option value="23">
+              23 - Decoupled Authentication required by ACS but not requested by 3DS Requestor
+            </option>
             <option value="24">24 - 3DS Requestor Decoupled Max Expiry Time exceeded</option>
-            <option value="25">25 - Decoupled Authentication was provided insufficient time to authenticate Cardholder. ACS will not make attempt</option>
-            <option value="26">26 - Authentication attempted but not performed by the Cardholder</option>
+            <option value="25">
+              25 - Decoupled Authentication was provided insufficient time to authenticate
+              Cardholder. ACS will not make attempt
+            </option>
+            <option value="26">
+              26 - Authentication attempted but not performed by the Cardholder
+            </option>
             <option value="27">27 - Preferred Authentication Method not supported</option>
             <option value="28">28 - Validation of content security policy failed</option>
-            <option value="29">29 - Authentication attempted but not completed by the Cardholder. Fall back to Decoupled Authentication</option>
-            <option value="30">30 - Authentication completed successfully but additional authentication of the Cardholder required. Reinitiate as Decoupled Authentication</option>
+            <option value="29">
+              29 - Authentication attempted but not completed by the Cardholder. Fall back to
+              Decoupled Authentication
+            </option>
+            <option value="30">
+              30 - Authentication completed successfully but additional authentication of the
+              Cardholder required. Reinitiate as Decoupled Authentication
+            </option>
             <option value="81">81 - Mastercard SCA Exemption</option>
             <option value="89">89 - Visa SCP Exemption</option>
             <option value="90">90 - Visa Issuer SCA Required</option>
@@ -919,7 +1008,11 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
           <input type="text" id="acquirerMerchantId" value="8909191" required />
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
             <input type="checkbox" id="enableAcquirerMerchantIdRandom" style="margin: 0" checked />
-            <label for="enableAcquirerMerchantIdRandom" style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em">隨機生成時包含此欄位</label>
+            <label
+              for="enableAcquirerMerchantIdRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
           </div>
           <small style="color: red">可隨機生成 (1-9999999)，預設關閉</small>
         </div>
@@ -952,7 +1045,11 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
           <input type="number" id="purchaseAmount" value="100" step="0.01" required />
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
             <input type="checkbox" id="enablePurchaseAmountRandom" style="margin: 0" checked />
-            <label for="enablePurchaseAmountRandom" style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em">隨機生成時包含此欄位</label>
+            <label
+              for="enablePurchaseAmountRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
           </div>
           <small style="color: red">可隨機生成 (10-1000)，預設開啟</small>
         </div>
@@ -993,7 +1090,12 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
             <span class="zh">美元金額</span>
             <span class="en">usdAmount</span>
           </label>
-          <input type="number" id="usdAmount" value="0.13841979956813022" step="0.000000000000000001" />
+          <input
+            type="number"
+            id="usdAmount"
+            value="0.13841979956813022"
+            step="0.000000000000000001"
+          />
         </div>
       </div>
     </div>
@@ -1125,7 +1227,11 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
           <input type="text" id="acctNumber" value="4143520000000123" maxlength="19" />
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
             <input type="checkbox" id="enableAcctNumberRandom" style="margin: 0" checked />
-            <label for="enableAcctNumberRandom" style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em">隨機生成時包含此欄位</label>
+            <label
+              for="enableAcctNumberRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
           </div>
           <small style="color: red">此欄位不會 POST 出去，僅用於自動生成其他欄位</small>
           <small style="color: red">Visa: 4143520000000000~4143529999999999</small>
@@ -1144,7 +1250,12 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
             <span class="zh">帳號雜湊值</span>
             <span class="en">acctNumberHashed</span>
           </label>
-          <input type="text" id="acctNumberHashed" value="2hpBkDB7ELbcpebGl5RM+HWTQGx3qciOwskcbsEVKC4=" disabled />
+          <input
+            type="text"
+            id="acctNumberHashed"
+            value="2hpBkDB7ELbcpebGl5RM+HWTQGx3qciOwskcbsEVKC4="
+            disabled
+          />
           <small>自動從帳號原始值計算 (HMAC-SHA256 + Base64)</small>
         </div>
         <div class="form-group">
@@ -1179,39 +1290,86 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
           </label>
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px">
             <input type="checkbox" id="enableMastercardExtension" style="margin: 0" />
-            <label for="enableMastercardExtension" style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em">啟用 Mastercard 訊息擴展</label>
+            <label
+              for="enableMastercardExtension"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >啟用 Mastercard 訊息擴展</label
+            >
           </div>
-          <div id="mastercardExtensionContainer" style="border: 1px solid #ddd; border-radius: 5px; padding: 10px; background: #f9f9f9;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div
+            id="mastercardExtensionContainer"
+            style="border: 1px solid #ddd; border-radius: 5px; padding: 10px; background: #f9f9f9"
+          >
+            <div
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px"
+            >
               <div>
-                <label for="mastercardScore" style="font-size: 0.8em; color: #666">Score (0-650)</label>
-                <input type="number" id="mastercardScore" value="600" min="0" max="650" style="width: 100%; padding: 5px" />
+                <label for="mastercardScore" style="font-size: 0.8em; color: #666"
+                  >Score (0-650)</label
+                >
+                <input
+                  type="number"
+                  id="mastercardScore"
+                  value="600"
+                  min="0"
+                  max="650"
+                  style="width: 100%; padding: 5px"
+                />
               </div>
               <div>
-                <label for="mastercardDecision" style="font-size: 0.8em; color: #666">Decision</label>
+                <label for="mastercardDecision" style="font-size: 0.8em; color: #666"
+                  >Decision</label
+                >
                 <select id="mastercardDecision" style="width: 100%; padding: 5px">
                   <option value="Not Low Risk" selected>Not Low Risk</option>
                   <option value="Low Risk">Low Risk</option>
                 </select>
               </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px"
+            >
               <div>
-                <label for="mastercardReasonCode1" style="font-size: 0.8em; color: #666">Reason Code 1</label>
-                <input type="text" id="mastercardReasonCode1" value="A" maxlength="1" style="width: 100%; padding: 5px" />
+                <label for="mastercardReasonCode1" style="font-size: 0.8em; color: #666"
+                  >Reason Code 1</label
+                >
+                <input
+                  type="text"
+                  id="mastercardReasonCode1"
+                  value="A"
+                  maxlength="1"
+                  style="width: 100%; padding: 5px"
+                />
               </div>
               <div>
-                <label for="mastercardReasonCode2" style="font-size: 0.8em; color: #666">Reason Code 2</label>
-                <input type="text" id="mastercardReasonCode2" value="" maxlength="1" style="width: 100%; padding: 5px" />
+                <label for="mastercardReasonCode2" style="font-size: 0.8em; color: #666"
+                  >Reason Code 2</label
+                >
+                <input
+                  type="text"
+                  id="mastercardReasonCode2"
+                  value=""
+                  maxlength="1"
+                  style="width: 100%; padding: 5px"
+                />
               </div>
             </div>
             <div>
               <label for="mastercardStatus" style="font-size: 0.8em; color: #666">Status</label>
-              <input type="text" id="mastercardStatus" value="success" style="width: 100%; padding: 5px" />
+              <input
+                type="text"
+                id="mastercardStatus"
+                value="success"
+                style="width: 100%; padding: 5px"
+              />
             </div>
             <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px">
               <input type="checkbox" id="enableMastercardExtensionRandom" style="margin: 0" />
-              <label for="enableMastercardExtensionRandom" style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em">隨機生成時包含此欄位</label>
+              <label
+                for="enableMastercardExtensionRandom"
+                style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+                >隨機生成時包含此欄位</label
+              >
             </div>
             <small style="color: red">可隨機生成：Score、Decision，其他欄位保持預設值</small>
           </div>
@@ -1221,10 +1379,21 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
             <span class="zh">Visa 風險基礎認證分數</span>
             <span class="en">visaRiskBasedAuthenticationScore</span>
           </label>
-          <input type="number" id="visaRiskBasedAuthenticationScore" value="" min="0" max="99" placeholder="留空為 NULL" />
+          <input
+            type="number"
+            id="visaRiskBasedAuthenticationScore"
+            value=""
+            min="0"
+            max="99"
+            placeholder="留空為 NULL"
+          />
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
             <input type="checkbox" id="enableVisaScoreRandom" style="margin: 0" />
-            <label for="enableVisaScoreRandom" style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em">隨機生成時包含此欄位</label>
+            <label
+              for="enableVisaScoreRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
           </div>
           <small style="color: red">可隨機生成 (0-99)，留空為 NULL</small>
         </div>
@@ -1249,7 +1418,11 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
           </select>
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
             <input type="checkbox" id="enableMessageCategory" style="margin: 0" />
-            <label for="enableMessageCategory" style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em">隨機生成時包含此欄位</label>
+            <label
+              for="enableMessageCategory"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
           </div>
           <small style="color: red">可隨機生成，預設關閉</small>
         </div>
@@ -1264,7 +1437,11 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
           </select>
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
             <input type="checkbox" id="enableDeviceChannel" style="margin: 0" />
-            <label for="enableDeviceChannel" style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em">隨機生成時包含此欄位</label>
+            <label
+              for="enableDeviceChannel"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
           </div>
           <small style="color: red">可隨機生成，預設關閉</small>
         </div>
@@ -1278,24 +1455,44 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
             <option value="02">02 = No challenge requested</option>
             <option value="03">03 = Challenge requested: 3DS Requestor Preference</option>
             <option value="04">04 = Challenge requested: Mandate</option>
-            <option value="05">05 = No challenge requested (transactional risk analysis is already performed)</option>
+            <option value="05">
+              05 = No challenge requested (transactional risk analysis is already performed)
+            </option>
             <option value="06">06 = No challenge requested (Data share only)</option>
-            <option value="07">07 = No challenge requested (strong consumer authentication is already performed)</option>
-            <option value="08">08 = No challenge requested (utilise Trust List exemption if no challenge required)</option>
-            <option value="09">09 = Challenge requested (Trust List prompt requested if challenge required)</option>
+            <option value="07">
+              07 = No challenge requested (strong consumer authentication is already performed)
+            </option>
+            <option value="08">
+              08 = No challenge requested (utilise Trust List exemption if no challenge required)
+            </option>
+            <option value="09">
+              09 = Challenge requested (Trust List prompt requested if challenge required)
+            </option>
             <option value="10">10 = No challenge requested (utilise low value exemption)</option>
-            <option value="11">11 = No challenge requested (Secure corporate payment exemption)</option>
-            <option value="12">12 = Challenge requested (Device Binding prompt requested if challenge required)</option>
+            <option value="11">
+              11 = No challenge requested (Secure corporate payment exemption)
+            </option>
+            <option value="12">
+              12 = Challenge requested (Device Binding prompt requested if challenge required)
+            </option>
             <option value="13">13 = Challenge requested (Issuer requested)</option>
             <option value="14">14 = Challenge requested (Merchant initiated transactions)</option>
-            <option value="80">80 = (Visa) Remove specified VMID+PAN from Trusted Listing database</option>
-            <option value="82">82 = (Visa) NO CHALLENGE REQUESTED. Secure Corporate Exemption</option>
+            <option value="80">
+              80 = (Visa) Remove specified VMID+PAN from Trusted Listing database
+            </option>
+            <option value="82">
+              82 = (Visa) NO CHALLENGE REQUESTED. Secure Corporate Exemption
+            </option>
           </select>
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
             <input type="checkbox" id="enableThreeDSRequestorChallengeInd" style="margin: 0" />
-            <label for="enableThreeDSRequestorChallengeInd" style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em">隨機生成時包含此欄位（Visa 才會隨機到 80/82）</label>
+            <label
+              for="enableThreeDSRequestorChallengeInd"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位（Visa 才會隨機到 80/82）</label
+            >
           </div>
-        <small style="color: red">可隨機生成，預設關閉</small>
+          <small style="color: red">可隨機生成，預設關閉</small>
         </div>
         <div class="form-group">
           <label for="authenticationMethod" class="bilingual-label">
@@ -1323,7 +1520,11 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
             <span class="zh">Areq URL</span>
             <span class="en">performancePath</span>
           </label>
-          <input type="text" id="performancePath" value="/acs-auth/auth/V/2.2.0/ed8544c4-fc50-289d-ee05-ee41c86bb6f5/001/areq" />
+          <input
+            type="text"
+            id="performancePath"
+            value="/acs-auth/auth/V/2.2.0/ed8544c4-fc50-289d-ee05-ee41c86bb6f5/001/areq"
+          />
         </div>
         <div class="form-group">
           <label for="execTime" class="bilingual-label">
@@ -1333,7 +1534,11 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
           <input type="number" id="execTime" value="5437" required />
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
             <input type="checkbox" id="enableExecTimeRandom" style="margin: 0" checked />
-            <label for="enableExecTimeRandom" style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em">隨機生成時包含此欄位</label>
+            <label
+              for="enableExecTimeRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
           </div>
           <small style="color: red">可隨機生成 (1000-6000ms)，預設開啟</small>
         </div>
@@ -1385,5 +1590,3 @@ defineExpose({ loadDefaults, generateRandom, getFormData, buildDocument, generat
 </template>
 
 <style scoped></style>
-
-

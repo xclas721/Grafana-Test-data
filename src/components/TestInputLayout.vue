@@ -61,7 +61,9 @@ const insertButtonText = computed(() => {
       <div class="quick-actions">
         <button class="quick-btn" @click="emit('loadDefaults')">載入預設值</button>
         <button class="quick-btn" @click="emit('generateRandom')">生成隨機數據</button>
-        <button class="quick-btn btn-primary" @click="emit('insertData')">{{ insertButtonText }}</button>
+        <button class="quick-btn btn-primary" @click="emit('insertData')">
+          {{ insertButtonText }}
+        </button>
         <div class="batch-container">
           <label for="batchCount" style="font-size: 12px; color: #666">數量:</label>
           <input
@@ -85,9 +87,7 @@ const insertButtonText = computed(() => {
             placeholder="1"
             title="生成多少天的數據"
           />
-          <button class="quick-btn btn-success" @click="emit('batchInsert')">
-            批量生成並POST
-          </button>
+          <button class="quick-btn btn-success" @click="emit('batchInsert')">批量生成並POST</button>
         </div>
       </div>
 
@@ -98,5 +98,3 @@ const insertButtonText = computed(() => {
 </template>
 
 <style scoped></style>
-
-

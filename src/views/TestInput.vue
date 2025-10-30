@@ -47,16 +47,17 @@ async function insertOnce() {
       if (!acs || !dss) return
       const acsIndex = `acs-transaction-${acs.utcDateStr}`
       const dssIndex = `3dss-transaction-${dss.utcDateStr}`
-      const bulk = [
-        JSON.stringify({ index: { _index: acsIndex } }),
-        JSON.stringify(acs.document),
-        JSON.stringify({ index: { _index: dssIndex } }),
-        JSON.stringify(dss.document),
-      ].join('\n') + '\n'
+      const bulk =
+        [
+          JSON.stringify({ index: { _index: acsIndex } }),
+          JSON.stringify(acs.document),
+          JSON.stringify({ index: { _index: dssIndex } }),
+          JSON.stringify(dss.document)
+        ].join('\n') + '\n'
       const res = await fetch(`${baseUrl}/_bulk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-ndjson', Authorization: auth },
-        body: bulk,
+        body: bulk
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
@@ -75,11 +76,14 @@ async function insertOnce() {
       const built = form.buildDocument?.(data, mode.value, indexBase)
       if (!built) return
       const fullIndex = `${indexBase}-${built.utcDateStr}`
-      const bulk = [JSON.stringify({ index: { _index: fullIndex } }), JSON.stringify(built.document)].join('\n') + '\n'
+      const bulk =
+        [JSON.stringify({ index: { _index: fullIndex } }), JSON.stringify(built.document)].join(
+          '\n'
+        ) + '\n'
       const res = await fetch(`${baseUrl}/_bulk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-ndjson', Authorization: auth },
-        body: bulk,
+        body: bulk
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
@@ -92,7 +96,12 @@ async function insertOnce() {
   }
 }
 
-function onCurrencySelect(payload: { numeric: string; code: string; name: string; country: string }) {
+function onCurrencySelect(payload: {
+  numeric: string
+  code: string
+  name: string
+  country: string
+}) {
   // 更新相關欄位（依原 HTML 行為）
   const set = (id: string, val: string) => {
     const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null
@@ -104,7 +113,10 @@ function onCurrencySelect(payload: { numeric: string; code: string; name: string
   set('currencyNumericCode', payload.numeric)
   set('currencyName', payload.name)
   // 國家推導（簡化：台灣/美國/中國/日本）
-  const map: Record<string, { alpha2: string; alpha3: string; numeric: string; name: string; mcc?: string }> = {
+  const map: Record<
+    string,
+    { alpha2: string; alpha3: string; numeric: string; name: string; mcc?: string }
+  > = {
     台灣: { alpha2: 'TW', alpha3: 'TWN', numeric: '158', name: 'Taiwan' },
     美國: { alpha2: 'US', alpha3: 'USA', numeric: '840', name: 'United States' },
     中國: { alpha2: 'CN', alpha3: 'CHN', numeric: '156', name: 'China' },
@@ -120,7 +132,7 @@ function onCurrencySelect(payload: { numeric: string; code: string; name: string
     越南: { alpha2: 'VN', alpha3: 'VNM', numeric: '704', name: 'Vietnam' },
     馬來西亞: { alpha2: 'MY', alpha3: 'MYS', numeric: '458', name: 'Malaysia' },
     印尼: { alpha2: 'ID', alpha3: 'IDN', numeric: '360', name: 'Indonesia' },
-    菲律賓: { alpha2: 'PH', alpha3: 'PHL', numeric: '608', name: 'Philippines' },
+    菲律賓: { alpha2: 'PH', alpha3: 'PHL', numeric: '608', name: 'Philippines' }
   }
   const info = map[payload.country]
   if (info) {
@@ -130,7 +142,10 @@ function onCurrencySelect(payload: { numeric: string; code: string; name: string
     set('countryNumeric', info.numeric)
     set('countryName', info.name)
   }
-  formRef.value?.setStatus?.(`已選擇 ${payload.country} ${payload.name} (${payload.code})`, 'success')
+  formRef.value?.setStatus?.(
+    `已選擇 ${payload.country} ${payload.name} (${payload.code})`,
+    'success'
+  )
 }
 
 async function batchInsert() {
@@ -149,7 +164,10 @@ async function batchInsert() {
   const average = Math.max(1, Math.floor(total / days))
   let remaining = total
   for (let d = 0; d < days; d++) {
-    const take = d === days - 1 ? remaining : Math.min(remaining, Math.max(1, average + Math.floor((Math.random() - 0.5) * average)))
+    const take =
+      d === days - 1
+        ? remaining
+        : Math.min(remaining, Math.max(1, average + Math.floor((Math.random() - 0.5) * average)))
     dailyCounts.push(take)
     remaining -= take
   }
@@ -159,7 +177,11 @@ async function batchInsert() {
   const startAt = Date.now()
   // 併發控制
   const CONCURRENCY = 5
-  async function processPool<T>(items: T[], worker: (item: T, idx: number) => Promise<void>, concurrency: number) {
+  async function processPool<T>(
+    items: T[],
+    worker: (item: T, idx: number) => Promise<void>,
+    concurrency: number
+  ) {
     let i = 0
     const runners: Promise<void>[] = []
     async function runOne() {
@@ -200,72 +222,93 @@ async function batchInsert() {
     panel.setText?.('progressStatus', `第 ${d + 1} 天 (${dateStr}) 處理中...`)
     const tasks: number[] = []
     for (let iTask = 0; iTask < count; iTask++) tasks.push(iTask)
-    await processPool(tasks, async () => {
-      try {
-        // 每筆先依原規則隨機，再取表單資料
-        form.generateRandom?.()
-        const data = form.getFormData?.()
-        if (!data) throw new Error('表單資料為空')
-        // 覆寫當日日期
-        data.currentDate = dateStr
-      if (mode.value === 'unified') {
-        const sharedTs = form.generateSharedTimestamp?.(data)
-        const acs = form.buildDocument?.(data, 'unified', 'acs-transaction', sharedTs)
-        const dss = form.buildDocument?.(data, 'unified', '3dss-transaction', sharedTs)
-          if (!acs || !dss) throw new Error('構建文件失敗')
-          const acsIndex = `acs-transaction-${acs.utcDateStr}`
-          const dssIndex = `3dss-transaction-${dss.utcDateStr}`
-          const bulk = [
-            JSON.stringify({ index: { _index: acsIndex } }),
-            JSON.stringify(acs.document),
-            JSON.stringify({ index: { _index: dssIndex } }),
-            JSON.stringify(dss.document),
-          ].join('\n') + '\n'
-          const res = await fetch(`${baseUrl}/_bulk`, { method: 'POST', headers: { 'Content-Type': 'application/x-ndjson', Authorization: auth }, body: bulk })
-        const json = await res.json()
-        if (!res.ok || json.errors) {
-          let reason = `HTTP ${res.status}`
-          if (json.errors) {
-            const items = (json.items || []) as Array<{ index?: { error?: { reason?: string } } }>
-            const reasons = items
-              .filter((it) => it?.index?.error)
-              .map((it) => it.index?.error?.reason || '')
-              .filter(Boolean)
-              .join('; ')
-            if (reasons) reason = reasons
+    await processPool(
+      tasks,
+      async () => {
+        try {
+          // 每筆先依原規則隨機，再取表單資料
+          form.generateRandom?.()
+          const data = form.getFormData?.()
+          if (!data) throw new Error('表單資料為空')
+          // 覆寫當日日期
+          data.currentDate = dateStr
+          if (mode.value === 'unified') {
+            const sharedTs = form.generateSharedTimestamp?.(data)
+            const acs = form.buildDocument?.(data, 'unified', 'acs-transaction', sharedTs)
+            const dss = form.buildDocument?.(data, 'unified', '3dss-transaction', sharedTs)
+            if (!acs || !dss) throw new Error('構建文件失敗')
+            const acsIndex = `acs-transaction-${acs.utcDateStr}`
+            const dssIndex = `3dss-transaction-${dss.utcDateStr}`
+            const bulk =
+              [
+                JSON.stringify({ index: { _index: acsIndex } }),
+                JSON.stringify(acs.document),
+                JSON.stringify({ index: { _index: dssIndex } }),
+                JSON.stringify(dss.document)
+              ].join('\n') + '\n'
+            const res = await fetch(`${baseUrl}/_bulk`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-ndjson', Authorization: auth },
+              body: bulk
+            })
+            const json = await res.json()
+            if (!res.ok || json.errors) {
+              let reason = `HTTP ${res.status}`
+              if (json.errors) {
+                const items = (json.items || []) as Array<{
+                  index?: { error?: { reason?: string } }
+                }>
+                const reasons = items
+                  .filter((it) => it?.index?.error)
+                  .map((it) => it.index?.error?.reason || '')
+                  .filter(Boolean)
+                  .join('; ')
+                if (reasons) reason = reasons
+              }
+              throw new Error(reason)
+            }
+          } else {
+            const indexBase = mode.value === 'acs' ? 'acs-transaction' : '3dss-transaction'
+            const built = form.buildDocument?.(data, mode.value, indexBase)
+            if (!built) throw new Error('構建文件失敗')
+            const fullIndex = `${indexBase}-${built.utcDateStr}`
+            const bulk =
+              [
+                JSON.stringify({ index: { _index: fullIndex } }),
+                JSON.stringify(built.document)
+              ].join('\n') + '\n'
+            const res = await fetch(`${baseUrl}/_bulk`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-ndjson', Authorization: auth },
+              body: bulk
+            })
+            const json2 = await res.json()
+            if (!res.ok || json2.errors) {
+              let reason = `HTTP ${res.status}`
+              if (json2.errors) {
+                const items = (json2.items || []) as Array<{
+                  index?: { error?: { reason?: string } }
+                }>
+                const reasons = items
+                  .filter((it) => it?.index?.error)
+                  .map((it) => it.index?.error?.reason || '')
+                  .filter(Boolean)
+                  .join('; ')
+                if (reasons) reason = reasons
+              }
+              throw new Error(reason)
+            }
+            // 已於前段 json2 分支處理錯誤與原因
           }
-          throw new Error(reason)
+          success++
+        } catch {
+          errorCount++
+          errorDetails.push(`日期 ${dateStr}：索引失敗`)
         }
-        } else {
-          const indexBase = mode.value === 'acs' ? 'acs-transaction' : '3dss-transaction'
-          const built = form.buildDocument?.(data, mode.value, indexBase)
-          if (!built) throw new Error('構建文件失敗')
-          const fullIndex = `${indexBase}-${built.utcDateStr}`
-          const bulk = [JSON.stringify({ index: { _index: fullIndex } }), JSON.stringify(built.document)].join('\n') + '\n'
-          const res = await fetch(`${baseUrl}/_bulk`, { method: 'POST', headers: { 'Content-Type': 'application/x-ndjson', Authorization: auth }, body: bulk })
-        const json2 = await res.json()
-        if (!res.ok || json2.errors) {
-          let reason = `HTTP ${res.status}`
-          if (json2.errors) {
-            const items = (json2.items || []) as Array<{ index?: { error?: { reason?: string } } }>
-            const reasons = items
-              .filter((it) => it?.index?.error)
-              .map((it) => it.index?.error?.reason || '')
-              .filter(Boolean)
-              .join('; ')
-            if (reasons) reason = reasons
-          }
-          throw new Error(reason)
-        }
-        // 已於前段 json2 分支處理錯誤與原因
-        }
-        success++
-      } catch {
-        errorCount++
-      errorDetails.push(`日期 ${dateStr}：索引失敗`)
-      }
-      panel.setProgress?.(success + errorCount, total, success, errorCount, startAt)
-    }, CONCURRENCY)
+        panel.setProgress?.(success + errorCount, total, success, errorCount, startAt)
+      },
+      CONCURRENCY
+    )
   }
   panel.setText?.('progressStatus', '處理完成')
   panel.setErrors?.(errorDetails)
@@ -293,5 +336,3 @@ async function batchInsert() {
 </template>
 
 <style scoped></style>
-
-

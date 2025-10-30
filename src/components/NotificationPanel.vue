@@ -10,7 +10,13 @@ function setText(id: string, text: string) {
   if (el) el.textContent = text
 }
 
-function setProgress(current: number, total: number, success: number, error: number, startTime?: number) {
+function setProgress(
+  current: number,
+  total: number,
+  success: number,
+  error: number,
+  startTime?: number
+) {
   const pct = total > 0 ? Math.round((current / total) * 100) : 0
   const bar = qs<HTMLDivElement>('progressBar')
   if (bar) {
@@ -147,7 +153,18 @@ defineExpose({ setProgress, addLog, setErrors, show, close, minimize, restore, s
         <div class="log-section">
           <div class="log-header">
             <span>操作日誌</span>
-            <button class="log-toggle" @click="() => { const lc = qs<HTMLDivElement>('logContent'); if (!lc) return; lc.style.display = lc.style.display === 'none' ? 'block' : 'none' }">展開/收起</button>
+            <button
+              class="log-toggle"
+              @click="
+                () => {
+                  const lc = qs<HTMLDivElement>('logContent')
+                  if (!lc) return
+                  lc.style.display = lc.style.display === 'none' ? 'block' : 'none'
+                }
+              "
+            >
+              展開/收起
+            </button>
           </div>
           <div class="log-content" id="logContent" style="display: none">
             <div id="logEntries"></div>
@@ -161,7 +178,12 @@ defineExpose({ setProgress, addLog, setErrors, show, close, minimize, restore, s
     </div>
 
     <!-- 最小化的通知 -->
-    <div id="minimizedNotification" class="notification-minimized" style="display: none" @click="restore">
+    <div
+      id="minimizedNotification"
+      class="notification-minimized"
+      style="display: none"
+      @click="restore"
+    >
       <span id="minimizedText">!</span>
       <div class="badge" id="minimizedBadge">0</div>
     </div>
@@ -169,5 +191,3 @@ defineExpose({ setProgress, addLog, setErrors, show, close, minimize, restore, s
 </template>
 
 <style scoped></style>
-
-
