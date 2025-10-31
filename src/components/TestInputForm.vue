@@ -393,20 +393,14 @@ function generateRandom() {
     const ch = chans[Math.floor(Math.random() * chans.length)] as string
     set('deviceChannel', ch)
   }
-  // threeDSRequestorChallengeInd 隨機（僅在勾選時）- 僅當 ARes=C 且 RReq=N 時允許 01~10，否則強制 NULL_VALUE
+  // threeDSRequestorChallengeInd 隨機（僅在勾選時）- 無狀態限制，值域 01~10
   const ciToggle = document.getElementById(
     'enableThreeDSRequestorChallengeInd'
   ) as HTMLInputElement | null
   if (ciToggle?.checked) {
-    const aresEl = document.getElementById('aresTransStatus') as HTMLSelectElement | null
-    const rreqEl = document.getElementById('rreqTransStatus') as HTMLSelectElement | null
-    if (aresEl?.value === 'C' && rreqEl?.value === 'N') {
-      const cis = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10']
-      const pick = cis[Math.floor(Math.random() * cis.length)] as string
-      set('threeDSRequestorChallengeInd', pick)
-    } else {
-      set('threeDSRequestorChallengeInd', 'NULL_VALUE')
-    }
+    const cis = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10']
+    const pick = cis[Math.floor(Math.random() * cis.length)] as string
+    set('threeDSRequestorChallengeInd', pick)
   }
   // challengeCancel 自動隨機生成（僅在 ARes=C 且 RReq=N 時才會生效）
   const aresStatusEl = document.getElementById('aresTransStatus') as HTMLSelectElement | null
@@ -414,8 +408,8 @@ function generateRandom() {
   if (aresStatusEl?.value === 'C' && rreqStatusEl?.value === 'N') {
     // challengeCancel 值：01, 02, 03, 04, 05, 06, 07, 09, 10
     const challengeCancelValues = ['01', '02', '03', '04', '05', '06', '07', '09', '10']
-    // 80% 機率生成實際值，20% 機率為 NULL_VALUE
-    const shouldSetValue = Math.random() < 0.8
+    // 8% 機率生成實際值，92% 機率為 NULL_VALUE（確保 NULL_VALUE > 90%）
+    const shouldSetValue = Math.random() < 0.08
     if (shouldSetValue) {
       const cc = challengeCancelValues[Math.floor(Math.random() * challengeCancelValues.length)] as string
       set('challengeCancel', cc)
@@ -1546,7 +1540,7 @@ defineExpose({
         <div class="form-group">
           <label for="threeDSRequestorChallengeInd" class="bilingual-label">
             <span class="zh">3DS 請求方挑戰指標</span>
-            <span class="en">threeDSRequestorChallengeInd</span>
+            <span class="en">RequestorChlgInd</span>
           </label>
           <select id="threeDSRequestorChallengeInd" required>
             <option value="01" selected>01 = No preference</option>
