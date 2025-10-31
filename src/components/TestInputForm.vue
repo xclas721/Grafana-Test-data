@@ -83,7 +83,19 @@ function wireStatusLinks() {
   const rreq = document.getElementById('rreqTransStatus') as HTMLSelectElement | null
   const trans = document.getElementById('transStatus') as HTMLInputElement | null
   const reason = document.getElementById('transStatusReason') as HTMLSelectElement | null
-  if (!ares || !rreq || !trans || !reason) return
+  const challengeCancel = document.getElementById('challengeCancel') as HTMLSelectElement | null
+  if (!ares || !rreq || !trans || !reason || !challengeCancel) return
+  
+  const updateChallengeCancel = () => {
+    if (ares.value === 'C' && rreq.value === 'N') {
+      challengeCancel.disabled = false
+      if (challengeCancel.value === 'NULL_VALUE') challengeCancel.value = '01'
+    } else {
+      challengeCancel.disabled = true
+      challengeCancel.value = 'NULL_VALUE'
+    }
+  }
+  
   ares.addEventListener('change', () => {
     const val = ares.value
     if (val === 'C' || val === 'D') {
@@ -102,13 +114,17 @@ function wireStatusLinks() {
       reason.disabled = true
       reason.value = 'NULL_VALUE'
     }
+    updateChallengeCancel()
   })
   rreq.addEventListener('change', () => {
     const val = ares.value
     if (val === 'C' || val === 'D') {
       trans.value = rreq.value
     }
+    updateChallengeCancel()
   })
+  // 初始化時也更新 challengeCancel 狀態
+  updateChallengeCancel()
 }
 
 function updateTimeRangeDisplay() {
@@ -250,6 +266,8 @@ function loadDefaults() {
   set('errorCode', 'NULL_VALUE')
   set('errorDetail', 'NULL_VALUE')
   set('errorMessageType', 'NULL_VALUE')
+  set('challengeCancel', 'NULL_VALUE')
+  set('browserIP', '::1')
   set('countryAlpha2', 'CN')
   set('countryNumeric', '156')
   set('countryAlpha3', 'CHN')
@@ -277,9 +295,18 @@ function generateRandom() {
   const enableExec = (document.getElementById('enableExecTimeRandom') as HTMLInputElement | null)
     ?.checked
   if (enableExec) set('execTime', String(Math.floor(Math.random() * 5000 + 1000)))
-  // 狀態
-  const statuses = ['Y', 'N', 'C', 'D', 'R', 'A', 'I', 'S', 'U']
-  const st = statuses[Math.floor(Math.random() * statuses.length)]
+  // 狀態（依照 Grafana-Test-Input.html 的權重分佈）
+  const r = Math.random()
+  let st: string
+  if (r < 0.4) st = 'Y' // 40%
+  else if (r < 0.45) st = 'N' // 5%
+  else if (r < 0.5) st = 'R' // 5%
+  else if (r < 0.75) st = 'C' // 25%
+  else if (r < 0.8) st = 'D' // 5%
+  else if (r < 0.85) st = 'A' // 5%
+  else if (r < 0.9) st = 'I' // 5%
+  else if (r < 0.95) st = 'S' // 5%
+  else st = 'U' // 5%
   set('aresTransStatus', String(st))
   const rreq = document.getElementById('rreqTransStatus') as HTMLSelectElement | null
   const trans = document.getElementById('transStatus') as HTMLInputElement | null
@@ -366,18 +393,50 @@ function generateRandom() {
     const ch = chans[Math.floor(Math.random() * chans.length)] as string
     set('deviceChannel', ch)
   }
-  // threeDSRequestorChallengeInd 隨機（僅在勾選時）- Visa 才包含 80/82
+  // threeDSRequestorChallengeInd 隨機（僅在勾選時）- 僅當 ARes=C 且 RReq=N 時允許 01~10，否則強制 NULL_VALUE
   const ciToggle = document.getElementById(
     'enableThreeDSRequestorChallengeInd'
   ) as HTMLInputElement | null
   if (ciToggle?.checked) {
-    const schemeEl = document.getElementById('cardScheme') as HTMLSelectElement | null
-    const scheme = (schemeEl?.value ?? 'V') as string
-    let cis = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14']
-    if (scheme === 'V') cis = cis.concat(['80', '82'])
-    const ci = cis[Math.floor(Math.random() * cis.length)] as string
-    set('threeDSRequestorChallengeInd', ci)
+    const aresEl = document.getElementById('aresTransStatus') as HTMLSelectElement | null
+    const rreqEl = document.getElementById('rreqTransStatus') as HTMLSelectElement | null
+    if (aresEl?.value === 'C' && rreqEl?.value === 'N') {
+      const cis = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10']
+      const pick = cis[Math.floor(Math.random() * cis.length)] as string
+      set('threeDSRequestorChallengeInd', pick)
+    } else {
+      set('threeDSRequestorChallengeInd', 'NULL_VALUE')
+    }
   }
+  // challengeCancel 自動隨機生成（僅在 ARes=C 且 RReq=N 時才會生效）
+  const aresStatusEl = document.getElementById('aresTransStatus') as HTMLSelectElement | null
+  const rreqStatusEl = document.getElementById('rreqTransStatus') as HTMLSelectElement | null
+  if (aresStatusEl?.value === 'C' && rreqStatusEl?.value === 'N') {
+    // challengeCancel 值：01, 02, 03, 04, 05, 06, 07, 09, 10
+    const challengeCancelValues = ['01', '02', '03', '04', '05', '06', '07', '09', '10']
+    // 80% 機率生成實際值，20% 機率為 NULL_VALUE
+    const shouldSetValue = Math.random() < 0.8
+    if (shouldSetValue) {
+      const cc = challengeCancelValues[Math.floor(Math.random() * challengeCancelValues.length)] as string
+      set('challengeCancel', cc)
+    } else {
+      set('challengeCancel', 'NULL_VALUE')
+    }
+  } else {
+    set('challengeCancel', 'NULL_VALUE')
+  }
+  // browserIP 隨機（IPv4/IPv6 混合，預設 50/50）
+  function randInt(max: number): number { return Math.floor(Math.random() * (max + 1)) }
+  function randomIPv4(): string {
+    return `${randInt(255)}.${randInt(255)}.${randInt(255)}.${randInt(255)}`
+  }
+  function h4(): string { return Math.floor(Math.random() * 0x10000).toString(16) }
+  function randomIPv6(): string {
+    return `${h4()}:${h4()}:${h4()}:${h4()}:${h4()}:${h4()}:${h4()}:${h4()}`
+  }
+  const browserIp = Math.random() < 0.5 ? randomIPv4() : randomIPv6()
+  const browserIpEl = document.getElementById('browserIP') as HTMLInputElement | null
+  if (browserIpEl) browserIpEl.value = browserIp
   setStatus('隨機數據已生成', 'success')
 }
 
@@ -615,9 +674,9 @@ function buildDocument(
     mcc?: string
     acquirerMerchantID?: string
     acquirerBIN?: string
-    purchaseAmount?: number
+    purchaseAmount?: string
     purchaseCurrency?: string
-    purchaseExponent?: number
+    purchaseExponent?: string
     usdAmount?: number
     ares_transStatus?: string
     transStatus?: string
@@ -629,11 +688,13 @@ function buildDocument(
     cardbin6?: string
     cardbin8?: string
     performance_metrics?: Array<{ path?: string; execTime?: number }>
+    browserIP?: string
     errorComponent?: string
     errorDescription?: string
     errorCode?: string
     errorDetail?: string
     errorMessageType?: string
+    challengeCancel?: string
     acsTransID?: string
     issuerOid?: string
     threeDSServerTransID?: string
@@ -649,9 +710,9 @@ function buildDocument(
     mcc: form.mcc,
     acquirerMerchantID: String(form.acquirerMerchantId),
     acquirerBIN: form.acquirerBin,
-    purchaseAmount: Number(form.purchaseAmount),
+    purchaseAmount: String(form.purchaseAmount),
     purchaseCurrency: form.purchaseCurrency,
-    purchaseExponent: Number(form.purchaseExponent),
+    purchaseExponent: String(form.purchaseExponent),
     usdAmount: Number(form.usdAmount || 0),
     ares_transStatus: form.aresTransStatus,
     transStatus: form.transStatus,
@@ -662,12 +723,26 @@ function buildDocument(
     acctNumberMask: form.acctNumberMask,
     cardbin6: form.cardbin6,
     cardbin8: form.cardbin8,
-    performance_metrics: [{ path: form.performancePath, execTime: Number(form.execTime || 0) }],
+    performance_metrics: [
+      { path: form.performancePath, execTime: Number(form.execTime || 0) },
+      { path: 'CardSchemeService.caculateCavv', execTime: Math.floor(Math.random() * 21) + 10 },
+      { path: 'VerificationCodeService.sendVerificationCode', execTime: Math.floor(Math.random() * 61) + 20 },
+      {
+        path: `/challenge/brw/V/2.3.1/${form.issuerOid}/1/${form.acsTransId}/creq`,
+        execTime: Math.floor(Math.random() * 501) + 300
+      },
+      {
+        path: `/acs-auth/auth/V/2.2.0/${form.issuerOid}/001/areq`,
+        execTime: Math.floor(Math.random() * 701) + 800
+      }
+    ],
+    browserIP: form.browserIP,
     errorComponent: form.errorComponent,
     errorDescription: form.errorDescription,
     errorCode: form.errorCode,
     errorDetail: form.errorDetail,
-    errorMessageType: form.errorMessageType
+    errorMessageType: form.errorMessageType,
+    challengeCancel: form.challengeCancel && form.challengeCancel !== 'NULL_VALUE' ? form.challengeCancel : undefined
   }
   // 擴充：貨幣/國家巢狀資訊
   ;(doc as unknown as Record<string, unknown>)['purchaseCurrency-country_info'] = {
@@ -676,6 +751,8 @@ function buildDocument(
     'ISO4217-currency_alphabetic_code': form.currencyAlphabeticCode,
     'ISO4217-currency_numeric_code': form.currencyNumericCode
   }
+  // threeDS 請求方挑戰指標（以索引正名輸出）
+  ;(doc as unknown as Record<string, unknown>).threedsRequestorChlgInd = form.threeDSRequestorChallengeInd
   ;(doc as unknown as Record<string, unknown>).merchantCountryCode_country_info = {
     'ISO3166-1-Alpha-2': form.countryAlpha2,
     'ISO3166-1-numeric': form.countryNumeric,
@@ -960,6 +1037,27 @@ defineExpose({
           </select>
           <small>只有當 ARes 狀態為 R 時才可選擇</small>
           <small style="color: red">可隨機生成</small>
+        </div>
+        <div class="form-group">
+          <label for="challengeCancel" class="bilingual-label">
+            <span class="zh">挑戰驗證取消指標</span>
+            <span class="en">challengeCancel</span>
+          </label>
+          <select id="challengeCancel" disabled>
+            <option value="NULL_VALUE" selected>NULL_VALUE (留空)</option>
+            <option value="01">01 - 持卡人選擇「取消」</option>
+            <option value="02">02 - 3DS 請求者取消了身份驗證</option>
+            <option value="03">03 - 交易被放棄 (Decoupled Authentication timeout)</option>
+            <option value="04">04 - ACS 其他超時的交易超時</option>
+            <option value="05">05 - ACS 未收到 ACS-First CReq 的事務超時</option>
+            <option value="06">06 - 交易錯誤</option>
+            <option value="07">07 - 未知</option>
+            <option value="09">09 - Error Message in response to the CRes message</option>
+            <option value="10">10 - Error Message in response to the CReq message</option>
+          </select>
+          <small>只有當 ARes 狀態為 C 且 RReq 狀態為 N 時才可選擇</small>
+          <small style="color: red">可隨機生成</small>
+          <small style="color: red">Edit 8 監控指標：challengeCancel ≠ null / ARes=C 的放棄率需 ≤ 10%</small>
         </div>
       </div>
     </div>
@@ -1507,6 +1605,14 @@ defineExpose({
             <span class="en">authenticationType</span>
           </label>
           <input type="text" id="authenticationType" value="NULL_VALUE" />
+        </div>
+        <div class="form-group">
+          <label for="browserIP" class="bilingual-label">
+            <span class="zh">瀏覽器 IP</span>
+            <span class="en">browserIP</span>
+          </label>
+          <input type="text" id="browserIP" value="::1" />
+          <small>隨機生成 IPv4/IPv6</small>
         </div>
       </div>
     </div>
