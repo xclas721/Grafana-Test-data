@@ -83,8 +83,9 @@ function wireStatusLinks() {
   const rreq = document.getElementById('rreqTransStatus') as HTMLSelectElement | null
   const trans = document.getElementById('transStatus') as HTMLInputElement | null
   const reason = document.getElementById('transStatusReason') as HTMLSelectElement | null
+  const stateMachineReason = document.getElementById('stateMachineReason') as HTMLSelectElement | null
   const challengeCancel = document.getElementById('challengeCancel') as HTMLSelectElement | null
-  if (!ares || !rreq || !trans || !reason || !challengeCancel) return
+  if (!ares || !rreq || !trans || !reason || !stateMachineReason || !challengeCancel) return
   
   const updateChallengeCancel = () => {
     if (ares.value === 'C' && rreq.value === 'N') {
@@ -110,9 +111,13 @@ function wireStatusLinks() {
     if (val === 'R') {
       reason.disabled = false
       if (reason.value === 'NULL_VALUE') reason.value = '01'
+      stateMachineReason.disabled = false
+      if (stateMachineReason.value === 'NULL_VALUE') stateMachineReason.value = '1001'
     } else {
       reason.disabled = true
       reason.value = 'NULL_VALUE'
+      stateMachineReason.disabled = true
+      stateMachineReason.value = 'NULL_VALUE'
     }
     updateChallengeCancel()
   })
@@ -239,6 +244,7 @@ function loadDefaults() {
   set('transStatus', 'N')
   set('rreqTransStatus', 'NULL_VALUE')
   set('transStatusReason', 'NULL_VALUE')
+  set('stateMachineReason', 'NULL_VALUE')
   set('merchantName', 'HiTRUST EMV Demo Merchant')
   set('merchantCountryCode', '156')
   set('acquirerMerchantId', '8909191')
@@ -340,6 +346,34 @@ function generateRandom() {
     } else {
       reasonEl.disabled = true
       reasonEl.value = 'NULL_VALUE'
+    }
+  }
+  // 當 ARes 為 R 時，stateMachineReason 從所有 StateMachineReasonEnum 值隨機；否則為 NULL_VALUE
+  const stateMachineReasonEl = document.getElementById('stateMachineReason') as HTMLSelectElement | null
+  if (stateMachineReasonEl) {
+    if (st === 'R') {
+      const stateMachineReasons: string[] = [
+        '1001', '1002', '1003', '1004', '1005', '1006', '1007', '1008', '1009', '1010',
+        '2001', '2002', '2101', '2102', '2103',
+        '3001', '3002', '3101', '3102', '3199', '3201', '3202', '3299', '3301', '3302', '3399',
+        '3401', '3402', '3403', '3404', '3499', '3501', '3502', '3503', '3504', '3601', '3602', '3604',
+        '4001', '4101', '4102', '4103', '4104', '4105', '4106', '4107', '4108', '4109', '4110', '4111',
+        '4201', '4202',
+        '5101', '5102', '5103', '5104', '5105', '5106', '5201', '5202', '5203', '5204',
+        '6101', '6102', '6103', '6201', '6301', '6401', '6402', '6403',
+        '7101', '7102', '7103', '7201', '7202', '7203', '7204', '7205', '7206', '7207',
+        '8101', '0000', '9999'
+      ]
+      stateMachineReasonEl.disabled = false
+      if (stateMachineReasons.length > 0) {
+        const idx = Math.floor(Math.random() * stateMachineReasons.length)
+        stateMachineReasonEl.value = stateMachineReasons[idx] as string
+      } else {
+        stateMachineReasonEl.value = '1001'
+      }
+    } else {
+      stateMachineReasonEl.disabled = true
+      stateMachineReasonEl.value = 'NULL_VALUE'
     }
   }
   // 帳號原始值（依卡別前綴）- 僅在勾選時隨機
@@ -809,6 +843,7 @@ function buildDocument(
     transStatus?: string
     rreq_transStatus?: string
     transStatusReason?: string
+    stateMachineReason?: string
     cardScheme?: string
     acctNumberHashed?: string
     acctNumberMask?: string
@@ -845,6 +880,7 @@ function buildDocument(
     transStatus: form.transStatus,
     rreq_transStatus: form.rreqTransStatus,
     transStatusReason: form.transStatusReason,
+    stateMachineReason: form.stateMachineReason,
     cardScheme: form.cardScheme,
     acctNumberHashed: form.acctNumberHashed,
     acctNumberMask: form.acctNumberMask,
@@ -1384,6 +1420,100 @@ defineExpose({
             <option value="81">81 - Mastercard SCA Exemption</option>
             <option value="89">89 - Visa SCP Exemption</option>
             <option value="90">90 - Visa Issuer SCA Required</option>
+          </select>
+          <small>只有當 ARes 狀態為 R 時才可選擇</small>
+          <small style="color: red">可隨機生成</small>
+        </div>
+        <div class="form-group">
+          <label for="stateMachineReason" class="bilingual-label">
+            <span class="zh">狀態機原因</span>
+            <span class="en">stateMachineReason</span>
+          </label>
+          <select id="stateMachineReason" disabled>
+            <option value="NULL_VALUE" selected>NULL_VALUE</option>
+            <option value="1001">1001 - Device not support</option>
+            <option value="1002">1002 - Exceeds amount limit</option>
+            <option value="1003">1003 - Exceeds auth frequency limit</option>
+            <option value="1004">1004 - User abandon</option>
+            <option value="1005">1005 - Trans timeout</option>
+            <option value="1006">1006 - Card scheme not supported</option>
+            <option value="1007">1007 - Invalid trans status</option>
+            <option value="1008">1008 - CReq not received</option>
+            <option value="1009">1009 - User not responsed</option>
+            <option value="1010">1010 - Dec auth not performed</option>
+            <option value="2001">2001 - Invalid message</option>
+            <option value="2002">2002 - Invalid message out of BIN range</option>
+            <option value="2101">2101 - Invalid ISO currency code</option>
+            <option value="2102">2102 - Invalid ISO currency exponent</option>
+            <option value="2103">2103 - Invalid ISO country code</option>
+            <option value="3001">3001 - Network connect timeout</option>
+            <option value="3002">3002 - Network read timeout</option>
+            <option value="3101">3101 - DS connect failed</option>
+            <option value="3102">3102 - DS read timeout</option>
+            <option value="3199">3199 - DS error</option>
+            <option value="3201">3201 - Card system connect failed</option>
+            <option value="3202">3202 - Card system read timeout</option>
+            <option value="3299">3299 - Card system error</option>
+            <option value="3301">3301 - HSM connect failed</option>
+            <option value="3302">3302 - HSM read timeout</option>
+            <option value="3399">3399 - HSM error</option>
+            <option value="3401">3401 - OTP sender connect failed</option>
+            <option value="3402">3402 - OTP sender read timeout</option>
+            <option value="3403">3403 - OTP sender exceeds frequency limit</option>
+            <option value="3404">3404 - OTP sender less than resend interval</option>
+            <option value="3499">3499 - OTP sender error</option>
+            <option value="3501">3501 - RReq connect failed</option>
+            <option value="3502">3502 - RReq read timeout</option>
+            <option value="3503">3503 - RRes response failed</option>
+            <option value="3504">3504 - RRes response error</option>
+            <option value="3601">3601 - OOB connect failed</option>
+            <option value="3602">3602 - OOB read timeout</option>
+            <option value="3604">3604 - OOBS response error</option>
+            <option value="4001">4001 - High risk</option>
+            <option value="4101">4101 - Black list</option>
+            <option value="4102">4102 - Black list IP</option>
+            <option value="4103">4103 - Black list email</option>
+            <option value="4104">4104 - Black list MID</option>
+            <option value="4105">4105 - Black list device ID</option>
+            <option value="4106">4106 - Black list acct number</option>
+            <option value="4107">4107 - Black list acct ID</option>
+            <option value="4108">4108 - Black list phone</option>
+            <option value="4109">4109 - Black list src country</option>
+            <option value="4110">4110 - Black list mer URL</option>
+            <option value="4111">4111 - Black list mer country</option>
+            <option value="4201">4201 - High risk RBA</option>
+            <option value="4202">4202 - 3RI challenge not support</option>
+            <option value="5101">5101 - Invalid acct number</option>
+            <option value="5102">5102 - Invalid expiry date</option>
+            <option value="5103">5103 - Acct number locked</option>
+            <option value="5104">5104 - Acct number not enrolled</option>
+            <option value="5105">5105 - Acct number not effective</option>
+            <option value="5106">5106 - Acct number expired</option>
+            <option value="5201">5201 - Invalid acct ID</option>
+            <option value="5202">5202 - Acct ID lock</option>
+            <option value="5203">5203 - Acct ID not enrolled</option>
+            <option value="5204">5204 - Acct ID not effective</option>
+            <option value="6101">6101 - Passcode invalid</option>
+            <option value="6102">6102 - Passcode expired</option>
+            <option value="6103">6103 - Passcode used</option>
+            <option value="6201">6201 - OOB not completed</option>
+            <option value="6301">6301 - KBA answer invalid</option>
+            <option value="6401">6401 - FIDO not completed</option>
+            <option value="6402">6402 - FIDO connect failed</option>
+            <option value="6403">6403 - FIDO read timeout</option>
+            <option value="7101">7101 - 3RI not support</option>
+            <option value="7102">7102 - 3RI invalid 3RI ind</option>
+            <option value="7103">7103 - 3RI NPA frictionless</option>
+            <option value="7201">7201 - 3RI recurring prior trans not found</option>
+            <option value="7202">7202 - 3RI recurring prior trans not auth</option>
+            <option value="7203">7203 - 3RI recurring prior trans expiried</option>
+            <option value="7204">7204 - 3RI recurring currency different</option>
+            <option value="7205">7205 - 3RI recurring amount over prior trans</option>
+            <option value="7206">7206 - 3RI recurring acct number different</option>
+            <option value="7207">7207 - 3RI instaldata over limit</option>
+            <option value="8101">8101 - Recurring date expiried</option>
+            <option value="0000">0000 - Completed</option>
+            <option value="9999">9999 - Unexcepted error</option>
           </select>
           <small>只有當 ARes 狀態為 R 時才可選擇</small>
           <small style="color: red">可隨機生成</small>
