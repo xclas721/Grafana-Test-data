@@ -257,8 +257,14 @@ function loadDefaults() {
   updateCardInfoFromAcctNumber()
   set('messageCategory', '01')
   set('deviceChannel', '02')
-  set('authenticationMethod', 'NULL_VALUE')
-  set('authenticationType', 'NULL_VALUE')
+  set('authenticationMethod', '02')
+  set('authenticationType', '02')
+  set('deviceIpAddress', '::1')
+  set('devicePlatform', 'MacIntel')
+  set('deviceLocale', 'zh-TW')
+  set('deviceAdvertisingId', '4d4427f20375a66287430edd54bd82d2')
+  set('threeDSCompInd', 'Y')
+  set('merchantCountryCodeStr', '156')
   set('performancePath', '/acs-auth/auth/V/2.2.0/ed8544c4-fc50-289d-ee05-ee41c86bb6f5/001/areq')
   set('execTime', '5437')
   set('errorComponent', 'NULL_VALUE')
@@ -419,7 +425,7 @@ function generateRandom() {
   } else {
     set('challengeCancel', 'NULL_VALUE')
   }
-  // browserIP 隨機（IPv4/IPv6 混合，預設 50/50）
+  // deviceIpAddress 隨機（IPv4/IPv6 混合，預設 50/50）- 以設備 IP 為主
   function randInt(max: number): number { return Math.floor(Math.random() * (max + 1)) }
   function randomIPv4(): string {
     return `${randInt(255)}.${randInt(255)}.${randInt(255)}.${randInt(255)}`
@@ -428,9 +434,77 @@ function generateRandom() {
   function randomIPv6(): string {
     return `${h4()}:${h4()}:${h4()}:${h4()}:${h4()}:${h4()}:${h4()}:${h4()}`
   }
-  const browserIp = Math.random() < 0.5 ? randomIPv4() : randomIPv6()
-  const browserIpEl = document.getElementById('browserIP') as HTMLInputElement | null
-  if (browserIpEl) browserIpEl.value = browserIp
+  const deviceIpToggle = document.getElementById('enableDeviceIpAddressRandom') as HTMLInputElement | null
+  if (deviceIpToggle?.checked) {
+    const deviceIp = Math.random() < 0.5 ? randomIPv4() : randomIPv6()
+    set('deviceIpAddress', deviceIp)
+    // 瀏覽器 IP 跟隨設備 IP
+    const browserIpEl = document.getElementById('browserIP') as HTMLInputElement | null
+    if (browserIpEl) browserIpEl.value = deviceIp
+  }
+
+  // devicePlatform 隨機（僅在勾選時）
+  const devicePlatformToggle = document.getElementById('enableDevicePlatformRandom') as HTMLInputElement | null
+  if (devicePlatformToggle?.checked) {
+    const platforms = ['MacIntel', 'Win32', 'Linux x86_64', 'iPhone', 'Android']
+    const platform = platforms[Math.floor(Math.random() * platforms.length)] as string
+    set('devicePlatform', platform)
+  }
+
+  // deviceLocale 隨機（僅在勾選時）
+  const deviceLocaleToggle = document.getElementById('enableDeviceLocaleRandom') as HTMLInputElement | null
+  if (deviceLocaleToggle?.checked) {
+    const locales = ['zh-TW', 'zh-CN', 'en-US', 'en-GB', 'ja-JP', 'ko-KR']
+    const locale = locales[Math.floor(Math.random() * locales.length)] as string
+    set('deviceLocale', locale)
+  }
+
+  // deviceAdvertisingId 隨機（僅在勾選時）
+  const deviceAdIdToggle = document.getElementById('enableDeviceAdvertisingIdRandom') as HTMLInputElement | null
+  if (deviceAdIdToggle?.checked) {
+    let adId = ''
+    for (let i = 0; i < 32; i++) {
+      adId += Math.floor(Math.random() * 16).toString(16)
+    }
+    set('deviceAdvertisingId', adId)
+  }
+
+  // threeDSCompInd 隨機（僅在勾選時）
+  const threeDSCompIndToggle = document.getElementById('enableThreeDSCompIndRandom') as HTMLInputElement | null
+  if (threeDSCompIndToggle?.checked) {
+    const compInd = Math.random() < 0.5 ? 'Y' : 'N'
+    set('threeDSCompInd', compInd)
+  }
+
+  // merchantCountryCodeStr 隨機（僅在勾選時）
+  const merchantCountryCodeStrToggle = document.getElementById('enableMerchantCountryCodeStrRandom') as HTMLInputElement | null
+  const merchantCountryCodeStrEl = document.getElementById('merchantCountryCodeStr') as HTMLSelectElement | null
+  if (merchantCountryCodeStrToggle?.checked && merchantCountryCodeStrEl && merchantCountryCodeStrEl.options.length > 0) {
+    // 從選單中隨機選擇一個選項（排除空值選項）
+    const options = Array.from(merchantCountryCodeStrEl.options).filter(opt => opt.value !== '')
+    if (options.length > 0) {
+      const randomOption = options[Math.floor(Math.random() * options.length)]!
+      set('merchantCountryCodeStr', randomOption.value)
+    }
+  }
+  // 如果沒有勾選，使用當前選單中的值（不需要額外設置，因為 getFormData 會讀取）
+
+  // authenticationMethod 隨機（僅在勾選時）
+  const authMethodToggle = document.getElementById('enableAuthenticationMethodRandom') as HTMLInputElement | null
+  if (authMethodToggle?.checked) {
+    const authMethods = ['01', '02', '03', '04', '05']
+    const authMethod = authMethods[Math.floor(Math.random() * authMethods.length)] as string
+    set('authenticationMethod', authMethod)
+  }
+
+  // authenticationType 隨機（僅在勾選時）
+  const authTypeToggle = document.getElementById('enableAuthenticationTypeRandom') as HTMLInputElement | null
+  if (authTypeToggle?.checked) {
+    const authTypes = ['01', '02', '03', '04', '05']
+    const authType = authTypes[Math.floor(Math.random() * authTypes.length)] as string
+    set('authenticationType', authType)
+  }
+
   setStatus('隨機數據已生成', 'success')
 }
 
@@ -490,6 +564,65 @@ onMounted(() => {
   const acctEl = document.getElementById('acctNumber') as HTMLInputElement | null
   acctEl?.addEventListener('input', updateCardInfoFromAcctNumber)
   wireStatusLinks()
+  // 綁定 deviceIpAddress 與 browserIP 同步（以設備 IP 為主）
+  const browserIpEl = document.getElementById('browserIP') as HTMLInputElement | null
+  const deviceIpEl = document.getElementById('deviceIpAddress') as HTMLInputElement | null
+  // 初始化時同步
+  if (browserIpEl && deviceIpEl && deviceIpEl.value) {
+    browserIpEl.value = deviceIpEl.value
+  }
+  // 監聽設備 IP 變化，自動同步到瀏覽器 IP
+  deviceIpEl?.addEventListener('input', () => {
+    if (browserIpEl && deviceIpEl) {
+      browserIpEl.value = deviceIpEl.value
+    }
+  })
+  // 3DS 參數全選功能
+  const enableAll3DSParamsCheckbox = document.getElementById('enableAll3DSParamsRandom') as HTMLInputElement | null
+  const threeDSParamCheckboxes = [
+    'enableMessageCategory',
+    'enableDeviceChannel',
+    'enableThreeDSRequestorChallengeInd',
+    'enableAuthenticationMethodRandom',
+    'enableAuthenticationTypeRandom',
+    'enableDeviceIpAddressRandom',
+    'enableDevicePlatformRandom',
+    'enableDeviceLocaleRandom',
+    'enableDeviceAdvertisingIdRandom',
+    'enableThreeDSCompIndRandom',
+    'enableMerchantCountryCodeStrRandom'
+  ]
+  function updateAll3DSParamsCheckbox() {
+    if (!enableAll3DSParamsCheckbox) return
+    const allChecked = threeDSParamCheckboxes.every((id) => {
+      const checkbox = document.getElementById(id) as HTMLInputElement | null
+      return checkbox?.checked ?? false
+    })
+    enableAll3DSParamsCheckbox.checked = allChecked
+  }
+  function toggleAll3DSParams(checked: boolean) {
+    // 批量更新所有子 checkbox
+    // 注意：這會觸發每個子 checkbox 的 change 事件，每個都會調用 updateAll3DSParamsCheckbox
+    // 但這是預期的行為，因為需要確保全選 checkbox 的狀態與子 checkbox 一致
+    threeDSParamCheckboxes.forEach((id) => {
+      const checkbox = document.getElementById(id) as HTMLInputElement | null
+      if (checkbox) {
+        checkbox.checked = checked
+      }
+    })
+    // 不需要手動更新全選 checkbox，因為子 checkbox 的 change 事件會自動觸發 updateAll3DSParamsCheckbox
+  }
+  enableAll3DSParamsCheckbox?.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement
+    toggleAll3DSParams(target.checked)
+  })
+  // 為每個子 checkbox 添加事件監聽器
+  threeDSParamCheckboxes.forEach((id) => {
+    const checkbox = document.getElementById(id) as HTMLInputElement | null
+    checkbox?.addEventListener('change', updateAll3DSParamsCheckbox)
+  })
+  // 初始化時檢查全選狀態
+  updateAll3DSParamsCheckbox()
   // 時間區間顯示
   document.getElementById('currentDate')?.addEventListener('change', updateTimeRangeDisplay)
   document.getElementById('timezone')?.addEventListener('change', updateTimeRangeDisplay)
@@ -738,6 +871,225 @@ function buildDocument(
     errorMessageType: form.errorMessageType,
     challengeCancel: form.challengeCancel && form.challengeCancel !== 'NULL_VALUE' ? form.challengeCancel : undefined
   }
+  // 添加設備相關欄位（如果存在）
+  if (form.deviceIpAddress && form.deviceIpAddress.trim() !== '') {
+    doc.deviceIpAddress = form.deviceIpAddress
+  }
+  if (form.devicePlatform && form.devicePlatform.trim() !== '') {
+    doc.devicePlatform = form.devicePlatform
+  }
+  if (form.deviceLocale && form.deviceLocale.trim() !== '') {
+    doc.deviceLocale = form.deviceLocale
+  }
+  if (form.deviceAdvertisingId && form.deviceAdvertisingId.trim() !== '') {
+    doc.deviceAdvertisingId = form.deviceAdvertisingId
+  }
+  if (form.threeDSCompInd && form.threeDSCompInd.trim() !== '') {
+    doc.threeDSCompInd = form.threeDSCompInd
+  }
+  if (form.merchantCountryCodeStr && form.merchantCountryCodeStr.trim() !== '') {
+    doc.merchantCountryCodeStr = form.merchantCountryCodeStr
+  }
+  if (form.authenticationMethod && form.authenticationMethod !== 'NULL_VALUE') {
+    doc.authenticationMethod = form.authenticationMethod
+  }
+  if (form.authenticationType && form.authenticationType !== 'NULL_VALUE') {
+    doc.authenticationType = form.authenticationType
+  }
+  // 國家代碼到國家資訊的映射（用於 GeoIP 生成）
+  const countryCodeMap: Record<string, { name: string; alpha2: string }> = {
+    '156': { name: 'China', alpha2: 'CN' },
+    '158': { name: 'Taiwan', alpha2: 'TW' },
+    '840': { name: 'United States', alpha2: 'US' },
+    '392': { name: 'Japan', alpha2: 'JP' },
+    '344': { name: 'Hong Kong', alpha2: 'HK' },
+    '410': { name: 'South Korea', alpha2: 'KR' },
+    '702': { name: 'Singapore', alpha2: 'SG' },
+    '036': { name: 'Australia', alpha2: 'AU' },
+    '124': { name: 'Canada', alpha2: 'CA' },
+    '978': { name: 'Eurozone', alpha2: 'EU' },
+    '826': { name: 'United Kingdom', alpha2: 'GB' }
+  }
+  // 生成 GeoIP 資訊（如果啟用）
+  function generateGeoIP(countryCode: string, countryName: string, countryAlpha2: string): Record<string, unknown> {
+    const cities: Record<string, Array<{ name: string; lat: number; lon: number; region: string }>> = {
+      '156': [
+        { name: 'Beijing', lat: 39.9042, lon: 116.4074, region: 'CN-BJ' },
+        { name: 'Shanghai', lat: 31.2304, lon: 121.4737, region: 'CN-SH' },
+        { name: 'Guangzhou', lat: 23.1291, lon: 113.2644, region: 'CN-GD' },
+        { name: 'Shenzhen', lat: 22.5431, lon: 114.0579, region: 'CN-GD' },
+        { name: 'Chengdu', lat: 30.6624, lon: 104.0633, region: 'CN-SC' },
+        { name: 'Hangzhou', lat: 30.2741, lon: 120.1551, region: 'CN-ZJ' },
+        { name: 'Nanjing', lat: 32.0603, lon: 118.7969, region: 'CN-JS' },
+        { name: 'Wuhan', lat: 30.5928, lon: 114.3055, region: 'CN-HB' },
+        { name: 'Xi\'an', lat: 34.3416, lon: 108.9398, region: 'CN-SN' },
+        { name: 'Tianjin', lat: 39.3434, lon: 117.3616, region: 'CN-TJ' }
+      ],
+      '158': [
+        // 直轄市
+        { name: 'Taipei', lat: 25.0330, lon: 121.5654, region: 'TW-TPE' },
+        { name: 'New Taipei', lat: 25.0169, lon: 121.4629, region: 'TW-NTP' },
+        { name: 'Taoyuan', lat: 24.9936, lon: 121.3010, region: 'TW-TAO' },
+        { name: 'Taichung', lat: 24.1477, lon: 120.6736, region: 'TW-TXG' },
+        { name: 'Tainan', lat: 22.9993, lon: 120.2269, region: 'TW-TNN' },
+        { name: 'Kaohsiung', lat: 22.6148, lon: 120.3139, region: 'TW-KHH' },
+        // 省轄市
+        { name: 'Keelung', lat: 25.1276, lon: 121.7395, region: 'TW-KEE' },
+        { name: 'Hsinchu', lat: 24.8036, lon: 120.9686, region: 'TW-HSQ' },
+        { name: 'Chiayi', lat: 23.4801, lon: 120.4491, region: 'TW-CYI' },
+        // 縣
+        { name: 'Hsinchu County', lat: 24.8387, lon: 121.0177, region: 'TW-HSQ' },
+        { name: 'Miaoli', lat: 24.5658, lon: 120.8239, region: 'TW-MIA' },
+        { name: 'Changhua', lat: 24.0720, lon: 120.5418, region: 'TW-CHA' },
+        { name: 'Nantou', lat: 23.9167, lon: 120.6833, region: 'TW-NAN' },
+        { name: 'Yunlin', lat: 23.7078, lon: 120.4313, region: 'TW-YUN' },
+        { name: 'Chiayi County', lat: 23.4518, lon: 120.2550, region: 'TW-CYQ' },
+        { name: 'Pingtung', lat: 22.6716, lon: 120.4882, region: 'TW-PIF' },
+        { name: 'Yilan', lat: 24.7021, lon: 121.7378, region: 'TW-ILA' },
+        { name: 'Hualien', lat: 23.9739, lon: 121.6014, region: 'TW-HUA' },
+        { name: 'Taitung', lat: 22.7603, lon: 121.1449, region: 'TW-TTT' },
+        { name: 'Penghu', lat: 23.5712, lon: 119.5794, region: 'TW-PEN' },
+        { name: 'Kinmen', lat: 24.4333, lon: 118.3667, region: 'TW-KIN' },
+        { name: 'Lienchiang', lat: 26.1594, lon: 119.9378, region: 'TW-LIE' }
+      ],
+      '840': [
+        { name: 'New York', lat: 40.7128, lon: -74.0060, region: 'US-NY' },
+        { name: 'Los Angeles', lat: 34.0522, lon: -118.2437, region: 'US-CA' },
+        { name: 'Chicago', lat: 41.8781, lon: -87.6298, region: 'US-IL' },
+        { name: 'Houston', lat: 29.7604, lon: -95.3698, region: 'US-TX' },
+        { name: 'San Francisco', lat: 37.7749, lon: -122.4194, region: 'US-CA' },
+        { name: 'Phoenix', lat: 33.4484, lon: -112.0740, region: 'US-AZ' },
+        { name: 'Philadelphia', lat: 39.9526, lon: -75.1652, region: 'US-PA' },
+        { name: 'San Antonio', lat: 29.4241, lon: -98.4936, region: 'US-TX' },
+        { name: 'San Diego', lat: 32.7157, lon: -117.1611, region: 'US-CA' },
+        { name: 'Dallas', lat: 32.7767, lon: -96.7970, region: 'US-TX' }
+      ],
+      '392': [
+        { name: 'Tokyo', lat: 35.6762, lon: 139.6503, region: 'JP-13' },
+        { name: 'Osaka', lat: 34.6937, lon: 135.5023, region: 'JP-27' },
+        { name: 'Yokohama', lat: 35.4437, lon: 139.6380, region: 'JP-14' },
+        { name: 'Kyoto', lat: 35.0116, lon: 135.7681, region: 'JP-26' },
+        { name: 'Sapporo', lat: 43.0642, lon: 141.3469, region: 'JP-01' },
+        { name: 'Nagoya', lat: 35.1815, lon: 136.9066, region: 'JP-23' },
+        { name: 'Fukuoka', lat: 33.5904, lon: 130.4017, region: 'JP-40' },
+        { name: 'Kobe', lat: 34.6901, lon: 135.1956, region: 'JP-28' },
+        { name: 'Sendai', lat: 38.2682, lon: 140.8694, region: 'JP-04' },
+        { name: 'Hiroshima', lat: 34.3853, lon: 132.4553, region: 'JP-34' }
+      ],
+      '344': [
+        { name: 'Hong Kong', lat: 22.3193, lon: 114.1694, region: 'HK' },
+        { name: 'Kowloon', lat: 22.3167, lon: 114.1833, region: 'HK' },
+        { name: 'New Territories', lat: 22.4000, lon: 114.2000, region: 'HK' },
+        { name: 'Central', lat: 22.2819, lon: 114.1556, region: 'HK' },
+        { name: 'Wan Chai', lat: 22.2783, lon: 114.1747, region: 'HK' }
+      ],
+      '410': [
+        { name: 'Seoul', lat: 37.5665, lon: 126.9780, region: 'KR-11' },
+        { name: 'Busan', lat: 35.1796, lon: 129.0756, region: 'KR-26' },
+        { name: 'Incheon', lat: 37.4563, lon: 126.7052, region: 'KR-28' },
+        { name: 'Daegu', lat: 35.8714, lon: 128.6014, region: 'KR-27' },
+        { name: 'Daejeon', lat: 36.3504, lon: 127.3845, region: 'KR-30' },
+        { name: 'Gwangju', lat: 35.1595, lon: 126.8526, region: 'KR-29' },
+        { name: 'Ulsan', lat: 35.5384, lon: 129.3114, region: 'KR-31' },
+        { name: 'Suwon', lat: 37.2636, lon: 127.0286, region: 'KR-41' }
+      ],
+      '702': [
+        { name: 'Singapore', lat: 1.3521, lon: 103.8198, region: 'SG' },
+        { name: 'Central Region', lat: 1.2966, lon: 103.8526, region: 'SG' },
+        { name: 'East Region', lat: 1.3441, lon: 103.9442, region: 'SG' },
+        { name: 'West Region', lat: 1.3574, lon: 103.7058, region: 'SG' }
+      ],
+      '036': [
+        { name: 'Sydney', lat: -33.8688, lon: 151.2093, region: 'AU-NSW' },
+        { name: 'Melbourne', lat: -37.8136, lon: 144.9631, region: 'AU-VIC' },
+        { name: 'Brisbane', lat: -27.4698, lon: 153.0251, region: 'AU-QLD' },
+        { name: 'Perth', lat: -31.9505, lon: 115.8605, region: 'AU-WA' },
+        { name: 'Adelaide', lat: -34.9285, lon: 138.6007, region: 'AU-SA' },
+        { name: 'Gold Coast', lat: -28.0167, lon: 153.4000, region: 'AU-QLD' },
+        { name: 'Canberra', lat: -35.2809, lon: 149.1300, region: 'AU-ACT' }
+      ],
+      '124': [
+        { name: 'Toronto', lat: 43.6532, lon: -79.3832, region: 'CA-ON' },
+        { name: 'Vancouver', lat: 49.2827, lon: -123.1207, region: 'CA-BC' },
+        { name: 'Montreal', lat: 45.5017, lon: -73.5673, region: 'CA-QC' },
+        { name: 'Calgary', lat: 51.0447, lon: -114.0719, region: 'CA-AB' },
+        { name: 'Ottawa', lat: 45.4215, lon: -75.6972, region: 'CA-ON' },
+        { name: 'Edmonton', lat: 53.5461, lon: -113.4938, region: 'CA-AB' },
+        { name: 'Winnipeg', lat: 49.8951, lon: -97.1384, region: 'CA-MB' },
+        { name: 'Quebec City', lat: 46.8139, lon: -71.2080, region: 'CA-QC' }
+      ],
+      '978': [
+        { name: 'Paris', lat: 48.8566, lon: 2.3522, region: 'FR-IDF' },
+        { name: 'Berlin', lat: 52.5200, lon: 13.4050, region: 'DE-BE' },
+        { name: 'Madrid', lat: 40.4168, lon: -3.7038, region: 'ES-MD' },
+        { name: 'Rome', lat: 41.9028, lon: 12.4964, region: 'IT-LAZ' },
+        { name: 'Amsterdam', lat: 52.3676, lon: 4.9041, region: 'NL-NH' },
+        { name: 'Brussels', lat: 50.8503, lon: 4.3517, region: 'BE-BRU' },
+        { name: 'Vienna', lat: 48.2082, lon: 16.3738, region: 'AT-9' },
+        { name: 'Dublin', lat: 53.3498, lon: -6.2603, region: 'IE-D' }
+      ],
+      '826': [
+        { name: 'London', lat: 51.5074, lon: -0.1278, region: 'GB-ENG' },
+        { name: 'Manchester', lat: 53.4808, lon: -2.2426, region: 'GB-ENG' },
+        { name: 'Birmingham', lat: 52.4862, lon: -1.8904, region: 'GB-ENG' },
+        { name: 'Glasgow', lat: 55.8642, lon: -4.2518, region: 'GB-SCT' },
+        { name: 'Edinburgh', lat: 55.9533, lon: -3.1883, region: 'GB-SCT' },
+        { name: 'Liverpool', lat: 53.4084, lon: -2.9916, region: 'GB-ENG' }
+      ]
+    }
+    const cityList = cities[countryCode] || [
+      { name: 'Unknown', lat: 0, lon: 0, region: 'UN' }
+    ]
+    const city = cityList[Math.floor(Math.random() * cityList.length)]!
+    // 判斷洲名
+    let continentName = 'Unknown'
+    if (['156', '158', '392', '344', '410', '702'].includes(countryCode)) {
+      continentName = 'Asia'
+    } else if (['840', '124'].includes(countryCode)) {
+      continentName = 'North America'
+    } else if (countryCode === '036') {
+      continentName = 'Oceania'
+    } else if (['978', '826'].includes(countryCode)) {
+      continentName = 'Europe'
+    }
+    return {
+      region_iso_code: city.region,
+      continent_name: continentName,
+      city_name: city.name,
+      country_iso_code: countryAlpha2,
+      country_name: countryName,
+      location: {
+        lat: city.lat + (Math.random() - 0.5) * 0.1,
+        lon: city.lon + (Math.random() - 0.5) * 0.1
+      },
+      region_name: city.name
+    }
+  }
+  // 使用 merchantCountryCodeStr 來生成 GeoIP（如果有的話，否則使用 merchantCountryCode）
+  const countryCodeForGeoIP = form.merchantCountryCodeStr || form.merchantCountryCode || '156'
+  const countryInfo = countryCodeMap[countryCodeForGeoIP] || countryCodeMap['156']!
+  // browserGeoIP（預設生成，基於 merchantCountryCodeStr）
+  const enableBrowserGeoIP = document.getElementById('enableBrowserGeoIPRandom') as HTMLInputElement | null
+  // 預設生成，除非 checkbox 明確取消勾選
+  if (enableBrowserGeoIP?.checked !== false) {
+    ;(doc as unknown as Record<string, unknown>).browserGeoIP = generateGeoIP(
+      countryCodeForGeoIP,
+      countryInfo.name,
+      countryInfo.alpha2
+    )
+  }
+  // deviceGeoIP（預設生成，基於 merchantCountryCodeStr）
+  const enableDeviceGeoIP = document.getElementById('enableDeviceGeoIPRandom') as HTMLInputElement | null
+  // 預設生成，除非 checkbox 明確取消勾選
+  if (enableDeviceGeoIP?.checked !== false) {
+    ;(doc as unknown as Record<string, unknown>).deviceGeoIP = generateGeoIP(
+      countryCodeForGeoIP,
+      countryInfo.name,
+      countryInfo.alpha2
+    )
+  }
+  // visaDafMessageExtension（始終為 null，但需要存在）
+  ;(doc as unknown as Record<string, unknown>).visaDafMessageExtension = null
   // 擴充：貨幣/國家巢狀資訊
   ;(doc as unknown as Record<string, unknown>)['purchaseCurrency-country_info'] = {
     'ISO4217-currency_minor_unit': form.currencyMinorUnit,
@@ -754,8 +1106,12 @@ function buildDocument(
     official_name_en: form.countryName
   }
   ;(doc as unknown as Record<string, unknown>).purchaseCurrencyStr = form.purchaseCurrency
+  // currencyCodeForRate（如果存在）
+  if (form.currencyCodeForRate && form.currencyCodeForRate.trim() !== '') {
+    ;(doc as unknown as Record<string, unknown>).currencyCodeForRate = form.currencyCodeForRate
+  }
   ;(doc as unknown as Record<string, unknown>).exchangeKey =
-    `${form.currencyCodeForRate}-${currentDateTime.split('T')[0]}`
+    `${form.currencyCodeForRate || form.currencyAlphabeticCode || 'CNY'}-${currentDateTime.split('T')[0]}`
   ;(doc as unknown as Record<string, unknown>).exchange_rate = {
     date: `${historicalDateStr}T00:00:00.000Z`,
     '@timestamp': `${historicalDateStr}T00:00:02.000Z`,
@@ -1495,6 +1851,14 @@ defineExpose({
     <!-- 8.3DS 參數 -->
     <div class="form-section">
       <h3>8.3DS 參數</h3>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
+        <input type="checkbox" id="enableAll3DSParamsRandom" style="margin: 0" />
+        <label
+          for="enableAll3DSParamsRandom"
+          style="margin: 0; font-weight: bold; color: #333; font-size: 1em"
+          >全選：隨機生成時包含所有 3DS 參數欄位</label
+        >
+      </div>
       <div class="form-grid">
         <div class="form-group">
           <label for="messageCategory" class="bilingual-label">
@@ -1591,14 +1955,48 @@ defineExpose({
             <span class="zh">認證方法</span>
             <span class="en">authenticationMethod</span>
           </label>
-          <input type="text" id="authenticationMethod" value="NULL_VALUE" />
+          <input type="text" id="authenticationMethod" value="02" />
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
+            <input type="checkbox" id="enableAuthenticationMethodRandom" style="margin: 0" />
+            <label
+              for="enableAuthenticationMethodRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
+          </div>
+          <small style="color: red">可隨機生成 (01-05)</small>
         </div>
         <div class="form-group">
           <label for="authenticationType" class="bilingual-label">
             <span class="zh">認證類型</span>
             <span class="en">authenticationType</span>
           </label>
-          <input type="text" id="authenticationType" value="NULL_VALUE" />
+          <input type="text" id="authenticationType" value="02" />
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
+            <input type="checkbox" id="enableAuthenticationTypeRandom" style="margin: 0" />
+            <label
+              for="enableAuthenticationTypeRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
+          </div>
+          <small style="color: red">可隨機生成 (01-05)</small>
+        </div>
+        <div class="form-group">
+          <label for="deviceIpAddress" class="bilingual-label">
+            <span class="zh">設備 IP 位址</span>
+            <span class="en">deviceIpAddress</span>
+          </label>
+          <input type="text" id="deviceIpAddress" value="::1" />
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
+            <input type="checkbox" id="enableDeviceIpAddressRandom" style="margin: 0" />
+            <label
+              for="enableDeviceIpAddressRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位（瀏覽器 IP 會跟隨）</label
+            >
+          </div>
+          <small style="color: red">可隨機生成 IPv4/IPv6，瀏覽器 IP 會自動跟隨</small>
         </div>
         <div class="form-group">
           <label for="browserIP" class="bilingual-label">
@@ -1606,7 +2004,133 @@ defineExpose({
             <span class="en">browserIP</span>
           </label>
           <input type="text" id="browserIP" value="::1" />
-          <small>隨機生成 IPv4/IPv6</small>
+          <small>自動跟隨設備 IP 位址</small>
+        </div>
+        <div class="form-group">
+          <label for="devicePlatform" class="bilingual-label">
+            <span class="zh">設備平台</span>
+            <span class="en">devicePlatform</span>
+          </label>
+          <input type="text" id="devicePlatform" value="MacIntel" />
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
+            <input type="checkbox" id="enableDevicePlatformRandom" style="margin: 0" />
+            <label
+              for="enableDevicePlatformRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
+          </div>
+          <small style="color: red">可隨機生成 (如: MacIntel, Win32, Linux x86_64)</small>
+        </div>
+        <div class="form-group">
+          <label for="deviceLocale" class="bilingual-label">
+            <span class="zh">設備語言設定</span>
+            <span class="en">deviceLocale</span>
+          </label>
+          <input type="text" id="deviceLocale" value="zh-TW" />
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
+            <input type="checkbox" id="enableDeviceLocaleRandom" style="margin: 0" />
+            <label
+              for="enableDeviceLocaleRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
+          </div>
+          <small style="color: red">可隨機生成 (如: zh-TW, zh-CN, en-US)</small>
+        </div>
+        <div class="form-group">
+          <label for="deviceAdvertisingId" class="bilingual-label">
+            <span class="zh">設備廣告 ID</span>
+            <span class="en">deviceAdvertisingId</span>
+          </label>
+          <input type="text" id="deviceAdvertisingId" value="4d4427f20375a66287430edd54bd82d2" />
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
+            <input type="checkbox" id="enableDeviceAdvertisingIdRandom" style="margin: 0" />
+            <label
+              for="enableDeviceAdvertisingIdRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
+          </div>
+          <small style="color: red">可隨機生成 32 位十六進制字串</small>
+        </div>
+        <div class="form-group">
+          <label for="threeDSCompInd" class="bilingual-label">
+            <span class="zh">3DS 完成指示</span>
+            <span class="en">threeDSCompInd</span>
+          </label>
+          <select id="threeDSCompInd">
+            <option value="">留空</option>
+            <option value="Y" selected>Y - Yes</option>
+            <option value="N">N - No</option>
+          </select>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
+            <input type="checkbox" id="enableThreeDSCompIndRandom" style="margin: 0" />
+            <label
+              for="enableThreeDSCompIndRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
+          </div>
+          <small style="color: red">可隨機生成 (Y/N)</small>
+        </div>
+        <div class="form-group">
+          <label for="merchantCountryCodeStr" class="bilingual-label">
+            <span class="zh">商戶國家代碼 (字串)</span>
+            <span class="en">merchantCountryCodeStr</span>
+          </label>
+          <select id="merchantCountryCodeStr">
+            <option value="156" selected>156 - 中國 (CN)</option>
+            <option value="158">158 - 台灣 (TW)</option>
+            <option value="840">840 - 美國 (US)</option>
+            <option value="392">392 - 日本 (JP)</option>
+            <option value="344">344 - 香港 (HK)</option>
+            <option value="410">410 - 韓國 (KR)</option>
+            <option value="702">702 - 新加坡 (SG)</option>
+            <option value="036">036 - 澳洲 (AU)</option>
+            <option value="124">124 - 加拿大 (CA)</option>
+            <option value="978">978 - 歐元區 (EU)</option>
+            <option value="826">826 - 英國 (GB)</option>
+          </select>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
+            <input type="checkbox" id="enableMerchantCountryCodeStrRandom" style="margin: 0" />
+            <label
+              for="enableMerchantCountryCodeStrRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
+          </div>
+          <small style="color: red">可隨機生成，從選單中隨機選擇</small>
+        </div>
+        <div class="form-group">
+          <label for="browserGeoIP" class="bilingual-label">
+            <span class="zh">瀏覽器 IP 地理位置</span>
+            <span class="en">browserGeoIP</span>
+          </label>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
+            <input type="checkbox" id="enableBrowserGeoIPRandom" style="margin: 0" checked />
+            <label
+              for="enableBrowserGeoIPRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位（預設開啟）</label
+            >
+          </div>
+          <small style="color: red">預設生成地理位置資訊（基於國家代碼），可隨機生成城市、座標等</small>
+        </div>
+        <div class="form-group">
+          <label for="deviceGeoIP" class="bilingual-label">
+            <span class="zh">設備 IP 地理位置</span>
+            <span class="en">deviceGeoIP</span>
+          </label>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
+            <input type="checkbox" id="enableDeviceGeoIPRandom" style="margin: 0" checked />
+            <label
+              for="enableDeviceGeoIPRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位（預設開啟）</label
+            >
+          </div>
+          <small style="color: red">預設生成地理位置資訊（基於國家代碼），可隨機生成城市、座標等</small>
         </div>
       </div>
     </div>
