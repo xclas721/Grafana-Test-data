@@ -83,10 +83,12 @@ function wireStatusLinks() {
   const rreq = document.getElementById('rreqTransStatus') as HTMLSelectElement | null
   const trans = document.getElementById('transStatus') as HTMLInputElement | null
   const reason = document.getElementById('transStatusReason') as HTMLSelectElement | null
-  const stateMachineReason = document.getElementById('stateMachineReason') as HTMLSelectElement | null
+  const stateMachineReason = document.getElementById(
+    'stateMachineReason'
+  ) as HTMLSelectElement | null
   const challengeCancel = document.getElementById('challengeCancel') as HTMLSelectElement | null
   if (!ares || !rreq || !trans || !reason || !stateMachineReason || !challengeCancel) return
-  
+
   const updateChallengeCancel = () => {
     if (ares.value === 'C' && rreq.value === 'N') {
       challengeCancel.disabled = false
@@ -96,7 +98,7 @@ function wireStatusLinks() {
       challengeCancel.value = 'NULL_VALUE'
     }
   }
-  
+
   ares.addEventListener('change', () => {
     const val = ares.value
     if (val === 'C' || val === 'D') {
@@ -273,6 +275,11 @@ function loadDefaults() {
   set('merchantCountryCodeStr', '156')
   set('performancePath', '/acs-auth/auth/V/2.2.0/ed8544c4-fc50-289d-ee05-ee41c86bb6f5/001/areq')
   set('execTime', '5437')
+  set('creqExecTime', '500')
+  set('rreqExecTime', '400')
+  set('rbaExecTime', '100')
+  set('cavvExecTime', '20')
+  set('otpExecTime', '50')
   set('errorComponent', 'NULL_VALUE')
   set('errorDescription', 'NULL_VALUE')
   set('errorCode', 'NULL_VALUE')
@@ -307,17 +314,45 @@ function generateRandom() {
   const enableExec = (document.getElementById('enableExecTimeRandom') as HTMLInputElement | null)
     ?.checked
   if (enableExec) set('execTime', String(Math.floor(Math.random() * 5000 + 1000)))
+  const enableCreqExec = (
+    document.getElementById('enableCreqExecTimeRandom') as HTMLInputElement | null
+  )?.checked
+  if (enableCreqExec) set('creqExecTime', String(Math.floor(Math.random() * 500 + 300)))
+  const enableRreqExec = (
+    document.getElementById('enableRreqExecTimeRandom') as HTMLInputElement | null
+  )?.checked
+  if (enableRreqExec) set('rreqExecTime', String(Math.floor(Math.random() * 400 + 200)))
+  const enableRbaExec = (
+    document.getElementById('enableRbaExecTimeRandom') as HTMLInputElement | null
+  )?.checked
+  if (enableRbaExec) set('rbaExecTime', String(Math.floor(Math.random() * 150 + 50)))
+  const enableCavvExec = (
+    document.getElementById('enableCavvExecTimeRandom') as HTMLInputElement | null
+  )?.checked
+  if (enableCavvExec) set('cavvExecTime', String(Math.floor(Math.random() * 21 + 10)))
+  const enableOtpExec = (
+    document.getElementById('enableOtpExecTimeRandom') as HTMLInputElement | null
+  )?.checked
+  if (enableOtpExec) set('otpExecTime', String(Math.floor(Math.random() * 61 + 20)))
   // 狀態（依照 Grafana-Test-Input.html 的權重分佈）
   const r = Math.random()
   let st: string
-  if (r < 0.4) st = 'Y' // 40%
-  else if (r < 0.45) st = 'N' // 5%
-  else if (r < 0.5) st = 'R' // 5%
-  else if (r < 0.75) st = 'C' // 25%
-  else if (r < 0.8) st = 'D' // 5%
-  else if (r < 0.85) st = 'A' // 5%
-  else if (r < 0.9) st = 'I' // 5%
-  else if (r < 0.95) st = 'S' // 5%
+  if (r < 0.4)
+    st = 'Y' // 40%
+  else if (r < 0.45)
+    st = 'N' // 5%
+  else if (r < 0.5)
+    st = 'R' // 5%
+  else if (r < 0.75)
+    st = 'C' // 25%
+  else if (r < 0.8)
+    st = 'D' // 5%
+  else if (r < 0.85)
+    st = 'A' // 5%
+  else if (r < 0.9)
+    st = 'I' // 5%
+  else if (r < 0.95)
+    st = 'S' // 5%
   else st = 'U' // 5%
   set('aresTransStatus', String(st))
   const rreq = document.getElementById('rreqTransStatus') as HTMLSelectElement | null
@@ -349,20 +384,95 @@ function generateRandom() {
     }
   }
   // 當 ARes 為 R 時，stateMachineReason 從所有 StateMachineReasonEnum 值隨機；否則為 NULL_VALUE
-  const stateMachineReasonEl = document.getElementById('stateMachineReason') as HTMLSelectElement | null
+  const stateMachineReasonEl = document.getElementById(
+    'stateMachineReason'
+  ) as HTMLSelectElement | null
   if (stateMachineReasonEl) {
     if (st === 'R') {
       const stateMachineReasons: string[] = [
-        '1001', '1002', '1003', '1004', '1005', '1006', '1007', '1008', '1009', '1010',
-        '2001', '2002', '2101', '2102', '2103',
-        '3001', '3002', '3101', '3102', '3199', '3201', '3202', '3299', '3301', '3302', '3399',
-        '3401', '3402', '3403', '3404', '3499', '3501', '3502', '3503', '3504', '3601', '3602', '3604',
-        '4001', '4101', '4102', '4103', '4104', '4105', '4106', '4107', '4108', '4109', '4110', '4111',
-        '4201', '4202',
-        '5101', '5102', '5103', '5104', '5105', '5106', '5201', '5202', '5203', '5204',
-        '6101', '6102', '6103', '6201', '6301', '6401', '6402', '6403',
-        '7101', '7102', '7103', '7201', '7202', '7203', '7204', '7205', '7206', '7207',
-        '8101', '0000', '9999'
+        '1001',
+        '1002',
+        '1003',
+        '1004',
+        '1005',
+        '1006',
+        '1007',
+        '1008',
+        '1009',
+        '1010',
+        '2001',
+        '2002',
+        '2101',
+        '2102',
+        '2103',
+        '3001',
+        '3002',
+        '3101',
+        '3102',
+        '3199',
+        '3201',
+        '3202',
+        '3299',
+        '3301',
+        '3302',
+        '3399',
+        '3401',
+        '3402',
+        '3403',
+        '3404',
+        '3499',
+        '3501',
+        '3502',
+        '3503',
+        '3504',
+        '3601',
+        '3602',
+        '3604',
+        '4001',
+        '4101',
+        '4102',
+        '4103',
+        '4104',
+        '4105',
+        '4106',
+        '4107',
+        '4108',
+        '4109',
+        '4110',
+        '4111',
+        '4201',
+        '4202',
+        '5101',
+        '5102',
+        '5103',
+        '5104',
+        '5105',
+        '5106',
+        '5201',
+        '5202',
+        '5203',
+        '5204',
+        '6101',
+        '6102',
+        '6103',
+        '6201',
+        '6301',
+        '6401',
+        '6402',
+        '6403',
+        '7101',
+        '7102',
+        '7103',
+        '7201',
+        '7202',
+        '7203',
+        '7204',
+        '7205',
+        '7206',
+        '7207',
+        '8101',
+        '0000',
+        '9999'
       ]
       stateMachineReasonEl.disabled = false
       if (stateMachineReasons.length > 0) {
@@ -451,7 +561,9 @@ function generateRandom() {
     // 8% 機率生成實際值，92% 機率為 NULL_VALUE（確保 NULL_VALUE > 90%）
     const shouldSetValue = Math.random() < 0.08
     if (shouldSetValue) {
-      const cc = challengeCancelValues[Math.floor(Math.random() * challengeCancelValues.length)] as string
+      const cc = challengeCancelValues[
+        Math.floor(Math.random() * challengeCancelValues.length)
+      ] as string
       set('challengeCancel', cc)
     } else {
       set('challengeCancel', 'NULL_VALUE')
@@ -460,15 +572,21 @@ function generateRandom() {
     set('challengeCancel', 'NULL_VALUE')
   }
   // deviceIpAddress 隨機（IPv4/IPv6 混合，預設 50/50）- 以設備 IP 為主
-  function randInt(max: number): number { return Math.floor(Math.random() * (max + 1)) }
+  function randInt(max: number): number {
+    return Math.floor(Math.random() * (max + 1))
+  }
   function randomIPv4(): string {
     return `${randInt(255)}.${randInt(255)}.${randInt(255)}.${randInt(255)}`
   }
-  function h4(): string { return Math.floor(Math.random() * 0x10000).toString(16) }
+  function h4(): string {
+    return Math.floor(Math.random() * 0x10000).toString(16)
+  }
   function randomIPv6(): string {
     return `${h4()}:${h4()}:${h4()}:${h4()}:${h4()}:${h4()}:${h4()}:${h4()}`
   }
-  const deviceIpToggle = document.getElementById('enableDeviceIpAddressRandom') as HTMLInputElement | null
+  const deviceIpToggle = document.getElementById(
+    'enableDeviceIpAddressRandom'
+  ) as HTMLInputElement | null
   if (deviceIpToggle?.checked) {
     const deviceIp = Math.random() < 0.5 ? randomIPv4() : randomIPv6()
     set('deviceIpAddress', deviceIp)
@@ -478,7 +596,9 @@ function generateRandom() {
   }
 
   // devicePlatform 隨機（僅在勾選時）
-  const devicePlatformToggle = document.getElementById('enableDevicePlatformRandom') as HTMLInputElement | null
+  const devicePlatformToggle = document.getElementById(
+    'enableDevicePlatformRandom'
+  ) as HTMLInputElement | null
   if (devicePlatformToggle?.checked) {
     const platforms = ['MacIntel', 'Win32', 'Linux x86_64', 'iPhone', 'Android']
     const platform = platforms[Math.floor(Math.random() * platforms.length)] as string
@@ -486,7 +606,9 @@ function generateRandom() {
   }
 
   // deviceLocale 隨機（僅在勾選時）
-  const deviceLocaleToggle = document.getElementById('enableDeviceLocaleRandom') as HTMLInputElement | null
+  const deviceLocaleToggle = document.getElementById(
+    'enableDeviceLocaleRandom'
+  ) as HTMLInputElement | null
   if (deviceLocaleToggle?.checked) {
     const locales = ['zh-TW', 'zh-CN', 'en-US', 'en-GB', 'ja-JP', 'ko-KR']
     const locale = locales[Math.floor(Math.random() * locales.length)] as string
@@ -494,7 +616,9 @@ function generateRandom() {
   }
 
   // deviceAdvertisingId 隨機（僅在勾選時）
-  const deviceAdIdToggle = document.getElementById('enableDeviceAdvertisingIdRandom') as HTMLInputElement | null
+  const deviceAdIdToggle = document.getElementById(
+    'enableDeviceAdvertisingIdRandom'
+  ) as HTMLInputElement | null
   if (deviceAdIdToggle?.checked) {
     let adId = ''
     for (let i = 0; i < 32; i++) {
@@ -504,18 +628,28 @@ function generateRandom() {
   }
 
   // threeDSCompInd 隨機（僅在勾選時）
-  const threeDSCompIndToggle = document.getElementById('enableThreeDSCompIndRandom') as HTMLInputElement | null
+  const threeDSCompIndToggle = document.getElementById(
+    'enableThreeDSCompIndRandom'
+  ) as HTMLInputElement | null
   if (threeDSCompIndToggle?.checked) {
     const compInd = Math.random() < 0.5 ? 'Y' : 'N'
     set('threeDSCompInd', compInd)
   }
 
   // merchantCountryCodeStr 隨機（僅在勾選時）
-  const merchantCountryCodeStrToggle = document.getElementById('enableMerchantCountryCodeStrRandom') as HTMLInputElement | null
-  const merchantCountryCodeStrEl = document.getElementById('merchantCountryCodeStr') as HTMLSelectElement | null
-  if (merchantCountryCodeStrToggle?.checked && merchantCountryCodeStrEl && merchantCountryCodeStrEl.options.length > 0) {
+  const merchantCountryCodeStrToggle = document.getElementById(
+    'enableMerchantCountryCodeStrRandom'
+  ) as HTMLInputElement | null
+  const merchantCountryCodeStrEl = document.getElementById(
+    'merchantCountryCodeStr'
+  ) as HTMLSelectElement | null
+  if (
+    merchantCountryCodeStrToggle?.checked &&
+    merchantCountryCodeStrEl &&
+    merchantCountryCodeStrEl.options.length > 0
+  ) {
     // 從選單中隨機選擇一個選項（排除空值選項）
-    const options = Array.from(merchantCountryCodeStrEl.options).filter(opt => opt.value !== '')
+    const options = Array.from(merchantCountryCodeStrEl.options).filter((opt) => opt.value !== '')
     if (options.length > 0) {
       const randomOption = options[Math.floor(Math.random() * options.length)]!
       set('merchantCountryCodeStr', randomOption.value)
@@ -524,7 +658,9 @@ function generateRandom() {
   // 如果沒有勾選，使用當前選單中的值（不需要額外設置，因為 getFormData 會讀取）
 
   // authenticationMethod 隨機（僅在勾選時）
-  const authMethodToggle = document.getElementById('enableAuthenticationMethodRandom') as HTMLInputElement | null
+  const authMethodToggle = document.getElementById(
+    'enableAuthenticationMethodRandom'
+  ) as HTMLInputElement | null
   if (authMethodToggle?.checked) {
     const authMethods = ['01', '02', '03', '04', '05']
     const authMethod = authMethods[Math.floor(Math.random() * authMethods.length)] as string
@@ -532,7 +668,9 @@ function generateRandom() {
   }
 
   // authenticationType 隨機（僅在勾選時）
-  const authTypeToggle = document.getElementById('enableAuthenticationTypeRandom') as HTMLInputElement | null
+  const authTypeToggle = document.getElementById(
+    'enableAuthenticationTypeRandom'
+  ) as HTMLInputElement | null
   if (authTypeToggle?.checked) {
     const authTypes = ['01', '02', '03', '04', '05']
     const authType = authTypes[Math.floor(Math.random() * authTypes.length)] as string
@@ -612,7 +750,9 @@ onMounted(() => {
     }
   })
   // 3DS 參數全選功能
-  const enableAll3DSParamsCheckbox = document.getElementById('enableAll3DSParamsRandom') as HTMLInputElement | null
+  const enableAll3DSParamsCheckbox = document.getElementById(
+    'enableAll3DSParamsRandom'
+  ) as HTMLInputElement | null
   const threeDSParamCheckboxes = [
     'enableMessageCategory',
     'enableDeviceChannel',
@@ -888,15 +1028,29 @@ function buildDocument(
     cardbin8: form.cardbin8,
     performance_metrics: [
       { path: form.performancePath, execTime: Number(form.execTime || 0) },
-      { path: 'CardSchemeService.caculateCavv', execTime: Math.floor(Math.random() * 21) + 10 },
-      { path: 'VerificationCodeService.sendVerificationCode', execTime: Math.floor(Math.random() * 61) + 20 },
+      {
+        path: 'CardSchemeService.caculateCavv',
+        execTime: Number(form.cavvExecTime || Math.floor(Math.random() * 21 + 10))
+      },
+      {
+        path: 'VerificationCodeService.sendVerificationCode',
+        execTime: Number(form.otpExecTime || Math.floor(Math.random() * 61 + 20))
+      },
       {
         path: `/challenge/brw/V/2.3.1/${form.issuerOid}/1/${form.acsTransId}/creq`,
-        execTime: Math.floor(Math.random() * 501) + 300
+        execTime: Number(form.creqExecTime || Math.floor(Math.random() * 501 + 300))
       },
       {
         path: `/acs-auth/auth/V/2.2.0/${form.issuerOid}/001/areq`,
-        execTime: Math.floor(Math.random() * 701) + 800
+        execTime: Number(form.execTime || Math.floor(Math.random() * 701 + 800))
+      },
+      {
+        path: `/acs-auth/auth/V/2.2.0/${form.issuerOid}/001/rreq`,
+        execTime: Number(form.rreqExecTime || Math.floor(Math.random() * 401 + 200))
+      },
+      {
+        path: 'RiskEvaluationService.evaluate',
+        execTime: Number(form.rbaExecTime || Math.floor(Math.random() * 151 + 50))
       }
     ],
     browserIP: form.browserIP,
@@ -905,7 +1059,10 @@ function buildDocument(
     errorCode: form.errorCode,
     errorDetail: form.errorDetail,
     errorMessageType: form.errorMessageType,
-    challengeCancel: form.challengeCancel && form.challengeCancel !== 'NULL_VALUE' ? form.challengeCancel : undefined
+    challengeCancel:
+      form.challengeCancel && form.challengeCancel !== 'NULL_VALUE'
+        ? form.challengeCancel
+        : undefined
   }
   // 添加設備相關欄位（如果存在）
   if (form.deviceIpAddress && form.deviceIpAddress.trim() !== '') {
@@ -947,8 +1104,15 @@ function buildDocument(
     '826': { name: 'United Kingdom', alpha2: 'GB' }
   }
   // 生成 GeoIP 資訊（如果啟用）
-  function generateGeoIP(countryCode: string, countryName: string, countryAlpha2: string): Record<string, unknown> {
-    const cities: Record<string, Array<{ name: string; lat: number; lon: number; region: string }>> = {
+  function generateGeoIP(
+    countryCode: string,
+    countryName: string,
+    countryAlpha2: string
+  ): Record<string, unknown> {
+    const cities: Record<
+      string,
+      Array<{ name: string; lat: number; lon: number; region: string }>
+    > = {
       '156': [
         { name: 'Beijing', lat: 39.9042, lon: 116.4074, region: 'CN-BJ' },
         { name: 'Shanghai', lat: 31.2304, lon: 121.4737, region: 'CN-SH' },
@@ -958,14 +1122,14 @@ function buildDocument(
         { name: 'Hangzhou', lat: 30.2741, lon: 120.1551, region: 'CN-ZJ' },
         { name: 'Nanjing', lat: 32.0603, lon: 118.7969, region: 'CN-JS' },
         { name: 'Wuhan', lat: 30.5928, lon: 114.3055, region: 'CN-HB' },
-        { name: 'Xi\'an', lat: 34.3416, lon: 108.9398, region: 'CN-SN' },
+        { name: "Xi'an", lat: 34.3416, lon: 108.9398, region: 'CN-SN' },
         { name: 'Tianjin', lat: 39.3434, lon: 117.3616, region: 'CN-TJ' }
       ],
       '158': [
         // 直轄市
-        { name: 'Taipei', lat: 25.0330, lon: 121.5654, region: 'TW-TPE' },
+        { name: 'Taipei', lat: 25.033, lon: 121.5654, region: 'TW-TPE' },
         { name: 'New Taipei', lat: 25.0169, lon: 121.4629, region: 'TW-NTP' },
-        { name: 'Taoyuan', lat: 24.9936, lon: 121.3010, region: 'TW-TAO' },
+        { name: 'Taoyuan', lat: 24.9936, lon: 121.301, region: 'TW-TAO' },
         { name: 'Taichung', lat: 24.1477, lon: 120.6736, region: 'TW-TXG' },
         { name: 'Tainan', lat: 22.9993, lon: 120.2269, region: 'TW-TNN' },
         { name: 'Kaohsiung', lat: 22.6148, lon: 120.3139, region: 'TW-KHH' },
@@ -976,10 +1140,10 @@ function buildDocument(
         // 縣
         { name: 'Hsinchu County', lat: 24.8387, lon: 121.0177, region: 'TW-HSQ' },
         { name: 'Miaoli', lat: 24.5658, lon: 120.8239, region: 'TW-MIA' },
-        { name: 'Changhua', lat: 24.0720, lon: 120.5418, region: 'TW-CHA' },
+        { name: 'Changhua', lat: 24.072, lon: 120.5418, region: 'TW-CHA' },
         { name: 'Nantou', lat: 23.9167, lon: 120.6833, region: 'TW-NAN' },
         { name: 'Yunlin', lat: 23.7078, lon: 120.4313, region: 'TW-YUN' },
-        { name: 'Chiayi County', lat: 23.4518, lon: 120.2550, region: 'TW-CYQ' },
+        { name: 'Chiayi County', lat: 23.4518, lon: 120.255, region: 'TW-CYQ' },
         { name: 'Pingtung', lat: 22.6716, lon: 120.4882, region: 'TW-PIF' },
         { name: 'Yilan', lat: 24.7021, lon: 121.7378, region: 'TW-ILA' },
         { name: 'Hualien', lat: 23.9739, lon: 121.6014, region: 'TW-HUA' },
@@ -989,21 +1153,21 @@ function buildDocument(
         { name: 'Lienchiang', lat: 26.1594, lon: 119.9378, region: 'TW-LIE' }
       ],
       '840': [
-        { name: 'New York', lat: 40.7128, lon: -74.0060, region: 'US-NY' },
+        { name: 'New York', lat: 40.7128, lon: -74.006, region: 'US-NY' },
         { name: 'Los Angeles', lat: 34.0522, lon: -118.2437, region: 'US-CA' },
         { name: 'Chicago', lat: 41.8781, lon: -87.6298, region: 'US-IL' },
         { name: 'Houston', lat: 29.7604, lon: -95.3698, region: 'US-TX' },
         { name: 'San Francisco', lat: 37.7749, lon: -122.4194, region: 'US-CA' },
-        { name: 'Phoenix', lat: 33.4484, lon: -112.0740, region: 'US-AZ' },
+        { name: 'Phoenix', lat: 33.4484, lon: -112.074, region: 'US-AZ' },
         { name: 'Philadelphia', lat: 39.9526, lon: -75.1652, region: 'US-PA' },
         { name: 'San Antonio', lat: 29.4241, lon: -98.4936, region: 'US-TX' },
         { name: 'San Diego', lat: 32.7157, lon: -117.1611, region: 'US-CA' },
-        { name: 'Dallas', lat: 32.7767, lon: -96.7970, region: 'US-TX' }
+        { name: 'Dallas', lat: 32.7767, lon: -96.797, region: 'US-TX' }
       ],
       '392': [
         { name: 'Tokyo', lat: 35.6762, lon: 139.6503, region: 'JP-13' },
         { name: 'Osaka', lat: 34.6937, lon: 135.5023, region: 'JP-27' },
-        { name: 'Yokohama', lat: 35.4437, lon: 139.6380, region: 'JP-14' },
+        { name: 'Yokohama', lat: 35.4437, lon: 139.638, region: 'JP-14' },
         { name: 'Kyoto', lat: 35.0116, lon: 135.7681, region: 'JP-26' },
         { name: 'Sapporo', lat: 43.0642, lon: 141.3469, region: 'JP-01' },
         { name: 'Nagoya', lat: 35.1815, lon: 136.9066, region: 'JP-23' },
@@ -1015,12 +1179,12 @@ function buildDocument(
       '344': [
         { name: 'Hong Kong', lat: 22.3193, lon: 114.1694, region: 'HK' },
         { name: 'Kowloon', lat: 22.3167, lon: 114.1833, region: 'HK' },
-        { name: 'New Territories', lat: 22.4000, lon: 114.2000, region: 'HK' },
+        { name: 'New Territories', lat: 22.4, lon: 114.2, region: 'HK' },
         { name: 'Central', lat: 22.2819, lon: 114.1556, region: 'HK' },
         { name: 'Wan Chai', lat: 22.2783, lon: 114.1747, region: 'HK' }
       ],
       '410': [
-        { name: 'Seoul', lat: 37.5665, lon: 126.9780, region: 'KR-11' },
+        { name: 'Seoul', lat: 37.5665, lon: 126.978, region: 'KR-11' },
         { name: 'Busan', lat: 35.1796, lon: 129.0756, region: 'KR-26' },
         { name: 'Incheon', lat: 37.4563, lon: 126.7052, region: 'KR-28' },
         { name: 'Daegu', lat: 35.8714, lon: 128.6014, region: 'KR-27' },
@@ -1041,8 +1205,8 @@ function buildDocument(
         { name: 'Brisbane', lat: -27.4698, lon: 153.0251, region: 'AU-QLD' },
         { name: 'Perth', lat: -31.9505, lon: 115.8605, region: 'AU-WA' },
         { name: 'Adelaide', lat: -34.9285, lon: 138.6007, region: 'AU-SA' },
-        { name: 'Gold Coast', lat: -28.0167, lon: 153.4000, region: 'AU-QLD' },
-        { name: 'Canberra', lat: -35.2809, lon: 149.1300, region: 'AU-ACT' }
+        { name: 'Gold Coast', lat: -28.0167, lon: 153.4, region: 'AU-QLD' },
+        { name: 'Canberra', lat: -35.2809, lon: 149.13, region: 'AU-ACT' }
       ],
       '124': [
         { name: 'Toronto', lat: 43.6532, lon: -79.3832, region: 'CA-ON' },
@@ -1052,11 +1216,11 @@ function buildDocument(
         { name: 'Ottawa', lat: 45.4215, lon: -75.6972, region: 'CA-ON' },
         { name: 'Edmonton', lat: 53.5461, lon: -113.4938, region: 'CA-AB' },
         { name: 'Winnipeg', lat: 49.8951, lon: -97.1384, region: 'CA-MB' },
-        { name: 'Quebec City', lat: 46.8139, lon: -71.2080, region: 'CA-QC' }
+        { name: 'Quebec City', lat: 46.8139, lon: -71.208, region: 'CA-QC' }
       ],
       '978': [
         { name: 'Paris', lat: 48.8566, lon: 2.3522, region: 'FR-IDF' },
-        { name: 'Berlin', lat: 52.5200, lon: 13.4050, region: 'DE-BE' },
+        { name: 'Berlin', lat: 52.52, lon: 13.405, region: 'DE-BE' },
         { name: 'Madrid', lat: 40.4168, lon: -3.7038, region: 'ES-MD' },
         { name: 'Rome', lat: 41.9028, lon: 12.4964, region: 'IT-LAZ' },
         { name: 'Amsterdam', lat: 52.3676, lon: 4.9041, region: 'NL-NH' },
@@ -1073,9 +1237,7 @@ function buildDocument(
         { name: 'Liverpool', lat: 53.4084, lon: -2.9916, region: 'GB-ENG' }
       ]
     }
-    const cityList = cities[countryCode] || [
-      { name: 'Unknown', lat: 0, lon: 0, region: 'UN' }
-    ]
+    const cityList = cities[countryCode] || [{ name: 'Unknown', lat: 0, lon: 0, region: 'UN' }]
     const city = cityList[Math.floor(Math.random() * cityList.length)]!
     // 判斷洲名
     let continentName = 'Unknown'
@@ -1105,7 +1267,9 @@ function buildDocument(
   const countryCodeForGeoIP = form.merchantCountryCodeStr || form.merchantCountryCode || '156'
   const countryInfo = countryCodeMap[countryCodeForGeoIP] || countryCodeMap['156']!
   // browserGeoIP（預設生成，基於 merchantCountryCodeStr）
-  const enableBrowserGeoIP = document.getElementById('enableBrowserGeoIPRandom') as HTMLInputElement | null
+  const enableBrowserGeoIP = document.getElementById(
+    'enableBrowserGeoIPRandom'
+  ) as HTMLInputElement | null
   // 預設生成，除非 checkbox 明確取消勾選
   if (enableBrowserGeoIP?.checked !== false) {
     ;(doc as unknown as Record<string, unknown>).browserGeoIP = generateGeoIP(
@@ -1115,7 +1279,9 @@ function buildDocument(
     )
   }
   // deviceGeoIP（預設生成，基於 merchantCountryCodeStr）
-  const enableDeviceGeoIP = document.getElementById('enableDeviceGeoIPRandom') as HTMLInputElement | null
+  const enableDeviceGeoIP = document.getElementById(
+    'enableDeviceGeoIPRandom'
+  ) as HTMLInputElement | null
   // 預設生成，除非 checkbox 明確取消勾選
   if (enableDeviceGeoIP?.checked !== false) {
     ;(doc as unknown as Record<string, unknown>).deviceGeoIP = generateGeoIP(
@@ -1134,7 +1300,8 @@ function buildDocument(
     'ISO4217-currency_numeric_code': form.currencyNumericCode
   }
   // threeDS 請求方挑戰指標（以索引正名輸出）
-  ;(doc as unknown as Record<string, unknown>).threedsRequestorChlgInd = form.threeDSRequestorChallengeInd
+  ;(doc as unknown as Record<string, unknown>).threedsRequestorChlgInd =
+    form.threeDSRequestorChallengeInd
   ;(doc as unknown as Record<string, unknown>).merchantCountryCode_country_info = {
     'ISO3166-1-Alpha-2': form.countryAlpha2,
     'ISO3166-1-numeric': form.countryNumeric,
@@ -1537,7 +1704,9 @@ defineExpose({
           </select>
           <small>只有當 ARes 狀態為 C 且 RReq 狀態為 N 時才可選擇</small>
           <small style="color: red">可隨機生成</small>
-          <small style="color: red">Edit 8 監控指標：challengeCancel ≠ null / ARes=C 的放棄率需 ≤ 10%</small>
+          <small style="color: red"
+            >Edit 8 監控指標：challengeCancel ≠ null / ARes=C 的放棄率需 ≤ 10%</small
+          >
         </div>
       </div>
     </div>
@@ -1981,7 +2150,17 @@ defineExpose({
     <!-- 8.3DS 參數 -->
     <div class="form-section">
       <h3>8.3DS 參數</h3>
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 15px;
+          padding: 10px;
+          background: #f5f5f5;
+          border-radius: 5px;
+        "
+      >
         <input type="checkbox" id="enableAll3DSParamsRandom" style="margin: 0" />
         <label
           for="enableAll3DSParamsRandom"
@@ -2245,7 +2424,9 @@ defineExpose({
               >隨機生成時包含此欄位（預設開啟）</label
             >
           </div>
-          <small style="color: red">預設生成地理位置資訊（基於國家代碼），可隨機生成城市、座標等</small>
+          <small style="color: red"
+            >預設生成地理位置資訊（基於國家代碼），可隨機生成城市、座標等</small
+          >
         </div>
         <div class="form-group">
           <label for="deviceGeoIP" class="bilingual-label">
@@ -2260,7 +2441,9 @@ defineExpose({
               >隨機生成時包含此欄位（預設開啟）</label
             >
           </div>
-          <small style="color: red">預設生成地理位置資訊（基於國家代碼），可隨機生成城市、座標等</small>
+          <small style="color: red"
+            >預設生成地理位置資訊（基於國家代碼），可隨機生成城市、座標等</small
+          >
         </div>
       </div>
     </div>
@@ -2282,8 +2465,8 @@ defineExpose({
         </div>
         <div class="form-group">
           <label for="execTime" class="bilingual-label">
-            <span class="zh">執行時間 (毫秒)</span>
-            <span class="en">execTime</span>
+            <span class="zh">AReq 執行時間 (毫秒)</span>
+            <span class="en">AReq execTime</span>
           </label>
           <input type="number" id="execTime" value="5437" required />
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
@@ -2295,6 +2478,86 @@ defineExpose({
             >
           </div>
           <small style="color: red">可隨機生成 (1000-6000ms)，預設開啟</small>
+        </div>
+        <div class="form-group">
+          <label for="creqExecTime" class="bilingual-label">
+            <span class="zh">CReq 執行時間 (毫秒)</span>
+            <span class="en">CReq execTime</span>
+          </label>
+          <input type="number" id="creqExecTime" value="500" />
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
+            <input type="checkbox" id="enableCreqExecTimeRandom" style="margin: 0" checked />
+            <label
+              for="enableCreqExecTimeRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
+          </div>
+          <small style="color: red">可隨機生成 (300-800ms)，預設開啟</small>
+        </div>
+        <div class="form-group">
+          <label for="rreqExecTime" class="bilingual-label">
+            <span class="zh">RReq 執行時間 (毫秒)</span>
+            <span class="en">RReq execTime</span>
+          </label>
+          <input type="number" id="rreqExecTime" value="400" />
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
+            <input type="checkbox" id="enableRreqExecTimeRandom" style="margin: 0" checked />
+            <label
+              for="enableRreqExecTimeRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
+          </div>
+          <small style="color: red">可隨機生成 (200-600ms)，預設開啟</small>
+        </div>
+        <div class="form-group">
+          <label for="rbaExecTime" class="bilingual-label">
+            <span class="zh">RBA 執行時間 (毫秒)</span>
+            <span class="en">RBA execTime</span>
+          </label>
+          <input type="number" id="rbaExecTime" value="100" />
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
+            <input type="checkbox" id="enableRbaExecTimeRandom" style="margin: 0" checked />
+            <label
+              for="enableRbaExecTimeRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
+          </div>
+          <small style="color: red">可隨機生成 (50-200ms)，預設開啟</small>
+        </div>
+        <div class="form-group">
+          <label for="cavvExecTime" class="bilingual-label">
+            <span class="zh">CAVV 響應時間 (毫秒)</span>
+            <span class="en">CAVV execTime</span>
+          </label>
+          <input type="number" id="cavvExecTime" value="20" />
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
+            <input type="checkbox" id="enableCavvExecTimeRandom" style="margin: 0" checked />
+            <label
+              for="enableCavvExecTimeRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
+          </div>
+          <small style="color: red">可隨機生成 (10-30ms)，預設開啟</small>
+        </div>
+        <div class="form-group">
+          <label for="otpExecTime" class="bilingual-label">
+            <span class="zh">簡訊OTP響應時間 (毫秒)</span>
+            <span class="en">OTP execTime</span>
+          </label>
+          <input type="number" id="otpExecTime" value="50" />
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
+            <input type="checkbox" id="enableOtpExecTimeRandom" style="margin: 0" checked />
+            <label
+              for="enableOtpExecTimeRandom"
+              style="margin: 0; font-weight: normal; color: #7f8c8d; font-size: 0.9em"
+              >隨機生成時包含此欄位</label
+            >
+          </div>
+          <small style="color: red">可隨機生成 (20-80ms)，預設開啟</small>
         </div>
       </div>
     </div>
