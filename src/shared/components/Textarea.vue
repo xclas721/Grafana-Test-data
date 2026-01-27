@@ -5,6 +5,8 @@ interface Props {
   modelValue?: string
   label?: string
   placeholder?: string
+  id?: string
+  name?: string
   rows?: number
   disabled?: boolean
   required?: boolean
@@ -25,7 +27,7 @@ const emit = defineEmits<{
 }>()
 
 const textareaClasses = computed(() => {
-  const classes = ['textarea', 'textarea-bordered', 'w-full']
+  const classes = ['textarea', 'textarea-bordered', 'textarea-sm', 'w-full']
   if (props.status === 'pass') classes.push('textarea-success')
   if (props.status === 'fail') classes.push('textarea-error')
   return classes.join(' ')
@@ -46,10 +48,13 @@ const handleInput = (event: Event) => {
       </span>
     </label>
     <textarea
+      :id="id"
+      :name="name"
       :value="modelValue ?? ''"
       :placeholder="placeholder"
       :rows="rows"
       :disabled="disabled"
+      :required="required"
       :class="textareaClasses"
       @input="handleInput"
     ></textarea>

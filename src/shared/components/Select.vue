@@ -11,6 +11,8 @@ interface Props {
   modelValue?: string | number
   label?: string
   placeholder?: string
+  id?: string
+  name?: string
   options: SelectOption[]
   disabled?: boolean
   required?: boolean
@@ -30,7 +32,7 @@ const emit = defineEmits<{
 }>()
 
 const selectClasses = computed(() => {
-  const classes = ['select', 'select-bordered', 'w-full']
+  const classes = ['select', 'select-bordered', 'select-sm', 'w-full']
   if (props.status === 'pass') classes.push('select-success')
   if (props.status === 'fail') classes.push('select-error')
   return classes.join(' ')
@@ -52,7 +54,15 @@ const handleChange = (event: Event) => {
         <span v-if="required" class="text-error">*</span>
       </span>
     </label>
-    <select :value="modelValue" :disabled="disabled" :class="selectClasses" @change="handleChange">
+    <select
+      :id="id"
+      :name="name"
+      :value="modelValue"
+      :disabled="disabled"
+      :required="required"
+      :class="selectClasses"
+      @change="handleChange"
+    >
       <option v-if="placeholder" value="" disabled>{{ placeholder }}</option>
       <option
         v-for="option in options"

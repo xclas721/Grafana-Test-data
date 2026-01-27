@@ -99,7 +99,7 @@ function wireStatusLinks() {
   ) as HTMLSelectElement | null
   const challengeCancel = document.getElementById('challengeCancel') as HTMLSelectElement | null
   if (!ares || !rreq || !trans || !reason || !stateMachineReason || !challengeCancel) return
-  
+
   const updateChallengeCancel = () => {
     if (ares.value === 'C' && rreq.value === 'N') {
       challengeCancel.disabled = false
@@ -109,7 +109,7 @@ function wireStatusLinks() {
       challengeCancel.value = 'NULL_VALUE'
     }
   }
-  
+
   ares.addEventListener('change', () => {
     const val = ares.value
     if (val === 'C' || val === 'D') {
@@ -602,7 +602,7 @@ function generateRandom() {
     const deviceIp = Math.random() < 0.5 ? randomIPv4() : randomIPv6()
     set('deviceIpAddress', deviceIp)
     // 瀏覽器 IP 跟隨設備 IP
-  const browserIpEl = document.getElementById('browserIP') as HTMLInputElement | null
+    const browserIpEl = document.getElementById('browserIP') as HTMLInputElement | null
     if (browserIpEl) browserIpEl.value = deviceIp
   }
 
@@ -710,7 +710,15 @@ function generateRandomAcctNumber() {
 function setStatus(message: string, type: 'success' | 'error' | 'info' | 'warning') {
   const statusDiv = document.getElementById('statusMessage')
   if (!statusDiv) return
-  statusDiv.innerHTML = `<div class="status-message status-${type}">${message}</div>`
+  const alertClass =
+    type === 'success'
+      ? 'alert alert-success'
+      : type === 'error'
+        ? 'alert alert-error'
+        : type === 'warning'
+          ? 'alert alert-warning'
+          : 'alert alert-info'
+  statusDiv.innerHTML = `<div class="${alertClass} text-sm">${message}</div>`
 }
 
 function cryptoRandomUUID(): string {
@@ -1389,7 +1397,7 @@ defineExpose({
 <template>
   <div id="statusMessage"></div>
 
-  <form id="acsForm">
+  <form id="acsForm" class="space-y-6">
     <BaseConfigSection />
 
     <TransactionIdSection />

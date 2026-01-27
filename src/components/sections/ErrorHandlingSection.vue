@@ -1,43 +1,30 @@
+<script setup lang="ts">
+import Card from '@/shared/components/Card.vue'
+import Input from '@/shared/components/Input.vue'
+</script>
+
 <template>
   <!-- 10.錯誤處理 -->
-  <div class="form-section">
-    <h3>10.錯誤處理(暫時都NULL_VALUE，也不隨機)</h3>
-    <div class="form-grid">
-      <div class="form-group">
-        <label for="errorComponent" class="bilingual-label">
-          <span class="zh">錯誤組件</span>
-          <span class="en">errorComponent</span>
-        </label>
-        <input type="text" id="errorComponent" value="NULL_VALUE" />
+  <section id="error-handling" class="scroll-mt-24">
+    <Card>
+      <h3 class="text-base font-semibold text-base-content/80 mb-3">
+        10.錯誤處理(暫時都NULL_VALUE，也不隨機)
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Input id="errorComponent" label="錯誤組件 (errorComponent)" :modelValue="'NULL_VALUE'" />
+        <Input
+          id="errorDescription"
+          label="錯誤描述 (errorDescription)"
+          :modelValue="'NULL_VALUE'"
+        />
+        <Input id="errorCode" label="錯誤代碼 (errorCode)" :modelValue="'NULL_VALUE'" />
+        <Input id="errorDetail" label="錯誤詳情 (errorDetail)" :modelValue="'NULL_VALUE'" />
+        <Input
+          id="errorMessageType"
+          label="錯誤訊息類型 (errorMessageType)"
+          :modelValue="'NULL_VALUE'"
+        />
       </div>
-      <div class="form-group">
-        <label for="errorDescription" class="bilingual-label">
-          <span class="zh">錯誤描述</span>
-          <span class="en">errorDescription</span>
-        </label>
-        <input type="text" id="errorDescription" value="NULL_VALUE" />
-      </div>
-      <div class="form-group">
-        <label for="errorCode" class="bilingual-label">
-          <span class="zh">錯誤代碼</span>
-          <span class="en">errorCode</span>
-        </label>
-        <input type="text" id="errorCode" value="NULL_VALUE" />
-      </div>
-      <div class="form-group">
-        <label for="errorDetail" class="bilingual-label">
-          <span class="zh">錯誤詳情</span>
-          <span class="en">errorDetail</span>
-        </label>
-        <input type="text" id="errorDetail" value="NULL_VALUE" />
-      </div>
-      <div class="form-group">
-        <label for="errorMessageType" class="bilingual-label">
-          <span class="zh">錯誤訊息類型</span>
-          <span class="en">errorMessageType</span>
-        </label>
-        <input type="text" id="errorMessageType" value="NULL_VALUE" />
-      </div>
-    </div>
-  </div>
+    </Card>
+  </section>
 </template>

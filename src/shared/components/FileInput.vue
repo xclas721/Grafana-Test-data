@@ -5,6 +5,8 @@ interface Props {
   modelValue?: File | File[] | null
   label?: string
   placeholder?: string
+  id?: string
+  name?: string
   accept?: string
   multiple?: boolean
   disabled?: boolean
@@ -26,7 +28,7 @@ const emit = defineEmits<{
 }>()
 
 const inputClasses = computed(() => {
-  const classes = ['file-input', 'file-input-bordered', 'w-full']
+  const classes = ['file-input', 'file-input-bordered', 'file-input-sm', 'w-full']
   if (props.status === 'pass') classes.push('file-input-success')
   if (props.status === 'fail') classes.push('file-input-error')
   return classes.join(' ')
@@ -61,10 +63,13 @@ const fileNames = computed(() => {
       </span>
     </label>
     <input
+      :id="id"
+      :name="name"
       type="file"
       :accept="accept"
       :multiple="multiple"
       :disabled="disabled"
+      :required="required"
       :class="inputClasses"
       @change="handleChange"
     />

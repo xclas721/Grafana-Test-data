@@ -1,20 +1,34 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+defineOptions({
+  name: 'AppInput'
+})
+
 interface Props {
   modelValue?: string | number | undefined
   label?: string
   placeholder?: string
+  id?: string
+  name?: string
   type?: string
+  min?: string | number
+  max?: string | number
+  step?: string | number
+  maxlength?: number
   status?: 'pass' | 'fail' | null
   statusMessage?: string
   disabled?: boolean
+  required?: boolean
+  readonly?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: '',
   type: 'text',
   disabled: false,
+  required: false,
+  readonly: false,
   status: null,
   statusMessage: ''
 })
@@ -29,7 +43,7 @@ const handleInput = (event: Event) => {
 }
 
 const inputClasses = computed(() => {
-  const classes = ['input', 'input-bordered', 'w-full']
+  const classes = ['input', 'input-bordered', 'input-sm', 'w-full']
 
   if (props.status === 'pass') classes.push('input-success')
   if (props.status === 'fail') classes.push('input-error')
@@ -45,10 +59,18 @@ const inputClasses = computed(() => {
     </label>
     <div class="join w-full">
       <input
+        :id="id"
+        :name="name"
         :type="type"
         :value="modelValue ?? ''"
         :placeholder="placeholder"
+        :min="min"
+        :max="max"
+        :step="step"
+        :maxlength="maxlength"
         :disabled="disabled"
+        :required="required"
+        :readonly="readonly"
         :class="inputClasses"
         class="join-item"
         @input="handleInput"

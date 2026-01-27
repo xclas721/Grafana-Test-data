@@ -31,3 +31,7 @@
   --color-error: #ff6670;
   --color-error-content: #ffffff;
 }
+
+html {
+  scroll-behavior: smooth;
+}
