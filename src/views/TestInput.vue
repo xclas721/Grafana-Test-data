@@ -102,16 +102,15 @@ function onCurrencySelect(payload: {
   name: string
   country: string
 }) {
-  // 更新相關欄位（依原 HTML 行為）
-  const set = (id: string, val: string) => {
-    const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null
-    if (el) el.value = val
+  const form = formRef.value
+  if (!form) return
+  const updates: Record<string, string> = {
+    purchaseCurrency: payload.numeric,
+    currencyCodeForRate: payload.code,
+    currencyAlphabeticCode: payload.code,
+    currencyNumericCode: payload.numeric,
+    currencyName: payload.name
   }
-  set('purchaseCurrency', payload.numeric)
-  set('currencyCodeForRate', payload.code)
-  set('currencyAlphabeticCode', payload.code)
-  set('currencyNumericCode', payload.numeric)
-  set('currencyName', payload.name)
   // 國家推導（簡化：台灣/美國/中國/日本）
   const map: Record<
     string,
@@ -136,26 +135,22 @@ function onCurrencySelect(payload: {
   }
   const info = map[payload.country]
   if (info) {
-    set('merchantCountryCode', info.numeric)
-    set('countryAlpha2', info.alpha2)
-    set('countryAlpha3', info.alpha3)
-    set('countryNumeric', info.numeric)
-    set('countryName', info.name)
+    updates.merchantCountryCode = info.numeric
+    updates.countryAlpha2 = info.alpha2
+    updates.countryAlpha3 = info.alpha3
+    updates.countryNumeric = info.numeric
+    updates.countryName = info.name
   }
-  formRef.value?.setStatus?.(
-    `已選擇 ${payload.country} ${payload.name} (${payload.code})`,
-    'success'
-  )
+  form.setFields?.(updates)
+  form.setStatus?.(`已選擇 ${payload.country} ${payload.name} (${payload.code})`, 'success')
 }
 
 async function batchInsert() {
   const form = formRef.value
   const panel = panelRef.value
   if (!form || !panel) return
-  const countInput = document.getElementById('batchCount') as HTMLInputElement | null
-  const daysInput = document.getElementById('batchDays') as HTMLInputElement | null
-  const total = parseInt(countInput?.value || String(batchCount.value) || '10')
-  const days = parseInt(daysInput?.value || String(batchDays.value) || '1')
+  const total = Math.max(1, parseInt(String(batchCount.value || 10)))
+  const days = Math.max(1, parseInt(String(batchDays.value || 1)))
   panel.show?.('正在批量處理...', total)
   panel.addLog?.('info', `開始批量處理，共 ${total} 筆，天數 ${days}`)
   const errorDetails: string[] = []
@@ -202,8 +197,7 @@ async function batchInsert() {
   const baseUrl = dataBase.baseUrl
   const auth = 'Basic ' + btoa(`${dataBase.username}:${dataBase.password}`)
   // 逐日處理
-  const currentDateEl = document.getElementById('currentDate') as HTMLInputElement | null
-  const startDate = currentDateEl?.value
+  const startDate = dataBase.currentDate
   if (!startDate) {
     form.setStatus?.('請先選擇日期', 'error')
     return
@@ -321,15 +315,15 @@ async function batchInsert() {
 <template>
   <TestInputLayout
     :activeMode="mode"
-    :batchCount="batchCount"
-    :batchDays="batchDays"
+    v-model:batchCount="batchCount"
+    v-model:batchDays="batchDays"
     @changeMode="onChangeMode"
     @loadDefaults="onLoadDefaults"
     @generateRandom="onGenerateRandom"
     @insertData="onInsertData"
     @batchInsert="onBatchInsert"
   >
-    <TestInputForm ref="formRef" :activeMode="mode" />
+    <TestInputForm ref="formRef" :activeMode="mode" :batchDays="batchDays" />
     <NotificationPanel ref="panelRef" />
     <CurrencyModal v-model="currencyModalVisible" @select="onCurrencySelect" />
   </TestInputLayout>
