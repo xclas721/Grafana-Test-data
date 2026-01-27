@@ -13,6 +13,8 @@ const emit = defineEmits<{
   (e: 'generateRandom'): void
   (e: 'insertData'): void
   (e: 'batchInsert'): void
+  (e: 'update:batchCount', value: number): void
+  (e: 'update:batchDays', value: number): void
 }>()
 
 const isUnified = computed(() => props.activeMode === 'unified')
@@ -161,7 +163,16 @@ onBeforeUnmount(() => {
                     max="100000"
                     class="input input-bordered input-sm w-24"
                     placeholder="10"
-                    @input="emit('changeMode', activeMode)"
+                    @input="
+                      (event) =>
+                        emit(
+                          'update:batchCount',
+                          Math.max(
+                            1,
+                            Math.min(100000, Number((event.target as HTMLInputElement).value || 10))
+                          )
+                        )
+                    "
                   />
                   <label for="batchDays" class="text-xs text-base-content/60">天數</label>
                   <input
@@ -173,6 +184,16 @@ onBeforeUnmount(() => {
                     class="input input-bordered input-sm w-20"
                     placeholder="1"
                     title="生成多少天的數據"
+                    @input="
+                      (event) =>
+                        emit(
+                          'update:batchDays',
+                          Math.max(
+                            1,
+                            Math.min(30, Number((event.target as HTMLInputElement).value || 1))
+                          )
+                        )
+                    "
                   />
                   <button class="btn btn-sm btn-success" @click="emit('batchInsert')">
                     批量生成並POST

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch, computed } from 'vue'
+import { onMounted, watch, computed, reactive, ref } from 'vue'
 import BaseConfigSection from './sections/BaseConfigSection.vue'
 import TransactionIdSection from './sections/TransactionIdSection.vue'
 import TransactionStatusSection from './sections/TransactionStatusSection.vue'
@@ -12,7 +12,7 @@ import ThreeDSParamsSection from './sections/ThreeDSParamsSection.vue'
 import PerformanceSection from './sections/PerformanceSection.vue'
 import ErrorHandlingSection from './sections/ErrorHandlingSection.vue'
 
-const props = defineProps<{ activeMode?: 'unified' | 'acs' | 'dss' }>()
+const props = defineProps<{ activeMode?: 'unified' | 'acs' | 'dss'; batchDays?: number }>()
 
 const modeText = computed(() => {
   if (props.activeMode === 'acs') return 'ACS'
@@ -26,33 +26,311 @@ const modeClass = computed(() => {
   return 'mode-indicator unified'
 })
 
-function setText(id: string, text: string) {
-  const el = document.getElementById(id)
-  if (el) el.textContent = text
+const timeRangeHtml = ref('請選擇日期')
+const statusMessage = ref('')
+const statusType = ref<'success' | 'error' | 'info' | 'warning'>('info')
+
+const statusClass = computed(() => {
+  return statusType.value === 'success'
+    ? 'alert alert-success'
+    : statusType.value === 'error'
+      ? 'alert alert-error'
+      : statusType.value === 'warning'
+        ? 'alert alert-warning'
+        : 'alert alert-info'
+})
+
+const disableCardScheme = computed(
+  () => formState.enableVisaScoreRandom || formState.enableMastercardExtension
+)
+const disableMastercardExtension = computed(() => formState.enableVisaScoreRandom)
+const disableVisaScoreRandom = computed(() => formState.enableMastercardExtension)
+const showMastercardExtension = computed(() => formState.enableMastercardExtension)
+
+const formState = reactive({
+  baseUrl: 'http://localhost:9200',
+  username: 'elastic',
+  password: '123456',
+  currentDate: '',
+  timezone: 'browser',
+  issuerOid: '06b4b203-da05-73f9-256f-454929df6076',
+  acsTransId: '',
+  threeDSServerTransId: '',
+  aresTransStatus: 'N',
+  transStatus: 'N',
+  rreqTransStatus: 'NULL_VALUE',
+  transStatusReason: 'NULL_VALUE',
+  stateMachineReason: 'NULL_VALUE',
+  challengeCancel: 'NULL_VALUE',
+  merchantName: 'HiTRUST EMV Demo Merchant',
+  merchantCountryCode: '156',
+  acquirerMerchantId: '8909191',
+  acquirerBin: '1231234',
+  mcc: '5661',
+  purchaseAmount: '100',
+  purchaseCurrency: '156',
+  purchaseExponent: '2',
+  usdAmount: '0.13841979956813022',
+  countryAlpha2: 'CN',
+  countryNumeric: '156',
+  countryAlpha3: 'CHN',
+  countryName: 'China',
+  currencyMinorUnit: '2',
+  currencyName: 'Yuan Renminbi',
+  currencyAlphabeticCode: 'CNY',
+  currencyNumericCode: '156',
+  exchangeRate: '7.2244',
+  exchangeBase: 'USD',
+  exchangeTarget: 'CNY',
+  currencyCodeForRate: 'CNY',
+  cardScheme: 'V',
+  acctNumber: '4143520000000123',
+  cardbin6: '414352',
+  acctNumberHashed: '2hpBkDB7ELbcpebGl5RM+HWTQGx3qciOwskcbsEVKC4=',
+  acctNumberMask: '414352******0123',
+  cardbin8: '41435200',
+  visaDafMessageExtension: 'null',
+  mastercardScore: '600',
+  mastercardDecision: 'Not Low Risk',
+  mastercardReasonCode1: 'A',
+  mastercardReasonCode2: '',
+  mastercardStatus: 'success',
+  visaRiskBasedAuthenticationScore: '',
+  messageCategory: '01',
+  deviceChannel: '02',
+  threeDSRequestorChallengeInd: '01',
+  authenticationMethod: '02',
+  authenticationType: '02',
+  deviceIpAddress: '::1',
+  browserIP: '::1',
+  devicePlatform: 'MacIntel',
+  deviceLocale: 'zh-TW',
+  deviceAdvertisingId: '4d4427f20375a66287430edd54bd82d2',
+  threeDSCompInd: 'Y',
+  merchantCountryCodeStr: '156',
+  performancePath: '/acs-auth/auth/V/2.2.0/06b4b203-da05-73f9-256f-454929df6076/001/areq',
+  execTime: '5437',
+  creqExecTime: '500',
+  rreqExecTime: '400',
+  rbaExecTime: '100',
+  cavvExecTime: '20',
+  otpExecTime: '50',
+  errorComponent: 'NULL_VALUE',
+  errorDescription: 'NULL_VALUE',
+  errorCode: 'NULL_VALUE',
+  errorDetail: 'NULL_VALUE',
+  errorMessageType: 'NULL_VALUE',
+  enablePurchaseAmountRandom: true,
+  enableAcquirerMerchantIdRandom: true,
+  enableAcctNumberRandom: true,
+  enableMastercardExtension: false,
+  enableMastercardExtensionRandom: false,
+  enableVisaScoreRandom: false,
+  enableExecTimeRandom: true,
+  enableCreqExecTimeRandom: true,
+  enableRreqExecTimeRandom: true,
+  enableRbaExecTimeRandom: true,
+  enableCavvExecTimeRandom: true,
+  enableOtpExecTimeRandom: true,
+  enableAll3DSParamsRandom: false,
+  enableMessageCategory: false,
+  enableDeviceChannel: false,
+  enableThreeDSRequestorChallengeInd: false,
+  enableAuthenticationMethodRandom: false,
+  enableAuthenticationTypeRandom: false,
+  enableDeviceIpAddressRandom: false,
+  enableDevicePlatformRandom: false,
+  enableDeviceLocaleRandom: false,
+  enableDeviceAdvertisingIdRandom: false,
+  enableThreeDSCompIndRandom: false,
+  enableMerchantCountryCodeStrRandom: false,
+  enableBrowserGeoIPRandom: true,
+  enableDeviceGeoIPRandom: true,
+  disableRreqTransStatus: true,
+  disableTransStatusReason: true,
+  disableStateMachineReason: true,
+  disableChallengeCancel: true
+})
+
+const stateBindings = {
+  baseUrl: 'baseUrl',
+  username: 'username',
+  password: 'password',
+  currentDate: 'currentDate',
+  timezone: 'timezone',
+  issuerOid: 'issuerOid',
+  acsTransId: 'acsTransId',
+  threeDSServerTransId: 'threeDSServerTransId',
+  aresTransStatus: 'aresTransStatus',
+  transStatus: 'transStatus',
+  rreqTransStatus: 'rreqTransStatus',
+  transStatusReason: 'transStatusReason',
+  stateMachineReason: 'stateMachineReason',
+  challengeCancel: 'challengeCancel',
+  merchantName: 'merchantName',
+  merchantCountryCode: 'merchantCountryCode',
+  acquirerMerchantId: 'acquirerMerchantId',
+  acquirerBin: 'acquirerBin',
+  mcc: 'mcc',
+  purchaseAmount: 'purchaseAmount',
+  purchaseCurrency: 'purchaseCurrency',
+  purchaseExponent: 'purchaseExponent',
+  usdAmount: 'usdAmount',
+  countryAlpha2: 'countryAlpha2',
+  countryNumeric: 'countryNumeric',
+  countryAlpha3: 'countryAlpha3',
+  countryName: 'countryName',
+  currencyMinorUnit: 'currencyMinorUnit',
+  currencyName: 'currencyName',
+  currencyAlphabeticCode: 'currencyAlphabeticCode',
+  currencyNumericCode: 'currencyNumericCode',
+  exchangeRate: 'exchangeRate',
+  exchangeBase: 'exchangeBase',
+  exchangeTarget: 'exchangeTarget',
+  currencyCodeForRate: 'currencyCodeForRate',
+  cardScheme: 'cardScheme',
+  acctNumber: 'acctNumber',
+  cardbin6: 'cardbin6',
+  acctNumberHashed: 'acctNumberHashed',
+  acctNumberMask: 'acctNumberMask',
+  cardbin8: 'cardbin8',
+  visaDafMessageExtension: 'visaDafMessageExtension',
+  mastercardScore: 'mastercardScore',
+  mastercardDecision: 'mastercardDecision',
+  mastercardReasonCode1: 'mastercardReasonCode1',
+  mastercardReasonCode2: 'mastercardReasonCode2',
+  mastercardStatus: 'mastercardStatus',
+  visaRiskBasedAuthenticationScore: 'visaRiskBasedAuthenticationScore',
+  messageCategory: 'messageCategory',
+  deviceChannel: 'deviceChannel',
+  threeDSRequestorChallengeInd: 'threeDSRequestorChallengeInd',
+  authenticationMethod: 'authenticationMethod',
+  authenticationType: 'authenticationType',
+  deviceIpAddress: 'deviceIpAddress',
+  browserIP: 'browserIP',
+  devicePlatform: 'devicePlatform',
+  deviceLocale: 'deviceLocale',
+  deviceAdvertisingId: 'deviceAdvertisingId',
+  threeDSCompInd: 'threeDSCompInd',
+  merchantCountryCodeStr: 'merchantCountryCodeStr',
+  performancePath: 'performancePath',
+  execTime: 'execTime',
+  creqExecTime: 'creqExecTime',
+  rreqExecTime: 'rreqExecTime',
+  rbaExecTime: 'rbaExecTime',
+  cavvExecTime: 'cavvExecTime',
+  otpExecTime: 'otpExecTime',
+  errorComponent: 'errorComponent',
+  errorDescription: 'errorDescription',
+  errorCode: 'errorCode',
+  errorDetail: 'errorDetail',
+  errorMessageType: 'errorMessageType'
+} as const
+
+function setField(id: string, val: string) {
+  const key = stateBindings[id as keyof typeof stateBindings]
+  if (key) {
+    formState[key] = val
+  }
 }
 
-function setClassName(id: string, className: string) {
-  const el = document.getElementById(id)
-  if (el) el.className = className
+function setFields(values: Record<string, string>) {
+  Object.entries(values).forEach(([id, val]) => {
+    setField(id, String(val))
+  })
 }
 
-function updateModeIndicator() {
-  setText('modeIndicator', modeText.value)
-  setClassName('modeIndicator', modeClass.value)
+const threeDSParamKeys = [
+  'enableMessageCategory',
+  'enableDeviceChannel',
+  'enableThreeDSRequestorChallengeInd',
+  'enableAuthenticationMethodRandom',
+  'enableAuthenticationTypeRandom',
+  'enableDeviceIpAddressRandom',
+  'enableDevicePlatformRandom',
+  'enableDeviceLocaleRandom',
+  'enableDeviceAdvertisingIdRandom',
+  'enableThreeDSCompIndRandom',
+  'enableMerchantCountryCodeStrRandom'
+] as const
+
+type ThreeDSParamKey = (typeof threeDSParamKeys)[number]
+
+let syncingAll3DSParams = false
+
+watch(
+  () => threeDSParamKeys.map((key) => formState[key]),
+  () => {
+    const allChecked = threeDSParamKeys.every((key) => formState[key])
+    if (formState.enableAll3DSParamsRandom !== allChecked) {
+      syncingAll3DSParams = true
+      formState.enableAll3DSParamsRandom = allChecked
+    }
+  }
+)
+
+watch(
+  () => formState.enableAll3DSParamsRandom,
+  (checked) => {
+    if (syncingAll3DSParams) {
+      syncingAll3DSParams = false
+      return
+    }
+    threeDSParamKeys.forEach((key) => {
+      formState[key as ThreeDSParamKey] = checked
+    })
+  }
+)
+
+const ARES_STATUS_WEIGHTS = [
+  { value: 'Y', weight: 0.4 },
+  { value: 'N', weight: 0.05 },
+  { value: 'R', weight: 0.05 },
+  { value: 'C', weight: 0.25 },
+  { value: 'D', weight: 0.05 },
+  { value: 'A', weight: 0.05 },
+  { value: 'I', weight: 0.05 },
+  { value: 'S', weight: 0.05 },
+  { value: 'U', weight: 0.05 }
+]
+const RREQ_SUCCESS_RATE = 0.8
+const CHALLENGE_CANCEL_RATE = 0.08
+
+const MERCHANT_COUNTRY_CODE_STR_VALUES = [
+  '156',
+  '158',
+  '840',
+  '392',
+  '344',
+  '410',
+  '702',
+  '036',
+  '124',
+  '978',
+  '826'
+]
+
+const MASTERCARD_DECISIONS = ['Not Low Risk', 'Low Risk']
+
+function pickWeightedValue(items: Array<{ value: string; weight: number }>): string {
+  const total = items.reduce((sum, item) => sum + item.weight, 0)
+  const r = Math.random() * total
+  let acc = 0
+  for (const item of items) {
+    acc += item.weight
+    if (r <= acc) return item.value
+  }
+  return items[items.length - 1]?.value ?? ''
 }
 
 function updateCardInfoFromAcctNumber() {
-  const acct = (document.getElementById('acctNumber') as HTMLInputElement | null)?.value || ''
-  const setVal = (id: string, val: string) => {
-    const el = document.getElementById(id) as HTMLInputElement | null
-    if (el) el.value = val
-  }
-  if (acct.length >= 6) setVal('cardbin6', acct.substring(0, 6))
-  if (acct.length >= 8) setVal('cardbin8', acct.substring(0, 8))
+  const acct = formState.acctNumber || ''
+  if (acct.length >= 6) setField('cardbin6', acct.substring(0, 6))
+  if (acct.length >= 8) setField('cardbin8', acct.substring(0, 8))
   if (acct.length >= 10) {
     const first6 = acct.substring(0, 6)
     const last4 = acct.substring(acct.length - 4)
-    setVal('acctNumberMask', first6 + '******' + last4)
+    setField('acctNumberMask', first6 + '******' + last4)
     // 優先採用 WebCrypto HMAC-SHA256 + Base64，失敗再退回簡化
     calculateAcctNumberHashed(acct)
   }
@@ -74,8 +352,7 @@ async function calculateAcctNumberHashed(acctNumber: string) {
     let binary = ''
     for (let i = 0; i < hashArray.length; i++) binary += String.fromCharCode(Number(hashArray[i]))
     const hashBase64 = btoa(binary)
-    const el = document.getElementById('acctNumberHashed') as HTMLInputElement | null
-    if (el) el.value = hashBase64
+    setField('acctNumberHashed', hashBase64)
   } catch {
     // 簡化版雜湊：Base64(簡單hash+前8)
     let hash = 0
@@ -84,76 +361,51 @@ async function calculateAcctNumberHashed(acctNumber: string) {
       hash |= 0
     }
     const hashStr = Math.abs(hash).toString(16).padStart(8, '0')
-    const el = document.getElementById('acctNumberHashed') as HTMLInputElement | null
-    if (el) el.value = btoa(hashStr + acctNumber.substring(0, 8))
+    setField('acctNumberHashed', btoa(hashStr + acctNumber.substring(0, 8)))
   }
 }
 
-function wireStatusLinks() {
-  const ares = document.getElementById('aresTransStatus') as HTMLSelectElement | null
-  const rreq = document.getElementById('rreqTransStatus') as HTMLSelectElement | null
-  const trans = document.getElementById('transStatus') as HTMLInputElement | null
-  const reason = document.getElementById('transStatusReason') as HTMLSelectElement | null
-  const stateMachineReason = document.getElementById(
-    'stateMachineReason'
-  ) as HTMLSelectElement | null
-  const challengeCancel = document.getElementById('challengeCancel') as HTMLSelectElement | null
-  if (!ares || !rreq || !trans || !reason || !stateMachineReason || !challengeCancel) return
-
-  const updateChallengeCancel = () => {
-    if (ares.value === 'C' && rreq.value === 'N') {
-      challengeCancel.disabled = false
-      if (challengeCancel.value === 'NULL_VALUE') challengeCancel.value = '01'
-    } else {
-      challengeCancel.disabled = true
-      challengeCancel.value = 'NULL_VALUE'
-    }
+function syncStatusDependencies() {
+  const ares = formState.aresTransStatus
+  if (ares === 'C' || ares === 'D') {
+    formState.disableRreqTransStatus = false
+    if (formState.rreqTransStatus === 'NULL_VALUE') setField('rreqTransStatus', 'Y')
+    setField('transStatus', formState.rreqTransStatus)
+  } else {
+    formState.disableRreqTransStatus = true
+    if (formState.rreqTransStatus !== 'NULL_VALUE') setField('rreqTransStatus', 'NULL_VALUE')
+    setField('transStatus', ares)
   }
 
-  ares.addEventListener('change', () => {
-    const val = ares.value
-    if (val === 'C' || val === 'D') {
-      rreq.disabled = false
-      if (rreq.value === 'NULL_VALUE') rreq.value = 'Y'
-      trans.value = rreq.value
-    } else {
-      rreq.disabled = true
-      rreq.value = 'NULL_VALUE'
-      trans.value = val
-    }
-    if (val === 'R') {
-      reason.disabled = false
-      if (reason.value === 'NULL_VALUE') reason.value = '01'
-      stateMachineReason.disabled = false
-      if (stateMachineReason.value === 'NULL_VALUE') stateMachineReason.value = '1001'
-    } else {
-      reason.disabled = true
-      reason.value = 'NULL_VALUE'
-      stateMachineReason.disabled = true
-      stateMachineReason.value = 'NULL_VALUE'
-    }
-    updateChallengeCancel()
-  })
-  rreq.addEventListener('change', () => {
-    const val = ares.value
-    if (val === 'C' || val === 'D') {
-      trans.value = rreq.value
-    }
-    updateChallengeCancel()
-  })
-  // 初始化時也更新 challengeCancel 狀態
-  updateChallengeCancel()
+  if (ares === 'R') {
+    formState.disableTransStatusReason = false
+    if (formState.transStatusReason === 'NULL_VALUE') setField('transStatusReason', '01')
+    formState.disableStateMachineReason = false
+    if (formState.stateMachineReason === 'NULL_VALUE') setField('stateMachineReason', '1001')
+  } else {
+    formState.disableTransStatusReason = true
+    if (formState.transStatusReason !== 'NULL_VALUE') setField('transStatusReason', 'NULL_VALUE')
+    formState.disableStateMachineReason = true
+    if (formState.stateMachineReason !== 'NULL_VALUE') setField('stateMachineReason', 'NULL_VALUE')
+  }
+
+  if (ares === 'C' && formState.rreqTransStatus === 'N') {
+    formState.disableChallengeCancel = false
+    if (formState.challengeCancel === 'NULL_VALUE') setField('challengeCancel', '01')
+  } else {
+    formState.disableChallengeCancel = true
+    if (formState.challengeCancel !== 'NULL_VALUE') setField('challengeCancel', 'NULL_VALUE')
+  }
 }
 
 function updateTimeRangeDisplay() {
-  const currentDate = (document.getElementById('currentDate') as HTMLInputElement | null)?.value
-  const timezone = ((document.getElementById('timezone') as HTMLSelectElement | null)?.value ??
-    'browser') as string
-  const batchDays = parseInt(
-    ((document.getElementById('batchDays') as HTMLInputElement | null)?.value ?? '1') as string
-  )
-  const textEl = document.getElementById('timeRangeText')
-  if (!currentDate || !textEl) return
+  const currentDate = formState.currentDate
+  const timezone = (formState.timezone || 'browser') as string
+  const batchDays = Math.max(1, Math.floor(props.batchDays ?? 1))
+  if (!currentDate) {
+    timeRangeHtml.value = '請選擇日期'
+    return
+  }
   const now = new Date()
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
     now.getDate()
@@ -213,7 +465,7 @@ function updateTimeRangeDisplay() {
       currentDate === today
         ? '<small>注意：時間範圍限制在當前時間之前</small>'
         : '<small>注意：可以生成全天24小時的任意時間</small>'
-    textEl.innerHTML = `<div style="font-size: 0.9em;">
+    timeRangeHtml.value = `<div style="font-size: 0.9em;">
       <div><strong>選擇時區：</strong>${tzName}</div>
       <div><strong>UTC 時間範圍：</strong>${utcStart} ~ ${utcEnd}</div>
       <div style="color:#666;margin-top:5px;">${note}</div>
@@ -232,7 +484,7 @@ function updateTimeRangeDisplay() {
       currentDate === today
         ? '<small>注意：第1天限制在當前時間之前，其他天為全天24小時</small>'
         : '<small>注意：所有天都可以生成全天24小時的任意時間</small>'
-    textEl.innerHTML = `<div style="font-size: 0.9em;">
+    timeRangeHtml.value = `<div style="font-size: 0.9em;">
       <div><strong>選擇時區：</strong>${tzName}</div>
       <div><strong>生成天數：</strong>${batchDays} 天 (${dateRangeText})</div>
       <div><strong>UTC 時間範圍：</strong>${utcStart} ~ ${multiEndUTC}</div>
@@ -242,271 +494,266 @@ function updateTimeRangeDisplay() {
 }
 
 function loadDefaults() {
-  const set = (id: string, val: string) => {
-    const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null
-    if (!el) return
-    if ('value' in el) el.value = val
-  }
-  set('baseUrl', 'http://localhost:9200')
-  set('username', 'elastic')
-  set('password', '123456')
-  set('issuerOid', 'ed8544c4-fc50-289d-ee05-ee41c86bb6f5')
-  set('acsTransId', cryptoRandomUUID())
-  set('threeDSServerTransId', cryptoRandomUUID().toLowerCase())
-  set('aresTransStatus', 'N')
-  set('transStatus', 'N')
-  set('rreqTransStatus', 'NULL_VALUE')
-  set('transStatusReason', 'NULL_VALUE')
-  set('stateMachineReason', 'NULL_VALUE')
-  set('merchantName', 'HiTRUST EMV Demo Merchant')
-  set('merchantCountryCode', '156')
-  set('acquirerMerchantId', '8909191')
-  set('acquirerBin', '1231234')
-  set('mcc', '5661')
-  set('purchaseAmount', '100')
-  set('purchaseCurrency', '156')
-  set('purchaseExponent', '2')
-  set('usdAmount', '0.13841979956813022')
-  set('exchangeRate', '7.2244')
-  set('exchangeBase', 'USD')
-  set('exchangeTarget', 'CNY')
-  set('currencyCodeForRate', 'CNY')
-  set('cardScheme', 'V')
-  set('acctNumber', '4143520000000123')
+  setField('baseUrl', 'http://localhost:9200')
+  setField('username', 'elastic')
+  setField('password', '123456')
+  setField('issuerOid', '06b4b203-da05-73f9-256f-454929df6076')
+  setField('acsTransId', cryptoRandomUUID())
+  setField('threeDSServerTransId', cryptoRandomUUID().toLowerCase())
+  setField('aresTransStatus', 'N')
+  setField('transStatus', 'N')
+  setField('rreqTransStatus', 'NULL_VALUE')
+  setField('transStatusReason', 'NULL_VALUE')
+  setField('stateMachineReason', 'NULL_VALUE')
+  setField('merchantName', 'HiTRUST EMV Demo Merchant')
+  setField('merchantCountryCode', '156')
+  setField('acquirerMerchantId', '8909191')
+  setField('acquirerBin', '1231234')
+  setField('mcc', '5661')
+  setField('purchaseAmount', '100')
+  setField('purchaseCurrency', '156')
+  setField('purchaseExponent', '2')
+  setField('usdAmount', '0.13841979956813022')
+  setField('exchangeRate', '7.2244')
+  setField('exchangeBase', 'USD')
+  setField('exchangeTarget', 'CNY')
+  setField('currencyCodeForRate', 'CNY')
+  setField('cardScheme', 'V')
+  setField('acctNumber', '4143520000000123')
+  setField('cardbin6', '414352')
+  setField('cardbin8', '41435200')
+  setField('acctNumberMask', '414352******0123')
+  setField('acctNumberHashed', '2hpBkDB7ELbcpebGl5RM+HWTQGx3qciOwskcbsEVKC4=')
+  setField('visaDafMessageExtension', 'null')
+  setField('mastercardScore', '600')
+  setField('mastercardDecision', 'Not Low Risk')
+  setField('mastercardReasonCode1', 'A')
+  setField('mastercardReasonCode2', '')
+  setField('mastercardStatus', 'success')
+  setField('visaRiskBasedAuthenticationScore', '')
   updateCardInfoFromAcctNumber()
-  set('messageCategory', '01')
-  set('deviceChannel', '02')
-  set('authenticationMethod', '02')
-  set('authenticationType', '02')
-  set('deviceIpAddress', '::1')
-  set('devicePlatform', 'MacIntel')
-  set('deviceLocale', 'zh-TW')
-  set('deviceAdvertisingId', '4d4427f20375a66287430edd54bd82d2')
-  set('threeDSCompInd', 'Y')
-  set('merchantCountryCodeStr', '156')
-  set('performancePath', '/acs-auth/auth/V/2.2.0/ed8544c4-fc50-289d-ee05-ee41c86bb6f5/001/areq')
-  set('execTime', '5437')
-  set('creqExecTime', '500')
-  set('rreqExecTime', '400')
-  set('rbaExecTime', '100')
-  set('cavvExecTime', '20')
-  set('otpExecTime', '50')
-  set('errorComponent', 'NULL_VALUE')
-  set('errorDescription', 'NULL_VALUE')
-  set('errorCode', 'NULL_VALUE')
-  set('errorDetail', 'NULL_VALUE')
-  set('errorMessageType', 'NULL_VALUE')
-  set('challengeCancel', 'NULL_VALUE')
-  set('browserIP', '::1')
-  set('countryAlpha2', 'CN')
-  set('countryNumeric', '156')
-  set('countryAlpha3', 'CHN')
-  set('countryName', 'China')
-  set('currencyMinorUnit', '2')
-  set('currencyName', 'Yuan Renminbi')
-  set('currencyAlphabeticCode', 'CNY')
-  set('currencyNumericCode', '156')
+  setField('messageCategory', '01')
+  setField('deviceChannel', '02')
+  setField('threeDSRequestorChallengeInd', '01')
+  setField('authenticationMethod', '02')
+  setField('authenticationType', '02')
+  setField('deviceIpAddress', '::1')
+  setField('browserIP', '::1')
+  setField('devicePlatform', 'MacIntel')
+  setField('deviceLocale', 'zh-TW')
+  setField('deviceAdvertisingId', '4d4427f20375a66287430edd54bd82d2')
+  setField('threeDSCompInd', 'Y')
+  setField('merchantCountryCodeStr', '156')
+  setField(
+    'performancePath',
+    '/acs-auth/auth/V/2.2.0/06b4b203-da05-73f9-256f-454929df6076/001/areq'
+  )
+  setField('execTime', '5437')
+  setField('creqExecTime', '500')
+  setField('rreqExecTime', '400')
+  setField('rbaExecTime', '100')
+  setField('cavvExecTime', '20')
+  setField('otpExecTime', '50')
+  setField('errorComponent', 'NULL_VALUE')
+  setField('errorDescription', 'NULL_VALUE')
+  setField('errorCode', 'NULL_VALUE')
+  setField('errorDetail', 'NULL_VALUE')
+  setField('errorMessageType', 'NULL_VALUE')
+  setField('challengeCancel', 'NULL_VALUE')
+  setField('countryAlpha2', 'CN')
+  setField('countryNumeric', '156')
+  setField('countryAlpha3', 'CHN')
+  setField('countryName', 'China')
+  setField('currencyMinorUnit', '2')
+  setField('currencyName', 'Yuan Renminbi')
+  setField('currencyAlphabeticCode', 'CNY')
+  setField('currencyNumericCode', '156')
+  syncStatusDependencies()
+  formState.enablePurchaseAmountRandom = true
+  formState.enableAcquirerMerchantIdRandom = true
+  formState.enableAcctNumberRandom = true
+  formState.enableMastercardExtension = false
+  formState.enableMastercardExtensionRandom = false
+  formState.enableVisaScoreRandom = false
+  formState.enableExecTimeRandom = true
+  formState.enableCreqExecTimeRandom = true
+  formState.enableRreqExecTimeRandom = true
+  formState.enableRbaExecTimeRandom = true
+  formState.enableCavvExecTimeRandom = true
+  formState.enableOtpExecTimeRandom = true
+  formState.enableAll3DSParamsRandom = false
+  formState.enableMessageCategory = false
+  formState.enableDeviceChannel = false
+  formState.enableThreeDSRequestorChallengeInd = false
+  formState.enableAuthenticationMethodRandom = false
+  formState.enableAuthenticationTypeRandom = false
+  formState.enableDeviceIpAddressRandom = false
+  formState.enableDevicePlatformRandom = false
+  formState.enableDeviceLocaleRandom = false
+  formState.enableDeviceAdvertisingIdRandom = false
+  formState.enableThreeDSCompIndRandom = false
+  formState.enableMerchantCountryCodeStrRandom = false
+  formState.enableBrowserGeoIPRandom = true
+  formState.enableDeviceGeoIPRandom = true
   setStatus('預設值已載入 (Vue 移植版)', 'success')
 }
 
 function generateRandom() {
   const set = (id: string, val: string) => {
-    const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null
-    if (el) el.value = val
+    setField(id, val)
   }
   set('acsTransId', cryptoRandomUUID())
   set('threeDSServerTransId', cryptoRandomUUID().toLowerCase())
   // 金額
-  const enableAmt = (
-    document.getElementById('enablePurchaseAmountRandom') as HTMLInputElement | null
-  )?.checked
-  if (enableAmt) set('purchaseAmount', (Math.random() * 990 + 10).toFixed(2))
+  if (formState.enablePurchaseAmountRandom) {
+    set('purchaseAmount', (Math.random() * 990 + 10).toFixed(2))
+  }
   // 執行時間
-  const enableExec = (document.getElementById('enableExecTimeRandom') as HTMLInputElement | null)
-    ?.checked
-  if (enableExec) set('execTime', String(Math.floor(Math.random() * 5000 + 1000)))
-  const enableCreqExec = (
-    document.getElementById('enableCreqExecTimeRandom') as HTMLInputElement | null
-  )?.checked
-  if (enableCreqExec) set('creqExecTime', String(Math.floor(Math.random() * 500 + 300)))
-  const enableRreqExec = (
-    document.getElementById('enableRreqExecTimeRandom') as HTMLInputElement | null
-  )?.checked
-  if (enableRreqExec) set('rreqExecTime', String(Math.floor(Math.random() * 400 + 200)))
-  const enableRbaExec = (
-    document.getElementById('enableRbaExecTimeRandom') as HTMLInputElement | null
-  )?.checked
-  if (enableRbaExec) set('rbaExecTime', String(Math.floor(Math.random() * 150 + 50)))
-  const enableCavvExec = (
-    document.getElementById('enableCavvExecTimeRandom') as HTMLInputElement | null
-  )?.checked
-  if (enableCavvExec) set('cavvExecTime', String(Math.floor(Math.random() * 21 + 10)))
-  const enableOtpExec = (
-    document.getElementById('enableOtpExecTimeRandom') as HTMLInputElement | null
-  )?.checked
-  if (enableOtpExec) set('otpExecTime', String(Math.floor(Math.random() * 61 + 20)))
+  if (formState.enableExecTimeRandom) {
+    set('execTime', String(Math.floor(Math.random() * 5000 + 1000)))
+  }
+  if (formState.enableCreqExecTimeRandom) {
+    set('creqExecTime', String(Math.floor(Math.random() * 500 + 300)))
+  }
+  if (formState.enableRreqExecTimeRandom) {
+    set('rreqExecTime', String(Math.floor(Math.random() * 400 + 200)))
+  }
+  if (formState.enableRbaExecTimeRandom) {
+    set('rbaExecTime', String(Math.floor(Math.random() * 150 + 50)))
+  }
+  if (formState.enableCavvExecTimeRandom) {
+    set('cavvExecTime', String(Math.floor(Math.random() * 21 + 10)))
+  }
+  if (formState.enableOtpExecTimeRandom) {
+    set('otpExecTime', String(Math.floor(Math.random() * 61 + 20)))
+  }
   // 狀態（依照 Grafana-Test-Input.html 的權重分佈）
-  const r = Math.random()
-  let st: string
-  if (r < 0.4)
-    st = 'Y' // 40%
-  else if (r < 0.45)
-    st = 'N' // 5%
-  else if (r < 0.5)
-    st = 'R' // 5%
-  else if (r < 0.75)
-    st = 'C' // 25%
-  else if (r < 0.8)
-    st = 'D' // 5%
-  else if (r < 0.85)
-    st = 'A' // 5%
-  else if (r < 0.9)
-    st = 'I' // 5%
-  else if (r < 0.95)
-    st = 'S' // 5%
-  else st = 'U' // 5%
+  const st = pickWeightedValue(ARES_STATUS_WEIGHTS)
   set('aresTransStatus', String(st))
-  const rreq = document.getElementById('rreqTransStatus') as HTMLSelectElement | null
-  const trans = document.getElementById('transStatus') as HTMLInputElement | null
   if (st === 'C' || st === 'D') {
-    if (rreq) rreq.value = Math.random() < 0.8 ? 'Y' : 'N'
-    if (trans && rreq) trans.value = rreq.value
+    const rreqVal = Math.random() < RREQ_SUCCESS_RATE ? 'Y' : 'N'
+    set('rreqTransStatus', rreqVal)
+    set('transStatus', rreqVal)
   } else {
-    if (rreq) rreq.value = 'NULL_VALUE'
-    if (trans) trans.value = String(st)
+    set('rreqTransStatus', 'NULL_VALUE')
+    set('transStatus', String(st))
   }
   // 當 ARes 為 R 時，transStatusReason 從 01~30/81/89/90 隨機；否則為 NULL_VALUE
-  const reasonEl = document.getElementById('transStatusReason') as HTMLSelectElement | null
-  if (reasonEl) {
-    if (st === 'R') {
-      const reasons: string[] = []
-      for (let i = 1; i <= 30; i++) reasons.push(String(i).padStart(2, '0'))
-      reasons.push('81', '89', '90')
-      reasonEl.disabled = false
-      if (reasons.length > 0) {
-        const idx = Math.floor(Math.random() * reasons.length)
-        reasonEl.value = reasons[idx] as string
-      } else {
-        reasonEl.value = '01'
-      }
+  if (st === 'R') {
+    const reasons: string[] = []
+    for (let i = 1; i <= 30; i++) reasons.push(String(i).padStart(2, '0'))
+    reasons.push('81', '89', '90')
+    if (reasons.length > 0) {
+      const idx = Math.floor(Math.random() * reasons.length)
+      set('transStatusReason', reasons[idx] as string)
     } else {
-      reasonEl.disabled = true
-      reasonEl.value = 'NULL_VALUE'
+      set('transStatusReason', '01')
     }
+  } else {
+    set('transStatusReason', 'NULL_VALUE')
   }
   // 當 ARes 為 R 時，stateMachineReason 從所有 StateMachineReasonEnum 值隨機；否則為 NULL_VALUE
-  const stateMachineReasonEl = document.getElementById(
-    'stateMachineReason'
-  ) as HTMLSelectElement | null
-  if (stateMachineReasonEl) {
-    if (st === 'R') {
-      const stateMachineReasons: string[] = [
-        '1001',
-        '1002',
-        '1003',
-        '1004',
-        '1005',
-        '1006',
-        '1007',
-        '1008',
-        '1009',
-        '1010',
-        '2001',
-        '2002',
-        '2101',
-        '2102',
-        '2103',
-        '3001',
-        '3002',
-        '3101',
-        '3102',
-        '3199',
-        '3201',
-        '3202',
-        '3299',
-        '3301',
-        '3302',
-        '3399',
-        '3401',
-        '3402',
-        '3403',
-        '3404',
-        '3499',
-        '3501',
-        '3502',
-        '3503',
-        '3504',
-        '3601',
-        '3602',
-        '3604',
-        '4001',
-        '4101',
-        '4102',
-        '4103',
-        '4104',
-        '4105',
-        '4106',
-        '4107',
-        '4108',
-        '4109',
-        '4110',
-        '4111',
-        '4201',
-        '4202',
-        '5101',
-        '5102',
-        '5103',
-        '5104',
-        '5105',
-        '5106',
-        '5201',
-        '5202',
-        '5203',
-        '5204',
-        '6101',
-        '6102',
-        '6103',
-        '6201',
-        '6301',
-        '6401',
-        '6402',
-        '6403',
-        '7101',
-        '7102',
-        '7103',
-        '7201',
-        '7202',
-        '7203',
-        '7204',
-        '7205',
-        '7206',
-        '7207',
-        '8101',
-        '0000',
-        '9999'
-      ]
-      stateMachineReasonEl.disabled = false
-      if (stateMachineReasons.length > 0) {
-        const idx = Math.floor(Math.random() * stateMachineReasons.length)
-        stateMachineReasonEl.value = stateMachineReasons[idx] as string
-      } else {
-        stateMachineReasonEl.value = '1001'
-      }
+  if (st === 'R') {
+    const stateMachineReasons: string[] = [
+      '1001',
+      '1002',
+      '1003',
+      '1004',
+      '1005',
+      '1006',
+      '1007',
+      '1008',
+      '1009',
+      '1010',
+      '2001',
+      '2002',
+      '2101',
+      '2102',
+      '2103',
+      '3001',
+      '3002',
+      '3101',
+      '3102',
+      '3199',
+      '3201',
+      '3202',
+      '3299',
+      '3301',
+      '3302',
+      '3399',
+      '3401',
+      '3402',
+      '3403',
+      '3404',
+      '3499',
+      '3501',
+      '3502',
+      '3503',
+      '3504',
+      '3601',
+      '3602',
+      '3604',
+      '4001',
+      '4101',
+      '4102',
+      '4103',
+      '4104',
+      '4105',
+      '4106',
+      '4107',
+      '4108',
+      '4109',
+      '4110',
+      '4111',
+      '4201',
+      '4202',
+      '5101',
+      '5102',
+      '5103',
+      '5104',
+      '5105',
+      '5106',
+      '5201',
+      '5202',
+      '5203',
+      '5204',
+      '6101',
+      '6102',
+      '6103',
+      '6201',
+      '6301',
+      '6401',
+      '6402',
+      '6403',
+      '7101',
+      '7102',
+      '7103',
+      '7201',
+      '7202',
+      '7203',
+      '7204',
+      '7205',
+      '7206',
+      '7207',
+      '8101',
+      '0000',
+      '9999'
+    ]
+    if (stateMachineReasons.length > 0) {
+      const idx = Math.floor(Math.random() * stateMachineReasons.length)
+      set('stateMachineReason', stateMachineReasons[idx] as string)
     } else {
-      stateMachineReasonEl.disabled = true
-      stateMachineReasonEl.value = 'NULL_VALUE'
+      set('stateMachineReason', '1001')
     }
+  } else {
+    set('stateMachineReason', 'NULL_VALUE')
   }
   // 帳號原始值（依卡別前綴）- 僅在勾選時隨機
-  const acctToggle = document.getElementById('enableAcctNumberRandom') as HTMLInputElement | null
-  if (acctToggle?.checked) {
+  if (formState.enableAcctNumberRandom) {
     generateRandomAcctNumber()
   }
   // acquirerMerchantID 隨機（僅在勾選時）
-  const acqToggle = document.getElementById(
-    'enableAcquirerMerchantIdRandom'
-  ) as HTMLInputElement | null
-  if (acqToggle?.checked) {
+  if (formState.enableAcquirerMerchantIdRandom) {
     const len = 7
     let rnd = ''
     for (let i = 0; i < len; i++) rnd += Math.floor(Math.random() * 10)
@@ -514,63 +761,44 @@ function generateRandom() {
     set('acquirerMerchantId', rnd)
   }
   // Visa Score 隨機（僅在勾選時）
-  const visaToggle = document.getElementById('enableVisaScoreRandom') as HTMLInputElement | null
-  if (visaToggle?.checked) {
+  if (formState.enableVisaScoreRandom) {
     const score = Math.floor(Math.random() * 100) // 0-99
     set('visaRiskBasedAuthenticationScore', String(score))
-    const scheme = document.getElementById('cardScheme') as HTMLSelectElement | null
-    if (scheme) scheme.value = 'V'
+    set('cardScheme', 'V')
   }
   // Mastercard 擴展 Score/Decision 隨機（僅在啟用且勾選隨機時）
-  const mcEnable = (document.getElementById('enableMastercardExtension') as HTMLInputElement | null)
-    ?.checked
-  const mcRand = (
-    document.getElementById('enableMastercardExtensionRandom') as HTMLInputElement | null
-  )?.checked
-  if (mcEnable && mcRand) {
-    const scoreEl = document.getElementById('mastercardScore') as HTMLInputElement | null
-    const decisionEl = document.getElementById('mastercardDecision') as HTMLSelectElement | null
-    if (scoreEl) scoreEl.value = String(Math.floor(Math.random() * 651)) // 0-650
-    if (decisionEl && decisionEl.options.length > 0) {
-      const len = decisionEl.options.length
-      const idx = Math.floor(Math.random() * len)
-      const opt = decisionEl.options.item(idx)
-      if (opt) decisionEl.value = opt.value
-    }
-    const scheme = document.getElementById('cardScheme') as HTMLSelectElement | null
-    if (scheme) scheme.value = 'M'
+  if (formState.enableMastercardExtension && formState.enableMastercardExtensionRandom) {
+    set('mastercardScore', String(Math.floor(Math.random() * 651)))
+    const pick =
+      MASTERCARD_DECISIONS[Math.floor(Math.random() * MASTERCARD_DECISIONS.length)] ??
+      'Not Low Risk'
+    set('mastercardDecision', pick)
+    set('cardScheme', 'M')
   }
   // messageCategory 隨機（僅在勾選時）
-  const msgToggle = document.getElementById('enableMessageCategory') as HTMLInputElement | null
-  if (msgToggle?.checked) {
+  if (formState.enableMessageCategory) {
     const categories = ['01', '02', '80', '85', '86']
     const mc = categories[Math.floor(Math.random() * categories.length)] as string
     set('messageCategory', mc)
   }
   // deviceChannel 隨機（僅在勾選時）
-  const devToggle = document.getElementById('enableDeviceChannel') as HTMLInputElement | null
-  if (devToggle?.checked) {
+  if (formState.enableDeviceChannel) {
     const chans = ['02', '03']
     const ch = chans[Math.floor(Math.random() * chans.length)] as string
     set('deviceChannel', ch)
   }
   // threeDSRequestorChallengeInd 隨機（僅在勾選時）- 無狀態限制，值域 01~10
-  const ciToggle = document.getElementById(
-    'enableThreeDSRequestorChallengeInd'
-  ) as HTMLInputElement | null
-  if (ciToggle?.checked) {
+  if (formState.enableThreeDSRequestorChallengeInd) {
     const cis = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10']
     const pick = cis[Math.floor(Math.random() * cis.length)] as string
     set('threeDSRequestorChallengeInd', pick)
   }
   // challengeCancel 自動隨機生成（僅在 ARes=C 且 RReq=N 時才會生效）
-  const aresStatusEl = document.getElementById('aresTransStatus') as HTMLSelectElement | null
-  const rreqStatusEl = document.getElementById('rreqTransStatus') as HTMLSelectElement | null
-  if (aresStatusEl?.value === 'C' && rreqStatusEl?.value === 'N') {
+  if (formState.aresTransStatus === 'C' && formState.rreqTransStatus === 'N') {
     // challengeCancel 值：01, 02, 03, 04, 05, 06, 07, 09, 10
     const challengeCancelValues = ['01', '02', '03', '04', '05', '06', '07', '09', '10']
     // 8% 機率生成實際值，92% 機率為 NULL_VALUE（確保 NULL_VALUE > 90%）
-    const shouldSetValue = Math.random() < 0.08
+    const shouldSetValue = Math.random() < CHALLENGE_CANCEL_RATE
     if (shouldSetValue) {
       const cc = challengeCancelValues[
         Math.floor(Math.random() * challengeCancelValues.length)
@@ -595,42 +823,29 @@ function generateRandom() {
   function randomIPv6(): string {
     return `${h4()}:${h4()}:${h4()}:${h4()}:${h4()}:${h4()}:${h4()}:${h4()}`
   }
-  const deviceIpToggle = document.getElementById(
-    'enableDeviceIpAddressRandom'
-  ) as HTMLInputElement | null
-  if (deviceIpToggle?.checked) {
+  if (formState.enableDeviceIpAddressRandom) {
     const deviceIp = Math.random() < 0.5 ? randomIPv4() : randomIPv6()
     set('deviceIpAddress', deviceIp)
     // 瀏覽器 IP 跟隨設備 IP
-    const browserIpEl = document.getElementById('browserIP') as HTMLInputElement | null
-    if (browserIpEl) browserIpEl.value = deviceIp
+    set('browserIP', deviceIp)
   }
 
   // devicePlatform 隨機（僅在勾選時）
-  const devicePlatformToggle = document.getElementById(
-    'enableDevicePlatformRandom'
-  ) as HTMLInputElement | null
-  if (devicePlatformToggle?.checked) {
+  if (formState.enableDevicePlatformRandom) {
     const platforms = ['MacIntel', 'Win32', 'Linux x86_64', 'iPhone', 'Android']
     const platform = platforms[Math.floor(Math.random() * platforms.length)] as string
     set('devicePlatform', platform)
   }
 
   // deviceLocale 隨機（僅在勾選時）
-  const deviceLocaleToggle = document.getElementById(
-    'enableDeviceLocaleRandom'
-  ) as HTMLInputElement | null
-  if (deviceLocaleToggle?.checked) {
+  if (formState.enableDeviceLocaleRandom) {
     const locales = ['zh-TW', 'zh-CN', 'en-US', 'en-GB', 'ja-JP', 'ko-KR']
     const locale = locales[Math.floor(Math.random() * locales.length)] as string
     set('deviceLocale', locale)
   }
 
   // deviceAdvertisingId 隨機（僅在勾選時）
-  const deviceAdIdToggle = document.getElementById(
-    'enableDeviceAdvertisingIdRandom'
-  ) as HTMLInputElement | null
-  if (deviceAdIdToggle?.checked) {
+  if (formState.enableDeviceAdvertisingIdRandom) {
     let adId = ''
     for (let i = 0; i < 32; i++) {
       adId += Math.floor(Math.random() * 16).toString(16)
@@ -639,50 +854,30 @@ function generateRandom() {
   }
 
   // threeDSCompInd 隨機（僅在勾選時）
-  const threeDSCompIndToggle = document.getElementById(
-    'enableThreeDSCompIndRandom'
-  ) as HTMLInputElement | null
-  if (threeDSCompIndToggle?.checked) {
+  if (formState.enableThreeDSCompIndRandom) {
     const compInd = Math.random() < 0.5 ? 'Y' : 'N'
     set('threeDSCompInd', compInd)
   }
 
   // merchantCountryCodeStr 隨機（僅在勾選時）
-  const merchantCountryCodeStrToggle = document.getElementById(
-    'enableMerchantCountryCodeStrRandom'
-  ) as HTMLInputElement | null
-  const merchantCountryCodeStrEl = document.getElementById(
-    'merchantCountryCodeStr'
-  ) as HTMLSelectElement | null
-  if (
-    merchantCountryCodeStrToggle?.checked &&
-    merchantCountryCodeStrEl &&
-    merchantCountryCodeStrEl.options.length > 0
-  ) {
-    // 從選單中隨機選擇一個選項（排除空值選項）
-    const options = Array.from(merchantCountryCodeStrEl.options).filter((opt) => opt.value !== '')
-    if (options.length > 0) {
-      const randomOption = options[Math.floor(Math.random() * options.length)]!
-      set('merchantCountryCodeStr', randomOption.value)
-    }
+  if (formState.enableMerchantCountryCodeStrRandom) {
+    const randomValue =
+      MERCHANT_COUNTRY_CODE_STR_VALUES[
+        Math.floor(Math.random() * MERCHANT_COUNTRY_CODE_STR_VALUES.length)
+      ] || '156'
+    set('merchantCountryCodeStr', randomValue)
   }
   // 如果沒有勾選，使用當前選單中的值（不需要額外設置，因為 getFormData 會讀取）
 
   // authenticationMethod 隨機（僅在勾選時）
-  const authMethodToggle = document.getElementById(
-    'enableAuthenticationMethodRandom'
-  ) as HTMLInputElement | null
-  if (authMethodToggle?.checked) {
+  if (formState.enableAuthenticationMethodRandom) {
     const authMethods = ['01', '02', '03', '04', '05']
     const authMethod = authMethods[Math.floor(Math.random() * authMethods.length)] as string
     set('authenticationMethod', authMethod)
   }
 
   // authenticationType 隨機（僅在勾選時）
-  const authTypeToggle = document.getElementById(
-    'enableAuthenticationTypeRandom'
-  ) as HTMLInputElement | null
-  if (authTypeToggle?.checked) {
+  if (formState.enableAuthenticationTypeRandom) {
     const authTypes = ['01', '02', '03', '04', '05']
     const authType = authTypes[Math.floor(Math.random() * authTypes.length)] as string
     set('authenticationType', authType)
@@ -692,33 +887,20 @@ function generateRandom() {
 }
 
 function generateRandomAcctNumber() {
-  const schemeEl = document.getElementById('cardScheme') as HTMLSelectElement | null
-  const scheme = schemeEl?.value || 'V'
+  const scheme = formState.cardScheme || 'V'
   let prefix = '414352'
   if (scheme === 'M') prefix = '515352'
   // 產出 13 位亂數字串
   let suffix = ''
   for (let i = 0; i < 13; i++) suffix += Math.floor(Math.random() * 10)
   const acct = prefix + suffix
-  const acctEl = document.getElementById('acctNumber') as HTMLInputElement | null
-  if (acctEl) {
-    acctEl.value = acct
-    updateCardInfoFromAcctNumber()
-  }
+  setField('acctNumber', acct)
+  updateCardInfoFromAcctNumber()
 }
 
 function setStatus(message: string, type: 'success' | 'error' | 'info' | 'warning') {
-  const statusDiv = document.getElementById('statusMessage')
-  if (!statusDiv) return
-  const alertClass =
-    type === 'success'
-      ? 'alert alert-success'
-      : type === 'error'
-        ? 'alert alert-error'
-        : type === 'warning'
-          ? 'alert alert-warning'
-          : 'alert alert-info'
-  statusDiv.innerHTML = `<div class="${alertClass} text-sm">${message}</div>`
+  statusMessage.value = message
+  statusType.value = type
 }
 
 function cryptoRandomUUID(): string {
@@ -749,142 +931,66 @@ onMounted(() => {
   const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
     today.getDate()
   ).padStart(2, '0')}`
-  const dateEl = document.getElementById('currentDate') as HTMLInputElement | null
-  if (dateEl && !dateEl.value) dateEl.value = dateStr
-  // 綁定聯動與計算
-  const acctEl = document.getElementById('acctNumber') as HTMLInputElement | null
-  acctEl?.addEventListener('input', updateCardInfoFromAcctNumber)
-  wireStatusLinks()
-  // 綁定 deviceIpAddress 與 browserIP 同步（以設備 IP 為主）
-  const browserIpEl = document.getElementById('browserIP') as HTMLInputElement | null
-  const deviceIpEl = document.getElementById('deviceIpAddress') as HTMLInputElement | null
-  // 初始化時同步
-  if (browserIpEl && deviceIpEl && deviceIpEl.value) {
-    browserIpEl.value = deviceIpEl.value
-  }
-  // 監聽設備 IP 變化，自動同步到瀏覽器 IP
-  deviceIpEl?.addEventListener('input', () => {
-    if (browserIpEl && deviceIpEl) {
-      browserIpEl.value = deviceIpEl.value
-    }
-  })
-  // 3DS 參數全選功能
-  const enableAll3DSParamsCheckbox = document.getElementById(
-    'enableAll3DSParamsRandom'
-  ) as HTMLInputElement | null
-  const threeDSParamCheckboxes = [
-    'enableMessageCategory',
-    'enableDeviceChannel',
-    'enableThreeDSRequestorChallengeInd',
-    'enableAuthenticationMethodRandom',
-    'enableAuthenticationTypeRandom',
-    'enableDeviceIpAddressRandom',
-    'enableDevicePlatformRandom',
-    'enableDeviceLocaleRandom',
-    'enableDeviceAdvertisingIdRandom',
-    'enableThreeDSCompIndRandom',
-    'enableMerchantCountryCodeStrRandom'
-  ]
-  function updateAll3DSParamsCheckbox() {
-    if (!enableAll3DSParamsCheckbox) return
-    const allChecked = threeDSParamCheckboxes.every((id) => {
-      const checkbox = document.getElementById(id) as HTMLInputElement | null
-      return checkbox?.checked ?? false
-    })
-    enableAll3DSParamsCheckbox.checked = allChecked
-  }
-  function toggleAll3DSParams(checked: boolean) {
-    // 批量更新所有子 checkbox
-    // 注意：這會觸發每個子 checkbox 的 change 事件，每個都會調用 updateAll3DSParamsCheckbox
-    // 但這是預期的行為，因為需要確保全選 checkbox 的狀態與子 checkbox 一致
-    threeDSParamCheckboxes.forEach((id) => {
-      const checkbox = document.getElementById(id) as HTMLInputElement | null
-      if (checkbox) {
-        checkbox.checked = checked
-      }
-    })
-    // 不需要手動更新全選 checkbox，因為子 checkbox 的 change 事件會自動觸發 updateAll3DSParamsCheckbox
-  }
-  enableAll3DSParamsCheckbox?.addEventListener('change', (e) => {
-    const target = e.target as HTMLInputElement
-    toggleAll3DSParams(target.checked)
-  })
-  // 為每個子 checkbox 添加事件監聽器
-  threeDSParamCheckboxes.forEach((id) => {
-    const checkbox = document.getElementById(id) as HTMLInputElement | null
-    checkbox?.addEventListener('change', updateAll3DSParamsCheckbox)
-  })
-  // 初始化時檢查全選狀態
-  updateAll3DSParamsCheckbox()
+  if (!formState.currentDate) setField('currentDate', dateStr)
   // 時間區間顯示
-  document.getElementById('currentDate')?.addEventListener('change', updateTimeRangeDisplay)
-  document.getElementById('timezone')?.addEventListener('change', updateTimeRangeDisplay)
-  document.getElementById('batchDays')?.addEventListener('input', updateTimeRangeDisplay)
-  updateModeIndicator()
   updateTimeRangeDisplay()
 
-  // 初始化 Visa/MC 互斥與顯示/禁用（還原舊版行為）
-  const visaScoreCheckbox = document.getElementById(
-    'enableVisaScoreRandom'
-  ) as HTMLInputElement | null
-  const mcEnableCheckbox = document.getElementById(
-    'enableMastercardExtension'
-  ) as HTMLInputElement | null
-  const cardSchemeSelect = document.getElementById('cardScheme') as HTMLSelectElement | null
-  const mcContainer = document.getElementById(
-    'mastercardExtensionContainer'
-  ) as HTMLDivElement | null
-  function applyVisaMcRules() {
-    const visaOn = !!visaScoreCheckbox?.checked
-    const mcOn = !!mcEnableCheckbox?.checked
-    if (visaOn) {
-      if (cardSchemeSelect) {
-        cardSchemeSelect.value = 'V'
-        cardSchemeSelect.disabled = true
+  watch(
+    () => [formState.enableVisaScoreRandom, formState.enableMastercardExtension],
+    ([visaOn, mcOn]) => {
+      if (visaOn) {
+        setField('cardScheme', 'V')
+        setStatus('Visa Score 已開啟，卡別鎖定為 Visa，Mastercard 已禁用', 'info')
+      } else if (mcOn) {
+        setField('cardScheme', 'M')
+        setStatus('Mastercard 擴展已開啟，卡別鎖定為 Mastercard，Visa Score 已禁用', 'info')
+      } else {
+        setStatus('卡別選擇與擴展設定恢復可調整', 'info')
       }
-      if (mcEnableCheckbox) mcEnableCheckbox.disabled = true
-      setStatus('Visa Score 已開啟，卡別鎖定為 Visa，Mastercard 已禁用', 'info')
-    } else if (mcOn) {
-      if (cardSchemeSelect) {
-        cardSchemeSelect.value = 'M'
-        cardSchemeSelect.disabled = true
-      }
-      if (visaScoreCheckbox) visaScoreCheckbox.disabled = true
-      if (mcContainer) mcContainer.style.display = 'block'
-      setStatus('Mastercard 擴展已開啟，卡別鎖定為 Mastercard，Visa Score 已禁用', 'info')
-    } else {
-      if (cardSchemeSelect) cardSchemeSelect.disabled = false
-      if (visaScoreCheckbox) visaScoreCheckbox.disabled = false
-      if (mcContainer) mcContainer.style.display = 'none'
-      setStatus('卡別選擇與擴展設定恢復可調整', 'info')
-    }
-  }
-  visaScoreCheckbox?.addEventListener('change', applyVisaMcRules)
-  mcEnableCheckbox?.addEventListener('change', applyVisaMcRules)
-  applyVisaMcRules()
+    },
+    { immediate: true }
+  )
 })
 
 watch(
-  () => props.activeMode,
+  () => [formState.currentDate, formState.timezone, props.batchDays],
   () => {
-    updateModeIndicator()
+    updateTimeRangeDisplay()
+  }
+)
+
+watch(
+  () => [formState.aresTransStatus, formState.rreqTransStatus],
+  () => {
+    syncStatusDependencies()
+  },
+  { immediate: true }
+)
+
+watch(
+  () => formState.acctNumber,
+  () => {
+    updateCardInfoFromAcctNumber()
+  }
+)
+
+watch(
+  () => formState.deviceIpAddress,
+  (value) => {
+    if (value && value !== formState.browserIP) setField('browserIP', value)
   }
 )
 
 type FormMap = Record<string, string>
 
 function getFormData(): FormMap {
-  const form = document.getElementById('acsForm') as HTMLFormElement | null
   const data: FormMap = {}
-  if (!form) return data
-  const inputs = form.querySelectorAll('input, select')
-  inputs.forEach((el) => {
-    const id = (el as HTMLInputElement).id
-    if (!id) return
-    if ((el as HTMLInputElement).type === 'checkbox') {
-      data[id] = (el as HTMLInputElement).checked ? 'on' : 'off'
+  Object.entries(formState).forEach(([key, value]) => {
+    if (key.startsWith('disable')) return
+    if (typeof value === 'boolean') {
+      data[key] = value ? 'on' : 'off'
     } else {
-      data[id] = (el as HTMLInputElement).value
+      data[key] = String(value ?? '')
     }
   })
   return data
@@ -1286,11 +1392,8 @@ function buildDocument(
   const countryCodeForGeoIP = form.merchantCountryCodeStr || form.merchantCountryCode || '156'
   const countryInfo = countryCodeMap[countryCodeForGeoIP] || countryCodeMap['156']!
   // browserGeoIP（預設生成，基於 merchantCountryCodeStr）
-  const enableBrowserGeoIP = document.getElementById(
-    'enableBrowserGeoIPRandom'
-  ) as HTMLInputElement | null
   // 預設生成，除非 checkbox 明確取消勾選
-  if (enableBrowserGeoIP?.checked !== false) {
+  if (form.enableBrowserGeoIPRandom !== 'off') {
     ;(doc as unknown as Record<string, unknown>).browserGeoIP = generateGeoIP(
       countryCodeForGeoIP,
       countryInfo.name,
@@ -1298,11 +1401,8 @@ function buildDocument(
     )
   }
   // deviceGeoIP（預設生成，基於 merchantCountryCodeStr）
-  const enableDeviceGeoIP = document.getElementById(
-    'enableDeviceGeoIPRandom'
-  ) as HTMLInputElement | null
   // 預設生成，除非 checkbox 明確取消勾選
-  if (enableDeviceGeoIP?.checked !== false) {
+  if (form.enableDeviceGeoIPRandom !== 'off') {
     ;(doc as unknown as Record<string, unknown>).deviceGeoIP = generateGeoIP(
       countryCodeForGeoIP,
       countryInfo.name,
@@ -1390,35 +1490,158 @@ defineExpose({
   getFormData,
   buildDocument,
   generateSharedTimestamp,
-  setStatus
+  setStatus,
+  setFields
 })
 </script>
 
 <template>
-  <div id="statusMessage"></div>
+  <div v-if="statusMessage" class="mb-4">
+    <div :class="statusClass" class="text-sm">{{ statusMessage }}</div>
+  </div>
 
   <form id="acsForm" class="space-y-6">
-    <BaseConfigSection />
+    <BaseConfigSection
+      v-model:baseUrl="formState.baseUrl"
+      v-model:username="formState.username"
+      v-model:password="formState.password"
+      v-model:currentDate="formState.currentDate"
+      v-model:timezone="formState.timezone"
+      :modeText="modeText"
+      :modeClass="modeClass"
+      :timeRangeHtml="timeRangeHtml"
+    />
 
-    <TransactionIdSection />
+    <TransactionIdSection
+      v-model:issuerOid="formState.issuerOid"
+      v-model:acsTransId="formState.acsTransId"
+      v-model:threeDSServerTransId="formState.threeDSServerTransId"
+    />
 
-    <TransactionStatusSection />
+    <TransactionStatusSection
+      v-model:aresTransStatus="formState.aresTransStatus"
+      v-model:transStatus="formState.transStatus"
+      v-model:rreqTransStatus="formState.rreqTransStatus"
+      v-model:transStatusReason="formState.transStatusReason"
+      v-model:stateMachineReason="formState.stateMachineReason"
+      v-model:challengeCancel="formState.challengeCancel"
+      :disableRreqTransStatus="formState.disableRreqTransStatus"
+      :disableTransStatusReason="formState.disableTransStatusReason"
+      :disableStateMachineReason="formState.disableStateMachineReason"
+      :disableChallengeCancel="formState.disableChallengeCancel"
+    />
 
-    <MerchantInfoSection />
+    <MerchantInfoSection
+      v-model:merchantName="formState.merchantName"
+      v-model:merchantCountryCode="formState.merchantCountryCode"
+      v-model:acquirerMerchantId="formState.acquirerMerchantId"
+      v-model:acquirerBin="formState.acquirerBin"
+      v-model:mcc="formState.mcc"
+      v-model:enableAcquirerMerchantIdRandom="formState.enableAcquirerMerchantIdRandom"
+    />
 
-    <PurchaseAmountSection />
+    <PurchaseAmountSection
+      v-model:purchaseAmount="formState.purchaseAmount"
+      v-model:purchaseCurrency="formState.purchaseCurrency"
+      v-model:purchaseExponent="formState.purchaseExponent"
+      v-model:usdAmount="formState.usdAmount"
+      v-model:enablePurchaseAmountRandom="formState.enablePurchaseAmountRandom"
+    />
 
-    <CountryCurrencySection />
+    <CountryCurrencySection
+      v-model:countryAlpha2="formState.countryAlpha2"
+      v-model:countryNumeric="formState.countryNumeric"
+      v-model:countryAlpha3="formState.countryAlpha3"
+      v-model:countryName="formState.countryName"
+      v-model:currencyMinorUnit="formState.currencyMinorUnit"
+      v-model:currencyName="formState.currencyName"
+      v-model:currencyAlphabeticCode="formState.currencyAlphabeticCode"
+      v-model:currencyNumericCode="formState.currencyNumericCode"
+    />
 
-    <ExchangeRateSection />
+    <ExchangeRateSection
+      v-model:exchangeRate="formState.exchangeRate"
+      v-model:exchangeBase="formState.exchangeBase"
+      v-model:exchangeTarget="formState.exchangeTarget"
+      v-model:currencyCodeForRate="formState.currencyCodeForRate"
+    />
 
-    <CardInfoSection />
+    <CardInfoSection
+      v-model:cardScheme="formState.cardScheme"
+      v-model:acctNumber="formState.acctNumber"
+      v-model:cardbin6="formState.cardbin6"
+      v-model:acctNumberHashed="formState.acctNumberHashed"
+      v-model:acctNumberMask="formState.acctNumberMask"
+      v-model:cardbin8="formState.cardbin8"
+      v-model:visaDafMessageExtension="formState.visaDafMessageExtension"
+      v-model:mastercardScore="formState.mastercardScore"
+      v-model:mastercardDecision="formState.mastercardDecision"
+      v-model:mastercardReasonCode1="formState.mastercardReasonCode1"
+      v-model:mastercardReasonCode2="formState.mastercardReasonCode2"
+      v-model:mastercardStatus="formState.mastercardStatus"
+      v-model:visaRiskBasedAuthenticationScore="formState.visaRiskBasedAuthenticationScore"
+      v-model:enableAcctNumberRandom="formState.enableAcctNumberRandom"
+      v-model:enableMastercardExtension="formState.enableMastercardExtension"
+      v-model:enableMastercardExtensionRandom="formState.enableMastercardExtensionRandom"
+      v-model:enableVisaScoreRandom="formState.enableVisaScoreRandom"
+      :disableCardScheme="disableCardScheme"
+      :disableMastercardExtension="disableMastercardExtension"
+      :disableVisaScoreRandom="disableVisaScoreRandom"
+      :showMastercardExtension="showMastercardExtension"
+    />
 
-    <ThreeDSParamsSection />
+    <ThreeDSParamsSection
+      v-model:messageCategory="formState.messageCategory"
+      v-model:deviceChannel="formState.deviceChannel"
+      v-model:threeDSRequestorChallengeInd="formState.threeDSRequestorChallengeInd"
+      v-model:authenticationMethod="formState.authenticationMethod"
+      v-model:authenticationType="formState.authenticationType"
+      v-model:deviceIpAddress="formState.deviceIpAddress"
+      v-model:browserIP="formState.browserIP"
+      v-model:devicePlatform="formState.devicePlatform"
+      v-model:deviceLocale="formState.deviceLocale"
+      v-model:deviceAdvertisingId="formState.deviceAdvertisingId"
+      v-model:threeDSCompInd="formState.threeDSCompInd"
+      v-model:merchantCountryCodeStr="formState.merchantCountryCodeStr"
+      v-model:enableAll3DSParamsRandom="formState.enableAll3DSParamsRandom"
+      v-model:enableMessageCategory="formState.enableMessageCategory"
+      v-model:enableDeviceChannel="formState.enableDeviceChannel"
+      v-model:enableThreeDSRequestorChallengeInd="formState.enableThreeDSRequestorChallengeInd"
+      v-model:enableAuthenticationMethodRandom="formState.enableAuthenticationMethodRandom"
+      v-model:enableAuthenticationTypeRandom="formState.enableAuthenticationTypeRandom"
+      v-model:enableDeviceIpAddressRandom="formState.enableDeviceIpAddressRandom"
+      v-model:enableDevicePlatformRandom="formState.enableDevicePlatformRandom"
+      v-model:enableDeviceLocaleRandom="formState.enableDeviceLocaleRandom"
+      v-model:enableDeviceAdvertisingIdRandom="formState.enableDeviceAdvertisingIdRandom"
+      v-model:enableThreeDSCompIndRandom="formState.enableThreeDSCompIndRandom"
+      v-model:enableMerchantCountryCodeStrRandom="formState.enableMerchantCountryCodeStrRandom"
+      v-model:enableBrowserGeoIPRandom="formState.enableBrowserGeoIPRandom"
+      v-model:enableDeviceGeoIPRandom="formState.enableDeviceGeoIPRandom"
+    />
 
-    <PerformanceSection />
+    <PerformanceSection
+      v-model:performancePath="formState.performancePath"
+      v-model:execTime="formState.execTime"
+      v-model:creqExecTime="formState.creqExecTime"
+      v-model:rreqExecTime="formState.rreqExecTime"
+      v-model:rbaExecTime="formState.rbaExecTime"
+      v-model:cavvExecTime="formState.cavvExecTime"
+      v-model:otpExecTime="formState.otpExecTime"
+      v-model:enableExecTimeRandom="formState.enableExecTimeRandom"
+      v-model:enableCreqExecTimeRandom="formState.enableCreqExecTimeRandom"
+      v-model:enableRreqExecTimeRandom="formState.enableRreqExecTimeRandom"
+      v-model:enableRbaExecTimeRandom="formState.enableRbaExecTimeRandom"
+      v-model:enableCavvExecTimeRandom="formState.enableCavvExecTimeRandom"
+      v-model:enableOtpExecTimeRandom="formState.enableOtpExecTimeRandom"
+    />
 
-    <ErrorHandlingSection />
+    <ErrorHandlingSection
+      v-model:errorComponent="formState.errorComponent"
+      v-model:errorDescription="formState.errorDescription"
+      v-model:errorCode="formState.errorCode"
+      v-model:errorDetail="formState.errorDetail"
+      v-model:errorMessageType="formState.errorMessageType"
+    />
   </form>
 </template>
 

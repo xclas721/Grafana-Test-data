@@ -3,6 +3,22 @@ import Card from '@/shared/components/Card.vue'
 import Input from '@/shared/components/Input.vue'
 import Select, { type SelectOption } from '@/shared/components/Select.vue'
 
+const props = defineProps<{
+  purchaseAmount: string
+  purchaseCurrency: string
+  purchaseExponent: string
+  usdAmount: string
+  enablePurchaseAmountRandom: boolean
+}>()
+
+const emit = defineEmits<{
+  'update:purchaseAmount': [value: string]
+  'update:purchaseCurrency': [value: string]
+  'update:purchaseExponent': [value: string]
+  'update:usdAmount': [value: string]
+  'update:enablePurchaseAmountRandom': [value: boolean]
+}>()
+
 const purchaseCurrencyOptions: SelectOption[] = [
   { value: '156', label: '156 - 中國人民幣 (CNY)' },
   { value: '901', label: '901 - 台灣新台幣 (TWD)' },
@@ -28,21 +44,29 @@ const purchaseCurrencyOptions: SelectOption[] = [
   <section id="purchase-amount" class="scroll-mt-24">
     <Card>
       <h3 class="text-base font-semibold text-base-content/80 mb-3">4.交易金額</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
           <Input
             id="purchaseAmount"
             type="number"
             label="購買金額 (purchaseAmount)"
-            :modelValue="'100'"
+            :modelValue="props.purchaseAmount"
             required
+            @update:modelValue="(value) => emit('update:purchaseAmount', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
               id="enablePurchaseAmountRandom"
               class="checkbox checkbox-sm"
-              checked
+              :checked="props.enablePurchaseAmountRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enablePurchaseAmountRandom',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
             />
             <label for="enablePurchaseAmountRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
@@ -54,9 +78,10 @@ const purchaseCurrencyOptions: SelectOption[] = [
           <Select
             id="purchaseCurrency"
             label="購買貨幣代碼 (purchaseCurrency)"
-            :modelValue="'156'"
+            :modelValue="props.purchaseCurrency"
             :options="purchaseCurrencyOptions"
             required
+            @update:modelValue="(value) => emit('update:purchaseCurrency', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">選擇貨幣類型</p>
         </div>
@@ -64,14 +89,16 @@ const purchaseCurrencyOptions: SelectOption[] = [
           id="purchaseExponent"
           type="number"
           label="購買金額指數 (purchaseExponent)"
-          :modelValue="'2'"
+          :modelValue="props.purchaseExponent"
           required
+          @update:modelValue="(value) => emit('update:purchaseExponent', String(value))"
         />
         <Input
           id="usdAmount"
           type="number"
           label="美元金額 (usdAmount)"
-          :modelValue="'0.13841979956813022'"
+          :modelValue="props.usdAmount"
+          @update:modelValue="(value) => emit('update:usdAmount', String(value))"
         />
       </div>
     </Card>

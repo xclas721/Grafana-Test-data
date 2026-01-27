@@ -3,6 +3,64 @@ import Card from '@/shared/components/Card.vue'
 import Input from '@/shared/components/Input.vue'
 import Select, { type SelectOption } from '@/shared/components/Select.vue'
 
+const props = defineProps<{
+  messageCategory: string
+  deviceChannel: string
+  threeDSRequestorChallengeInd: string
+  authenticationMethod: string
+  authenticationType: string
+  deviceIpAddress: string
+  browserIP: string
+  devicePlatform: string
+  deviceLocale: string
+  deviceAdvertisingId: string
+  threeDSCompInd: string
+  merchantCountryCodeStr: string
+  enableAll3DSParamsRandom: boolean
+  enableMessageCategory: boolean
+  enableDeviceChannel: boolean
+  enableThreeDSRequestorChallengeInd: boolean
+  enableAuthenticationMethodRandom: boolean
+  enableAuthenticationTypeRandom: boolean
+  enableDeviceIpAddressRandom: boolean
+  enableDevicePlatformRandom: boolean
+  enableDeviceLocaleRandom: boolean
+  enableDeviceAdvertisingIdRandom: boolean
+  enableThreeDSCompIndRandom: boolean
+  enableMerchantCountryCodeStrRandom: boolean
+  enableBrowserGeoIPRandom: boolean
+  enableDeviceGeoIPRandom: boolean
+}>()
+
+const emit = defineEmits<{
+  'update:messageCategory': [value: string]
+  'update:deviceChannel': [value: string]
+  'update:threeDSRequestorChallengeInd': [value: string]
+  'update:authenticationMethod': [value: string]
+  'update:authenticationType': [value: string]
+  'update:deviceIpAddress': [value: string]
+  'update:browserIP': [value: string]
+  'update:devicePlatform': [value: string]
+  'update:deviceLocale': [value: string]
+  'update:deviceAdvertisingId': [value: string]
+  'update:threeDSCompInd': [value: string]
+  'update:merchantCountryCodeStr': [value: string]
+  'update:enableAll3DSParamsRandom': [value: boolean]
+  'update:enableMessageCategory': [value: boolean]
+  'update:enableDeviceChannel': [value: boolean]
+  'update:enableThreeDSRequestorChallengeInd': [value: boolean]
+  'update:enableAuthenticationMethodRandom': [value: boolean]
+  'update:enableAuthenticationTypeRandom': [value: boolean]
+  'update:enableDeviceIpAddressRandom': [value: boolean]
+  'update:enableDevicePlatformRandom': [value: boolean]
+  'update:enableDeviceLocaleRandom': [value: boolean]
+  'update:enableDeviceAdvertisingIdRandom': [value: boolean]
+  'update:enableThreeDSCompIndRandom': [value: boolean]
+  'update:enableMerchantCountryCodeStrRandom': [value: boolean]
+  'update:enableBrowserGeoIPRandom': [value: boolean]
+  'update:enableDeviceGeoIPRandom': [value: boolean]
+}>()
+
 const messageCategoryOptions: SelectOption[] = [
   { value: '01', label: '01 - PA (Payment Authentication)' },
   { value: '02', label: '02 - NPA (Non-Payment Authentication)' },
@@ -80,22 +138,41 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
     <Card>
       <h3 class="text-base font-semibold text-base-content/80 mb-3">8.3DS 參數</h3>
       <div class="flex items-center gap-2 mb-4 rounded-md bg-base-200 px-3 py-2">
-        <input type="checkbox" id="enableAll3DSParamsRandom" class="checkbox checkbox-sm" />
+        <input
+          type="checkbox"
+          id="enableAll3DSParamsRandom"
+          class="checkbox checkbox-sm"
+          :checked="props.enableAll3DSParamsRandom"
+          @change="
+            (event) =>
+              emit('update:enableAll3DSParamsRandom', (event.target as HTMLInputElement).checked)
+          "
+        />
         <label for="enableAll3DSParamsRandom" class="text-sm font-semibold">
           全選：隨機生成時包含所有 3DS 參數欄位
         </label>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
           <Select
             id="messageCategory"
             label="訊息類別 (messageCategory)"
-            :modelValue="'01'"
+            :modelValue="props.messageCategory"
             :options="messageCategoryOptions"
             required
+            @update:modelValue="(value) => emit('update:messageCategory', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
-            <input type="checkbox" id="enableMessageCategory" class="checkbox checkbox-sm" />
+            <input
+              type="checkbox"
+              id="enableMessageCategory"
+              class="checkbox checkbox-sm"
+              :checked="props.enableMessageCategory"
+              @change="
+                (event) =>
+                  emit('update:enableMessageCategory', (event.target as HTMLInputElement).checked)
+              "
+            />
             <label for="enableMessageCategory" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
             </label>
@@ -106,12 +183,22 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
           <Select
             id="deviceChannel"
             label="裝置通道 (deviceChannel)"
-            :modelValue="'02'"
+            :modelValue="props.deviceChannel"
             :options="deviceChannelOptions"
             required
+            @update:modelValue="(value) => emit('update:deviceChannel', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
-            <input type="checkbox" id="enableDeviceChannel" class="checkbox checkbox-sm" />
+            <input
+              type="checkbox"
+              id="enableDeviceChannel"
+              class="checkbox checkbox-sm"
+              :checked="props.enableDeviceChannel"
+              @change="
+                (event) =>
+                  emit('update:enableDeviceChannel', (event.target as HTMLInputElement).checked)
+              "
+            />
             <label for="enableDeviceChannel" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
             </label>
@@ -122,15 +209,26 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
           <Select
             id="threeDSRequestorChallengeInd"
             label="3DS 請求方挑戰指標 (RequestorChlgInd)"
-            :modelValue="'01'"
+            :modelValue="props.threeDSRequestorChallengeInd"
             :options="requestorChallengeOptions"
             required
+            @update:modelValue="
+              (value) => emit('update:threeDSRequestorChallengeInd', String(value))
+            "
           />
           <div class="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
               id="enableThreeDSRequestorChallengeInd"
               class="checkbox checkbox-sm"
+              :checked="props.enableThreeDSRequestorChallengeInd"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableThreeDSRequestorChallengeInd',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
             />
             <label for="enableThreeDSRequestorChallengeInd" class="text-sm text-base-content/60">
               隨機生成時包含此欄位（Visa 才會隨機到 80/82）
@@ -142,13 +240,22 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
           <Input
             id="authenticationMethod"
             label="認證方法 (authenticationMethod)"
-            :modelValue="'02'"
+            :modelValue="props.authenticationMethod"
+            @update:modelValue="(value) => emit('update:authenticationMethod', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
               id="enableAuthenticationMethodRandom"
               class="checkbox checkbox-sm"
+              :checked="props.enableAuthenticationMethodRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableAuthenticationMethodRandom',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
             />
             <label for="enableAuthenticationMethodRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
@@ -157,12 +264,25 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
           <p class="text-xs text-error mt-2">可隨機生成 (01-05)</p>
         </div>
         <div>
-          <Input id="authenticationType" label="認證類型 (authenticationType)" :modelValue="'02'" />
+          <Input
+            id="authenticationType"
+            label="認證類型 (authenticationType)"
+            :modelValue="props.authenticationType"
+            @update:modelValue="(value) => emit('update:authenticationType', String(value))"
+          />
           <div class="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
               id="enableAuthenticationTypeRandom"
               class="checkbox checkbox-sm"
+              :checked="props.enableAuthenticationTypeRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableAuthenticationTypeRandom',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
             />
             <label for="enableAuthenticationTypeRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
@@ -171,9 +291,26 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
           <p class="text-xs text-error mt-2">可隨機生成 (01-05)</p>
         </div>
         <div>
-          <Input id="deviceIpAddress" label="設備 IP 位址 (deviceIpAddress)" :modelValue="'::1'" />
+          <Input
+            id="deviceIpAddress"
+            label="設備 IP 位址 (deviceIpAddress)"
+            :modelValue="props.deviceIpAddress"
+            @update:modelValue="(value) => emit('update:deviceIpAddress', String(value))"
+          />
           <div class="flex items-center gap-2 mt-2">
-            <input type="checkbox" id="enableDeviceIpAddressRandom" class="checkbox checkbox-sm" />
+            <input
+              type="checkbox"
+              id="enableDeviceIpAddressRandom"
+              class="checkbox checkbox-sm"
+              :checked="props.enableDeviceIpAddressRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableDeviceIpAddressRandom',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
+            />
             <label for="enableDeviceIpAddressRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位（瀏覽器 IP 會跟隨）
             </label>
@@ -181,13 +318,35 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
           <p class="text-xs text-error mt-2">可隨機生成 IPv4/IPv6，瀏覽器 IP 會自動跟隨</p>
         </div>
         <div>
-          <Input id="browserIP" label="瀏覽器 IP (browserIP)" :modelValue="'::1'" />
+          <Input
+            id="browserIP"
+            label="瀏覽器 IP (browserIP)"
+            :modelValue="props.browserIP"
+            @update:modelValue="(value) => emit('update:browserIP', String(value))"
+          />
           <p class="text-xs text-base-content/60 mt-1">自動跟隨設備 IP 位址</p>
         </div>
         <div>
-          <Input id="devicePlatform" label="設備平台 (devicePlatform)" :modelValue="'MacIntel'" />
+          <Input
+            id="devicePlatform"
+            label="設備平台 (devicePlatform)"
+            :modelValue="props.devicePlatform"
+            @update:modelValue="(value) => emit('update:devicePlatform', String(value))"
+          />
           <div class="flex items-center gap-2 mt-2">
-            <input type="checkbox" id="enableDevicePlatformRandom" class="checkbox checkbox-sm" />
+            <input
+              type="checkbox"
+              id="enableDevicePlatformRandom"
+              class="checkbox checkbox-sm"
+              :checked="props.enableDevicePlatformRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableDevicePlatformRandom',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
+            />
             <label for="enableDevicePlatformRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
             </label>
@@ -195,9 +354,26 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
           <p class="text-xs text-error mt-2">可隨機生成 (如: MacIntel, Win32, Linux x86_64)</p>
         </div>
         <div>
-          <Input id="deviceLocale" label="設備語言設定 (deviceLocale)" :modelValue="'zh-TW'" />
+          <Input
+            id="deviceLocale"
+            label="設備語言設定 (deviceLocale)"
+            :modelValue="props.deviceLocale"
+            @update:modelValue="(value) => emit('update:deviceLocale', String(value))"
+          />
           <div class="flex items-center gap-2 mt-2">
-            <input type="checkbox" id="enableDeviceLocaleRandom" class="checkbox checkbox-sm" />
+            <input
+              type="checkbox"
+              id="enableDeviceLocaleRandom"
+              class="checkbox checkbox-sm"
+              :checked="props.enableDeviceLocaleRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableDeviceLocaleRandom',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
+            />
             <label for="enableDeviceLocaleRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
             </label>
@@ -208,13 +384,22 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
           <Input
             id="deviceAdvertisingId"
             label="設備廣告 ID (deviceAdvertisingId)"
-            :modelValue="'4d4427f20375a66287430edd54bd82d2'"
+            :modelValue="props.deviceAdvertisingId"
+            @update:modelValue="(value) => emit('update:deviceAdvertisingId', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
               id="enableDeviceAdvertisingIdRandom"
               class="checkbox checkbox-sm"
+              :checked="props.enableDeviceAdvertisingIdRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableDeviceAdvertisingIdRandom',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
             />
             <label for="enableDeviceAdvertisingIdRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
@@ -226,11 +411,24 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
           <Select
             id="threeDSCompInd"
             label="3DS 完成指示 (threeDSCompInd)"
-            :modelValue="'Y'"
+            :modelValue="props.threeDSCompInd"
             :options="threeDSCompIndOptions"
+            @update:modelValue="(value) => emit('update:threeDSCompInd', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
-            <input type="checkbox" id="enableThreeDSCompIndRandom" class="checkbox checkbox-sm" />
+            <input
+              type="checkbox"
+              id="enableThreeDSCompIndRandom"
+              class="checkbox checkbox-sm"
+              :checked="props.enableThreeDSCompIndRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableThreeDSCompIndRandom',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
+            />
             <label for="enableThreeDSCompIndRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
             </label>
@@ -241,14 +439,23 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
           <Select
             id="merchantCountryCodeStr"
             label="商戶國家代碼 (字串) (merchantCountryCodeStr)"
-            :modelValue="'156'"
+            :modelValue="props.merchantCountryCodeStr"
             :options="merchantCountryCodeStrOptions"
+            @update:modelValue="(value) => emit('update:merchantCountryCodeStr', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
               id="enableMerchantCountryCodeStrRandom"
               class="checkbox checkbox-sm"
+              :checked="props.enableMerchantCountryCodeStrRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableMerchantCountryCodeStrRandom',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
             />
             <label for="enableMerchantCountryCodeStrRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
@@ -265,7 +472,14 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
               type="checkbox"
               id="enableBrowserGeoIPRandom"
               class="checkbox checkbox-sm"
-              checked
+              :checked="props.enableBrowserGeoIPRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableBrowserGeoIPRandom',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
             />
             <label for="enableBrowserGeoIPRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位（預設開啟）
@@ -284,7 +498,11 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
               type="checkbox"
               id="enableDeviceGeoIPRandom"
               class="checkbox checkbox-sm"
-              checked
+              :checked="props.enableDeviceGeoIPRandom"
+              @change="
+                (event) =>
+                  emit('update:enableDeviceGeoIPRandom', (event.target as HTMLInputElement).checked)
+              "
             />
             <label for="enableDeviceGeoIPRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位（預設開啟）

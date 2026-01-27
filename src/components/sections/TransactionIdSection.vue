@@ -1,6 +1,18 @@
 <script setup lang="ts">
 import Card from '@/shared/components/Card.vue'
 import Input from '@/shared/components/Input.vue'
+
+const props = defineProps<{
+  issuerOid: string
+  acsTransId: string
+  threeDSServerTransId: string
+}>()
+
+const emit = defineEmits<{
+  'update:issuerOid': [value: string]
+  'update:acsTransId': [value: string]
+  'update:threeDSServerTransId': [value: string]
+}>()
 </script>
 
 <template>
@@ -8,19 +20,21 @@ import Input from '@/shared/components/Input.vue'
   <section id="transaction-id" class="scroll-mt-24">
     <Card>
       <h3 class="text-base font-semibold text-base-content/80 mb-3">1.交易識別</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Input
           id="issuerOid"
           label="發卡機構 OID (issuerOid)"
-          :modelValue="'06b4b203-da05-73f9-256f-454929df6076'"
+          :modelValue="props.issuerOid"
           required
+          @update:modelValue="(value) => emit('update:issuerOid', String(value))"
         />
         <div>
           <Input
             id="acsTransId"
             label="ACS 交易 ID (acsTransID)"
-            :modelValue="'17616cb5-96d5-42cb-990a-08b28ff72874'"
+            :modelValue="props.acsTransId"
             required
+            @update:modelValue="(value) => emit('update:acsTransId', String(value))"
           />
           <p class="text-xs text-error mt-1">可隨機生成</p>
         </div>
@@ -28,8 +42,9 @@ import Input from '@/shared/components/Input.vue'
           <Input
             id="threeDSServerTransId"
             label="3DS Server 交易 ID (threeDSServerTransID)"
-            :modelValue="'79c42c48-b25a-49f1-a791-fb45123cd944'"
+            :modelValue="props.threeDSServerTransId"
             required
+            @update:modelValue="(value) => emit('update:threeDSServerTransId', String(value))"
           />
           <p class="text-xs text-error mt-1">可隨機生成</p>
         </div>

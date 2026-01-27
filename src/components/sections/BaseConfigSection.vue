@@ -3,6 +3,25 @@ import Card from '@/shared/components/Card.vue'
 import Input from '@/shared/components/Input.vue'
 import Select, { type SelectOption } from '@/shared/components/Select.vue'
 
+const props = defineProps<{
+  baseUrl: string
+  username: string
+  password: string
+  currentDate: string
+  timezone: string
+  modeText: string
+  modeClass: string
+  timeRangeHtml: string
+}>()
+
+const emit = defineEmits<{
+  'update:baseUrl': [value: string]
+  'update:username': [value: string]
+  'update:password': [value: string]
+  'update:currentDate': [value: string]
+  'update:timezone': [value: string]
+}>()
+
 const timezoneOptions: SelectOption[] = [
   { value: 'browser', label: '瀏覽器時區 (自動檢測)' },
   { value: 'Asia/Taipei', label: '台灣 (UTC+8)' },
@@ -26,29 +45,44 @@ const timezoneOptions: SelectOption[] = [
     <Card>
       <div class="flex items-center gap-2 mb-4">
         <h3 class="text-base font-semibold text-base-content/80">基礎配置</h3>
-        <span id="modeIndicator" class="mode-indicator unified">統一</span>
+        <span :class="props.modeClass">{{ props.modeText }}</span>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
           <Input
             id="baseUrl"
             type="url"
             label="Elasticsearch URL (base_url)"
-            :modelValue="'http://localhost:9200'"
+            :modelValue="props.baseUrl"
             required
+            @update:modelValue="(value) => emit('update:baseUrl', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">Elasticsearch 服務地址</p>
         </div>
-        <Input id="username" label="用戶名 (username)" :modelValue="'elastic'" required />
+        <Input
+          id="username"
+          label="用戶名 (username)"
+          :modelValue="props.username"
+          required
+          @update:modelValue="(value) => emit('update:username', String(value))"
+        />
         <Input
           id="password"
           type="password"
           label="密碼 (password)"
-          :modelValue="'123456'"
+          :modelValue="props.password"
           required
+          @update:modelValue="(value) => emit('update:password', String(value))"
         />
         <div>
-          <Input id="currentDate" type="date" label="當前日期 (current_date)" required />
+          <Input
+            id="currentDate"
+            type="date"
+            label="當前日期 (current_date)"
+            :modelValue="props.currentDate"
+            required
+            @update:modelValue="(value) => emit('update:currentDate', String(value))"
+          />
           <p class="text-xs text-base-content/60 mt-1">交易日期 (YYYY-MM-DD-HH:MM:SS)</p>
           <p class="text-xs text-error mt-1">
             HH:MM:SS將自動生成隨機時間，並依據時區轉換為 UTC 時間，根據UTC時間決定儲存的索引名稱
@@ -58,9 +92,10 @@ const timezoneOptions: SelectOption[] = [
           <Select
             id="timezone"
             label="時區 (timezone)"
-            :modelValue="'browser'"
+            :modelValue="props.timezone"
             :options="timezoneOptions"
             required
+            @update:modelValue="(value) => emit('update:timezone', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">選擇時區用於時間轉換，預設使用瀏覽器時區</p>
         </div>
@@ -68,8 +103,8 @@ const timezoneOptions: SelectOption[] = [
           <label class="label">
             <span class="label-text">UTC時間區間 (Time Range)</span>
           </label>
-          <div id="timeRangeDisplay" class="rounded-md bg-base-200 px-3 py-2">
-            <span id="timeRangeText" class="text-base-content/60">請選擇日期</span>
+          <div id="timeRangeDisplay" class="rounded-md bg-base-200 px-3 py-2 text-base-content/60">
+            <div v-html="props.timeRangeHtml || '請選擇日期'"></div>
           </div>
         </div>
       </div>

@@ -1,6 +1,38 @@
 <script setup lang="ts">
 import Card from '@/shared/components/Card.vue'
 import Input from '@/shared/components/Input.vue'
+
+const props = defineProps<{
+  performancePath: string
+  execTime: string
+  creqExecTime: string
+  rreqExecTime: string
+  rbaExecTime: string
+  cavvExecTime: string
+  otpExecTime: string
+  enableExecTimeRandom: boolean
+  enableCreqExecTimeRandom: boolean
+  enableRreqExecTimeRandom: boolean
+  enableRbaExecTimeRandom: boolean
+  enableCavvExecTimeRandom: boolean
+  enableOtpExecTimeRandom: boolean
+}>()
+
+const emit = defineEmits<{
+  'update:performancePath': [value: string]
+  'update:execTime': [value: string]
+  'update:creqExecTime': [value: string]
+  'update:rreqExecTime': [value: string]
+  'update:rbaExecTime': [value: string]
+  'update:cavvExecTime': [value: string]
+  'update:otpExecTime': [value: string]
+  'update:enableExecTimeRandom': [value: boolean]
+  'update:enableCreqExecTimeRandom': [value: boolean]
+  'update:enableRreqExecTimeRandom': [value: boolean]
+  'update:enableRbaExecTimeRandom': [value: boolean]
+  'update:enableCavvExecTimeRandom': [value: boolean]
+  'update:enableOtpExecTimeRandom': [value: boolean]
+}>()
 </script>
 
 <template>
@@ -8,22 +40,33 @@ import Input from '@/shared/components/Input.vue'
   <section id="performance" class="scroll-mt-24">
     <Card>
       <h3 class="text-base font-semibold text-base-content/80 mb-3">9.效能監控</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Input
           id="performancePath"
           label="Areq URL (performancePath)"
-          :modelValue="'/acs-auth/auth/V/2.2.0/ed8544c4-fc50-289d-ee05-ee41c86bb6f5/001/areq'"
+          :modelValue="props.performancePath"
+          @update:modelValue="(value) => emit('update:performancePath', String(value))"
         />
         <div>
           <Input
             id="execTime"
             type="number"
             label="AReq 執行時間 (毫秒) (AReq execTime)"
-            :modelValue="'5437'"
+            :modelValue="props.execTime"
             required
+            @update:modelValue="(value) => emit('update:execTime', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
-            <input type="checkbox" id="enableExecTimeRandom" class="checkbox checkbox-sm" checked />
+            <input
+              type="checkbox"
+              id="enableExecTimeRandom"
+              class="checkbox checkbox-sm"
+              :checked="props.enableExecTimeRandom"
+              @change="
+                (event) =>
+                  emit('update:enableExecTimeRandom', (event.target as HTMLInputElement).checked)
+              "
+            />
             <label for="enableExecTimeRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
             </label>
@@ -35,14 +78,22 @@ import Input from '@/shared/components/Input.vue'
             id="creqExecTime"
             type="number"
             label="CReq 執行時間 (毫秒) (CReq execTime)"
-            :modelValue="'500'"
+            :modelValue="props.creqExecTime"
+            @update:modelValue="(value) => emit('update:creqExecTime', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
               id="enableCreqExecTimeRandom"
               class="checkbox checkbox-sm"
-              checked
+              :checked="props.enableCreqExecTimeRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableCreqExecTimeRandom',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
             />
             <label for="enableCreqExecTimeRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
@@ -55,14 +106,22 @@ import Input from '@/shared/components/Input.vue'
             id="rreqExecTime"
             type="number"
             label="RReq 執行時間 (毫秒) (RReq execTime)"
-            :modelValue="'400'"
+            :modelValue="props.rreqExecTime"
+            @update:modelValue="(value) => emit('update:rreqExecTime', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
               id="enableRreqExecTimeRandom"
               class="checkbox checkbox-sm"
-              checked
+              :checked="props.enableRreqExecTimeRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableRreqExecTimeRandom',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
             />
             <label for="enableRreqExecTimeRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
@@ -75,14 +134,19 @@ import Input from '@/shared/components/Input.vue'
             id="rbaExecTime"
             type="number"
             label="RBA 執行時間 (毫秒) (RBA execTime)"
-            :modelValue="'100'"
+            :modelValue="props.rbaExecTime"
+            @update:modelValue="(value) => emit('update:rbaExecTime', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
               id="enableRbaExecTimeRandom"
               class="checkbox checkbox-sm"
-              checked
+              :checked="props.enableRbaExecTimeRandom"
+              @change="
+                (event) =>
+                  emit('update:enableRbaExecTimeRandom', (event.target as HTMLInputElement).checked)
+              "
             />
             <label for="enableRbaExecTimeRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
@@ -95,14 +159,22 @@ import Input from '@/shared/components/Input.vue'
             id="cavvExecTime"
             type="number"
             label="CAVV 響應時間 (毫秒) (CAVV execTime)"
-            :modelValue="'20'"
+            :modelValue="props.cavvExecTime"
+            @update:modelValue="(value) => emit('update:cavvExecTime', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
               id="enableCavvExecTimeRandom"
               class="checkbox checkbox-sm"
-              checked
+              :checked="props.enableCavvExecTimeRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableCavvExecTimeRandom',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
             />
             <label for="enableCavvExecTimeRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
@@ -115,14 +187,19 @@ import Input from '@/shared/components/Input.vue'
             id="otpExecTime"
             type="number"
             label="簡訊OTP響應時間 (毫秒) (OTP execTime)"
-            :modelValue="'50'"
+            :modelValue="props.otpExecTime"
+            @update:modelValue="(value) => emit('update:otpExecTime', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
               id="enableOtpExecTimeRandom"
               class="checkbox checkbox-sm"
-              checked
+              :checked="props.enableOtpExecTimeRandom"
+              @change="
+                (event) =>
+                  emit('update:enableOtpExecTimeRandom', (event.target as HTMLInputElement).checked)
+              "
             />
             <label for="enableOtpExecTimeRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位

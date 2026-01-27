@@ -3,6 +3,28 @@ import Card from '@/shared/components/Card.vue'
 import Input from '@/shared/components/Input.vue'
 import Select, { type SelectOption } from '@/shared/components/Select.vue'
 
+const props = defineProps<{
+  aresTransStatus: string
+  transStatus: string
+  rreqTransStatus: string
+  transStatusReason: string
+  stateMachineReason: string
+  challengeCancel: string
+  disableRreqTransStatus: boolean
+  disableTransStatusReason: boolean
+  disableStateMachineReason: boolean
+  disableChallengeCancel: boolean
+}>()
+
+const emit = defineEmits<{
+  'update:aresTransStatus': [value: string]
+  'update:transStatus': [value: string]
+  'update:rreqTransStatus': [value: string]
+  'update:transStatusReason': [value: string]
+  'update:stateMachineReason': [value: string]
+  'update:challengeCancel': [value: string]
+}>()
+
 const aresOptions: SelectOption[] = [
   { value: 'Y', label: 'Y' },
   { value: 'N', label: 'N' },
@@ -179,28 +201,36 @@ const challengeCancelOptions: SelectOption[] = [
   <section id="transaction-status" class="scroll-mt-24">
     <Card>
       <h3 class="text-base font-semibold text-base-content/80 mb-3">2.交易狀態</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
           <Select
             id="aresTransStatus"
             label="ARes 交易狀態 (ares_transStatus)"
-            :modelValue="'N'"
+            :modelValue="props.aresTransStatus"
             :options="aresOptions"
             required
+            @update:modelValue="(value) => emit('update:aresTransStatus', String(value))"
           />
           <p class="text-xs text-error mt-1">可隨機生成</p>
         </div>
         <div>
-          <Input id="transStatus" label="交易狀態 (transStatus)" :modelValue="'N'" required />
+          <Input
+            id="transStatus"
+            label="交易狀態 (transStatus)"
+            :modelValue="props.transStatus"
+            required
+            @update:modelValue="(value) => emit('update:transStatus', String(value))"
+          />
           <p class="text-xs text-base-content/60 mt-1">通常等於 ARes 交易狀態</p>
         </div>
         <div>
           <Select
             id="rreqTransStatus"
             label="RReq 交易狀態 (rreq_transStatus)"
-            :modelValue="'NULL_VALUE'"
+            :modelValue="props.rreqTransStatus"
             :options="rreqOptions"
-            :disabled="true"
+            :disabled="props.disableRreqTransStatus"
+            @update:modelValue="(value) => emit('update:rreqTransStatus', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">只有當 ARes 狀態為 C/D 時才可選擇</p>
           <p class="text-xs text-error mt-1">可隨機生成</p>
@@ -209,9 +239,10 @@ const challengeCancelOptions: SelectOption[] = [
           <Select
             id="transStatusReason"
             label="交易狀態原因 (transStatusReason)"
-            :modelValue="'NULL_VALUE'"
+            :modelValue="props.transStatusReason"
             :options="transStatusReasonOptions"
-            :disabled="true"
+            :disabled="props.disableTransStatusReason"
+            @update:modelValue="(value) => emit('update:transStatusReason', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">只有當 ARes 狀態為 R 時才可選擇</p>
           <p class="text-xs text-error mt-1">可隨機生成</p>
@@ -220,9 +251,10 @@ const challengeCancelOptions: SelectOption[] = [
           <Select
             id="stateMachineReason"
             label="狀態機原因 (stateMachineReason)"
-            :modelValue="'NULL_VALUE'"
+            :modelValue="props.stateMachineReason"
             :options="stateMachineReasonOptions"
-            :disabled="true"
+            :disabled="props.disableStateMachineReason"
+            @update:modelValue="(value) => emit('update:stateMachineReason', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">只有當 ARes 狀態為 R 時才可選擇</p>
           <p class="text-xs text-error mt-1">可隨機生成</p>
@@ -231,9 +263,10 @@ const challengeCancelOptions: SelectOption[] = [
           <Select
             id="challengeCancel"
             label="挑戰驗證取消指標 (challengeCancel)"
-            :modelValue="'NULL_VALUE'"
+            :modelValue="props.challengeCancel"
             :options="challengeCancelOptions"
-            :disabled="true"
+            :disabled="props.disableChallengeCancel"
+            @update:modelValue="(value) => emit('update:challengeCancel', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">
             只有當 ARes 狀態為 C 且 RReq 狀態為 N 時才可選擇

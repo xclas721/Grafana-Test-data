@@ -3,6 +3,50 @@ import Card from '@/shared/components/Card.vue'
 import Input from '@/shared/components/Input.vue'
 import Select, { type SelectOption } from '@/shared/components/Select.vue'
 
+const props = defineProps<{
+  cardScheme: string
+  acctNumber: string
+  cardbin6: string
+  acctNumberHashed: string
+  acctNumberMask: string
+  cardbin8: string
+  visaDafMessageExtension: string
+  mastercardScore: string
+  mastercardDecision: string
+  mastercardReasonCode1: string
+  mastercardReasonCode2: string
+  mastercardStatus: string
+  visaRiskBasedAuthenticationScore: string
+  enableAcctNumberRandom: boolean
+  enableMastercardExtension: boolean
+  enableMastercardExtensionRandom: boolean
+  enableVisaScoreRandom: boolean
+  disableCardScheme: boolean
+  disableMastercardExtension: boolean
+  disableVisaScoreRandom: boolean
+  showMastercardExtension: boolean
+}>()
+
+const emit = defineEmits<{
+  'update:cardScheme': [value: string]
+  'update:acctNumber': [value: string]
+  'update:cardbin6': [value: string]
+  'update:acctNumberHashed': [value: string]
+  'update:acctNumberMask': [value: string]
+  'update:cardbin8': [value: string]
+  'update:visaDafMessageExtension': [value: string]
+  'update:mastercardScore': [value: string]
+  'update:mastercardDecision': [value: string]
+  'update:mastercardReasonCode1': [value: string]
+  'update:mastercardReasonCode2': [value: string]
+  'update:mastercardStatus': [value: string]
+  'update:visaRiskBasedAuthenticationScore': [value: string]
+  'update:enableAcctNumberRandom': [value: boolean]
+  'update:enableMastercardExtension': [value: boolean]
+  'update:enableMastercardExtensionRandom': [value: boolean]
+  'update:enableVisaScoreRandom': [value: boolean]
+}>()
+
 const cardSchemeOptions: SelectOption[] = [
   { value: 'V', label: 'V - Visa' },
   { value: 'M', label: 'M - Mastercard' },
@@ -26,27 +70,34 @@ const mastercardDecisionOptions: SelectOption[] = [
   <section id="card-info" class="scroll-mt-24">
     <Card>
       <h3 class="text-base font-semibold text-base-content/80 mb-3">7.卡片信息</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Select
           id="cardScheme"
           label="卡片組織 (cardScheme)"
-          :modelValue="'V'"
+          :modelValue="props.cardScheme"
           :options="cardSchemeOptions"
           required
+          :disabled="props.disableCardScheme"
+          @update:modelValue="(value) => emit('update:cardScheme', String(value))"
         />
         <div>
           <Input
             id="acctNumber"
             label="帳號原始值 (acctNumber)"
-            :modelValue="'4143520000000123'"
+            :modelValue="props.acctNumber"
             :maxlength="19"
+            @update:modelValue="(value) => emit('update:acctNumber', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
               id="enableAcctNumberRandom"
               class="checkbox checkbox-sm"
-              checked
+              :checked="props.enableAcctNumberRandom"
+              @change="
+                (event) =>
+                  emit('update:enableAcctNumberRandom', (event.target as HTMLInputElement).checked)
+              "
             />
             <label for="enableAcctNumberRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
@@ -60,10 +111,11 @@ const mastercardDecisionOptions: SelectOption[] = [
           <Input
             id="cardbin6"
             label="卡片 BIN (6位) (cardbin6)"
-            :modelValue="'414352'"
+            :modelValue="props.cardbin6"
             :maxlength="6"
             required
             :disabled="true"
+            @update:modelValue="(value) => emit('update:cardbin6', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">自動從帳號原始值前6碼生成</p>
         </div>
@@ -71,8 +123,9 @@ const mastercardDecisionOptions: SelectOption[] = [
           <Input
             id="acctNumberHashed"
             label="帳號雜湊值 (acctNumberHashed)"
-            :modelValue="'2hpBkDB7ELbcpebGl5RM+HWTQGx3qciOwskcbsEVKC4='"
+            :modelValue="props.acctNumberHashed"
             :disabled="true"
+            @update:modelValue="(value) => emit('update:acctNumberHashed', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">
             自動從帳號原始值計算 (HMAC-SHA256 + Base64)
@@ -82,8 +135,9 @@ const mastercardDecisionOptions: SelectOption[] = [
           <Input
             id="acctNumberMask"
             label="帳號遮罩 (acctNumberMask)"
-            :modelValue="'414352******0123'"
+            :modelValue="props.acctNumberMask"
             :disabled="true"
+            @update:modelValue="(value) => emit('update:acctNumberMask', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">
             自動從帳號原始值生成（前6碼+******+後4碼）
@@ -93,10 +147,11 @@ const mastercardDecisionOptions: SelectOption[] = [
           <Input
             id="cardbin8"
             label="卡片 BIN (8位) (cardbin8)"
-            :modelValue="'41435200'"
+            :modelValue="props.cardbin8"
             :maxlength="8"
             required
             :disabled="true"
+            @update:modelValue="(value) => emit('update:cardbin8', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">自動從帳號原始值前8碼生成</p>
         </div>
@@ -105,14 +160,28 @@ const mastercardDecisionOptions: SelectOption[] = [
         <Input
           id="visaDafMessageExtension"
           label="Visa DAF 訊息擴展 (visaDafMessageExtension)"
-          :modelValue="'null'"
+          :modelValue="props.visaDafMessageExtension"
+          @update:modelValue="(value) => emit('update:visaDafMessageExtension', String(value))"
         />
         <div class="md:col-span-2">
           <label class="label">
             <span class="label-text">Mastercard 訊息擴展 (mastercardMessageExtension)</span>
           </label>
           <div class="flex items-center gap-2 mb-3">
-            <input type="checkbox" id="enableMastercardExtension" class="checkbox checkbox-sm" />
+            <input
+              type="checkbox"
+              id="enableMastercardExtension"
+              class="checkbox checkbox-sm"
+              :checked="props.enableMastercardExtension"
+              :disabled="props.disableMastercardExtension"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableMastercardExtension',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
+            />
             <label for="enableMastercardExtension" class="text-sm text-base-content/60">
               啟用 Mastercard 訊息擴展
             </label>
@@ -120,43 +189,61 @@ const mastercardDecisionOptions: SelectOption[] = [
           <div
             id="mastercardExtensionContainer"
             class="rounded-md border border-base-300 bg-base-200 p-4"
+            v-show="props.showMastercardExtension"
           >
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <Input
                 id="mastercardScore"
                 type="number"
                 label="Score (0-650)"
-                :modelValue="'600'"
+                :modelValue="props.mastercardScore"
                 :min="'0'"
                 :max="'650'"
+                @update:modelValue="(value) => emit('update:mastercardScore', String(value))"
               />
               <Select
                 id="mastercardDecision"
                 label="Decision"
-                :modelValue="'Not Low Risk'"
+                :modelValue="props.mastercardDecision"
                 :options="mastercardDecisionOptions"
+                @update:modelValue="(value) => emit('update:mastercardDecision', String(value))"
               />
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <Input
                 id="mastercardReasonCode1"
                 label="Reason Code 1"
-                :modelValue="'A'"
+                :modelValue="props.mastercardReasonCode1"
                 :maxlength="1"
+                @update:modelValue="(value) => emit('update:mastercardReasonCode1', String(value))"
               />
               <Input
                 id="mastercardReasonCode2"
                 label="Reason Code 2"
-                :modelValue="''"
+                :modelValue="props.mastercardReasonCode2"
                 :maxlength="1"
+                @update:modelValue="(value) => emit('update:mastercardReasonCode2', String(value))"
               />
             </div>
-            <Input id="mastercardStatus" label="Status" :modelValue="'success'" />
+            <Input
+              id="mastercardStatus"
+              label="Status"
+              :modelValue="props.mastercardStatus"
+              @update:modelValue="(value) => emit('update:mastercardStatus', String(value))"
+            />
             <div class="flex items-center gap-2 mt-3">
               <input
                 type="checkbox"
                 id="enableMastercardExtensionRandom"
                 class="checkbox checkbox-sm"
+                :checked="props.enableMastercardExtensionRandom"
+                @change="
+                  (event) =>
+                    emit(
+                      'update:enableMastercardExtensionRandom',
+                      (event.target as HTMLInputElement).checked
+                    )
+                "
               />
               <label for="enableMastercardExtensionRandom" class="text-sm text-base-content/60">
                 隨機生成時包含此欄位
@@ -170,13 +257,26 @@ const mastercardDecisionOptions: SelectOption[] = [
             id="visaRiskBasedAuthenticationScore"
             type="number"
             label="Visa 風險基礎認證分數 (visaRiskBasedAuthenticationScore)"
-            :modelValue="''"
+            :modelValue="props.visaRiskBasedAuthenticationScore"
             :min="'0'"
             :max="'99'"
             placeholder="留空為 NULL"
+            @update:modelValue="
+              (value) => emit('update:visaRiskBasedAuthenticationScore', String(value))
+            "
           />
           <div class="flex items-center gap-2 mt-2">
-            <input type="checkbox" id="enableVisaScoreRandom" class="checkbox checkbox-sm" />
+            <input
+              type="checkbox"
+              id="enableVisaScoreRandom"
+              class="checkbox checkbox-sm"
+              :checked="props.enableVisaScoreRandom"
+              :disabled="props.disableVisaScoreRandom"
+              @change="
+                (event) =>
+                  emit('update:enableVisaScoreRandom', (event.target as HTMLInputElement).checked)
+              "
+            />
             <label for="enableVisaScoreRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
             </label>
