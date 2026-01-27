@@ -61,7 +61,22 @@ const formState = reactive({
   rreqTransStatus: 'NULL_VALUE',
   transStatusReason: 'NULL_VALUE',
   stateMachineReason: 'NULL_VALUE',
+  transStatusReasonMode: 'random' as 'random' | 'fixed',
+  stateMachineReasonMode: 'random' as 'random' | 'fixed',
   challengeCancel: 'NULL_VALUE',
+  aresWeightY: '51',
+  aresWeightN: '1',
+  aresWeightR: '1',
+  aresWeightC: '20',
+  aresWeightD: '5',
+  aresWeightA: '10',
+  aresWeightI: '10',
+  aresWeightS: '1',
+  aresWeightU: '1',
+  rreqWeightNull: '0',
+  rreqWeightY: '80',
+  rreqWeightN: '20',
+  challengeCancelRate: '8',
   merchantName: 'HiTRUST EMV Demo Merchant',
   merchantCountryCode: '156',
   acquirerMerchantId: '8909191',
@@ -132,18 +147,18 @@ const formState = reactive({
   enableRbaExecTimeRandom: true,
   enableCavvExecTimeRandom: true,
   enableOtpExecTimeRandom: true,
-  enableAll3DSParamsRandom: false,
-  enableMessageCategory: false,
-  enableDeviceChannel: false,
-  enableThreeDSRequestorChallengeInd: false,
-  enableAuthenticationMethodRandom: false,
-  enableAuthenticationTypeRandom: false,
-  enableDeviceIpAddressRandom: false,
-  enableDevicePlatformRandom: false,
-  enableDeviceLocaleRandom: false,
-  enableDeviceAdvertisingIdRandom: false,
-  enableThreeDSCompIndRandom: false,
-  enableMerchantCountryCodeStrRandom: false,
+  enableAll3DSParamsRandom: true,
+  enableMessageCategory: true,
+  enableDeviceChannel: true,
+  enableThreeDSRequestorChallengeInd: true,
+  enableAuthenticationMethodRandom: true,
+  enableAuthenticationTypeRandom: true,
+  enableDeviceIpAddressRandom: true,
+  enableDevicePlatformRandom: true,
+  enableDeviceLocaleRandom: true,
+  enableDeviceAdvertisingIdRandom: true,
+  enableThreeDSCompIndRandom: true,
+  enableMerchantCountryCodeStrRandom: true,
   enableBrowserGeoIPRandom: true,
   enableDeviceGeoIPRandom: true,
   disableRreqTransStatus: true,
@@ -167,6 +182,19 @@ const stateBindings = {
   transStatusReason: 'transStatusReason',
   stateMachineReason: 'stateMachineReason',
   challengeCancel: 'challengeCancel',
+  aresWeightY: 'aresWeightY',
+  aresWeightN: 'aresWeightN',
+  aresWeightR: 'aresWeightR',
+  aresWeightC: 'aresWeightC',
+  aresWeightD: 'aresWeightD',
+  aresWeightA: 'aresWeightA',
+  aresWeightI: 'aresWeightI',
+  aresWeightS: 'aresWeightS',
+  aresWeightU: 'aresWeightU',
+  rreqWeightNull: 'rreqWeightNull',
+  rreqWeightY: 'rreqWeightY',
+  rreqWeightN: 'rreqWeightN',
+  challengeCancelRate: 'challengeCancelRate',
   merchantName: 'merchantName',
   merchantCountryCode: 'merchantCountryCode',
   acquirerMerchantId: 'acquirerMerchantId',
@@ -282,19 +310,35 @@ watch(
   }
 )
 
-const ARES_STATUS_WEIGHTS = [
-  { value: 'Y', weight: 0.4 },
-  { value: 'N', weight: 0.05 },
-  { value: 'R', weight: 0.05 },
-  { value: 'C', weight: 0.25 },
-  { value: 'D', weight: 0.05 },
-  { value: 'A', weight: 0.05 },
-  { value: 'I', weight: 0.05 },
-  { value: 'S', weight: 0.05 },
-  { value: 'U', weight: 0.05 }
+const ARES_WEIGHT_KEYS = [
+  'aresWeightY',
+  'aresWeightN',
+  'aresWeightR',
+  'aresWeightC',
+  'aresWeightD',
+  'aresWeightA',
+  'aresWeightI',
+  'aresWeightS',
+  'aresWeightU'
+] as const
+
+const DEFAULT_ARES_STATUS_WEIGHTS = [
+  { value: 'Y', weight: 40 },
+  { value: 'N', weight: 5 },
+  { value: 'R', weight: 5 },
+  { value: 'C', weight: 25 },
+  { value: 'D', weight: 5 },
+  { value: 'A', weight: 5 },
+  { value: 'I', weight: 5 },
+  { value: 'S', weight: 5 },
+  { value: 'U', weight: 5 }
 ]
-const RREQ_SUCCESS_RATE = 0.8
-const CHALLENGE_CANCEL_RATE = 0.08
+const DEFAULT_RREQ_WEIGHTS = [
+  { value: 'NULL_VALUE', weight: 0 },
+  { value: 'Y', weight: 80 },
+  { value: 'N', weight: 20 }
+] as const
+const DEFAULT_CHALLENGE_CANCEL_RATE = 0.08
 
 const MERCHANT_COUNTRY_CODE_STR_VALUES = [
   '156',
@@ -322,6 +366,83 @@ function pickWeightedValue(items: Array<{ value: string; weight: number }>): str
   }
   return items[items.length - 1]?.value ?? ''
 }
+
+function parsePercent(value: string, fallback: number): number {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed)) return fallback
+  if (parsed < 0) return 0
+  if (parsed > 100) return 100
+  return Math.round(parsed)
+}
+
+function buildAresWeights(): Array<{ value: string; weight: number }> {
+  const defaults = {
+    Y: 40,
+    N: 5,
+    R: 5,
+    C: 25,
+    D: 5,
+    A: 5,
+    I: 5,
+    S: 5,
+    U: 5
+  } as const
+  const items = [
+    { value: 'Y', weight: parsePercent(formState.aresWeightY, defaults.Y) },
+    { value: 'N', weight: parsePercent(formState.aresWeightN, defaults.N) },
+    { value: 'R', weight: parsePercent(formState.aresWeightR, defaults.R) },
+    { value: 'C', weight: parsePercent(formState.aresWeightC, defaults.C) },
+    { value: 'D', weight: parsePercent(formState.aresWeightD, defaults.D) },
+    { value: 'A', weight: parsePercent(formState.aresWeightA, defaults.A) },
+    { value: 'I', weight: parsePercent(formState.aresWeightI, defaults.I) },
+    { value: 'S', weight: parsePercent(formState.aresWeightS, defaults.S) },
+    { value: 'U', weight: parsePercent(formState.aresWeightU, defaults.U) }
+  ]
+  const total = items.reduce((sum, item) => sum + item.weight, 0)
+  if (total <= 0) return DEFAULT_ARES_STATUS_WEIGHTS
+  return items
+}
+
+const aresWeightTotal = computed(() =>
+  ARES_WEIGHT_KEYS.reduce((sum, key) => sum + parsePercent(formState[key], 0), 0)
+)
+const aresWeightUnallocated = computed(() => 100 - aresWeightTotal.value)
+
+const rreqWeightTotal = computed(
+  () =>
+    parsePercent(formState.rreqWeightNull, 0) +
+    parsePercent(formState.rreqWeightY, 0) +
+    parsePercent(formState.rreqWeightN, 0)
+)
+const rreqWeightUnallocated = computed(() => 100 - rreqWeightTotal.value)
+
+const expectedFrictionlessRate = computed(() => {
+  const y = parsePercent(formState.aresWeightY, 0)
+  const a = parsePercent(formState.aresWeightA, 0)
+  const i = parsePercent(formState.aresWeightI, 0)
+  const total = aresWeightTotal.value || 100
+  return ((y + a + i) / total) * 100
+})
+
+const expectedChallengeSuccessRate = computed(() => {
+  const total = rreqWeightTotal.value || 100
+  const y = parsePercent(formState.rreqWeightY, 0)
+  return (y / total) * 100
+})
+
+const expectedTransactionSuccessRate = computed(() => {
+  const y = parsePercent(formState.aresWeightY, 0)
+  const a = parsePercent(formState.aresWeightA, 0)
+  const i = parsePercent(formState.aresWeightI, 0)
+  const c = parsePercent(formState.aresWeightC, 0)
+  const d = parsePercent(formState.aresWeightD, 0)
+  const total = aresWeightTotal.value || 100
+  const rreqTotal = rreqWeightTotal.value || 100
+  const rreqY = parsePercent(formState.rreqWeightY, 0)
+  const rreqSuccessRate = rreqY / rreqTotal
+  const successShare = y + a + i + (c + d) * rreqSuccessRate
+  return (successShare / total) * 100
+})
 
 function updateCardInfoFromAcctNumber() {
   const acct = formState.acctNumber || ''
@@ -505,6 +626,8 @@ function loadDefaults() {
   setField('rreqTransStatus', 'NULL_VALUE')
   setField('transStatusReason', 'NULL_VALUE')
   setField('stateMachineReason', 'NULL_VALUE')
+  setField('transStatusReasonMode', 'random')
+  setField('stateMachineReasonMode', 'random')
   setField('merchantName', 'HiTRUST EMV Demo Merchant')
   setField('merchantCountryCode', '156')
   setField('acquirerMerchantId', '8909191')
@@ -569,6 +692,19 @@ function loadDefaults() {
   setField('currencyAlphabeticCode', 'CNY')
   setField('currencyNumericCode', '156')
   syncStatusDependencies()
+  setField('aresWeightY', '51')
+  setField('aresWeightN', '1')
+  setField('aresWeightR', '1')
+  setField('aresWeightC', '20')
+  setField('aresWeightD', '5')
+  setField('aresWeightA', '10')
+  setField('aresWeightI', '10')
+  setField('aresWeightS', '1')
+  setField('aresWeightU', '1')
+  setField('rreqWeightNull', '0')
+  setField('rreqWeightY', '80')
+  setField('rreqWeightN', '20')
+  setField('challengeCancelRate', '8')
   formState.enablePurchaseAmountRandom = true
   formState.enableAcquirerMerchantIdRandom = true
   formState.enableAcctNumberRandom = true
@@ -581,18 +717,18 @@ function loadDefaults() {
   formState.enableRbaExecTimeRandom = true
   formState.enableCavvExecTimeRandom = true
   formState.enableOtpExecTimeRandom = true
-  formState.enableAll3DSParamsRandom = false
-  formState.enableMessageCategory = false
-  formState.enableDeviceChannel = false
-  formState.enableThreeDSRequestorChallengeInd = false
-  formState.enableAuthenticationMethodRandom = false
-  formState.enableAuthenticationTypeRandom = false
-  formState.enableDeviceIpAddressRandom = false
-  formState.enableDevicePlatformRandom = false
-  formState.enableDeviceLocaleRandom = false
-  formState.enableDeviceAdvertisingIdRandom = false
-  formState.enableThreeDSCompIndRandom = false
-  formState.enableMerchantCountryCodeStrRandom = false
+  formState.enableAll3DSParamsRandom = true
+  formState.enableMessageCategory = true
+  formState.enableDeviceChannel = true
+  formState.enableThreeDSRequestorChallengeInd = true
+  formState.enableAuthenticationMethodRandom = true
+  formState.enableAuthenticationTypeRandom = true
+  formState.enableDeviceIpAddressRandom = true
+  formState.enableDevicePlatformRandom = true
+  formState.enableDeviceLocaleRandom = true
+  formState.enableDeviceAdvertisingIdRandom = true
+  formState.enableThreeDSCompIndRandom = true
+  formState.enableMerchantCountryCodeStrRandom = true
   formState.enableBrowserGeoIPRandom = true
   formState.enableDeviceGeoIPRandom = true
   setStatus('預設值已載入 (Vue 移植版)', 'success')
@@ -604,6 +740,14 @@ function generateRandom() {
   }
   set('acsTransId', cryptoRandomUUID())
   set('threeDSServerTransId', cryptoRandomUUID().toLowerCase())
+  if (aresWeightTotal.value !== 100) {
+    setStatus(`ARes 權重未分配 ${aresWeightUnallocated.value}% ，請調整至 100%`, 'warning')
+    return
+  }
+  if (rreqWeightTotal.value !== 100) {
+    setStatus(`RReq 權重未分配 ${rreqWeightUnallocated.value}% ，請調整至 100%`, 'warning')
+    return
+  }
   // 金額
   if (formState.enablePurchaseAmountRandom) {
     set('purchaseAmount', (Math.random() * 990 + 10).toFixed(2))
@@ -628,50 +772,97 @@ function generateRandom() {
     set('otpExecTime', String(Math.floor(Math.random() * 61 + 20)))
   }
   // 狀態（依照 Grafana-Test-Input.html 的權重分佈）
-  const st = pickWeightedValue(ARES_STATUS_WEIGHTS)
+  const st = pickWeightedValue(buildAresWeights())
+  const challengeCancelRate =
+    parsePercent(formState.challengeCancelRate, DEFAULT_CHALLENGE_CANCEL_RATE * 100) / 100
   set('aresTransStatus', String(st))
   if (st === 'C' || st === 'D') {
-    const rreqVal = Math.random() < RREQ_SUCCESS_RATE ? 'Y' : 'N'
+    const defaultRreqWeights = {
+      nullValue: DEFAULT_RREQ_WEIGHTS[0].weight,
+      y: DEFAULT_RREQ_WEIGHTS[1].weight,
+      n: DEFAULT_RREQ_WEIGHTS[2].weight
+    }
+    const rreqItems = [
+      {
+        value: 'NULL_VALUE',
+        weight: parsePercent(formState.rreqWeightNull, defaultRreqWeights.nullValue)
+      },
+      {
+        value: 'Y',
+        weight: parsePercent(formState.rreqWeightY, defaultRreqWeights.y)
+      },
+      {
+        value: 'N',
+        weight: parsePercent(formState.rreqWeightN, defaultRreqWeights.n)
+      }
+    ]
+    const rreqTotal = rreqItems.reduce((sum, item) => sum + item.weight, 0)
+    const rreqVal =
+      rreqTotal > 0 ? pickWeightedValue(rreqItems) : pickWeightedValue([...DEFAULT_RREQ_WEIGHTS])
     set('rreqTransStatus', rreqVal)
-    set('transStatus', rreqVal)
+    set('transStatus', rreqVal === 'NULL_VALUE' ? String(st) : rreqVal)
   } else {
     set('rreqTransStatus', 'NULL_VALUE')
     set('transStatus', String(st))
   }
-  // 當 ARes 為 R 時，transStatusReason 從 01~30/81/89/90 隨機；否則為 NULL_VALUE
+  // 當 ARes 為 R 時，transStatusReason 依模式固定或全隨機；否則為 NULL_VALUE
   if (st === 'R') {
     const reasons: string[] = []
     for (let i = 1; i <= 30; i++) reasons.push(String(i).padStart(2, '0'))
     reasons.push('81', '89', '90')
-    if (reasons.length > 0) {
-      const idx = Math.floor(Math.random() * reasons.length)
-      set('transStatusReason', reasons[idx] as string)
+    const fixedReason = String(formState.transStatusReason || '').trim()
+    if (formState.transStatusReasonMode === 'random') {
+      if (reasons.length > 0) {
+        const idx = Math.floor(Math.random() * reasons.length)
+        set('transStatusReason', reasons[idx] as string)
+      } else {
+        set('transStatusReason', '01')
+      }
     } else {
-      set('transStatusReason', '01')
+      set('transStatusReason', fixedReason && fixedReason !== 'NULL_VALUE' ? fixedReason : 'NULL_VALUE')
     }
   } else {
     set('transStatusReason', 'NULL_VALUE')
   }
-  // 當 ARes 為 R 時，stateMachineReason 從所有 StateMachineReasonEnum 值隨機；否則為 NULL_VALUE
+  // 當 ARes 為 R 時，stateMachineReason 依模式固定或全隨機；否則為 NULL_VALUE
   if (st === 'R') {
     const stateMachineReasons: string[] = [
+      '0000',
+      '0001',
+      '0002',
       '1001',
       '1002',
       '1003',
       '1004',
       '1005',
-      '1006',
-      '1007',
-      '1008',
-      '1009',
-      '1010',
       '2001',
       '2002',
+      '2003',
+      '2004',
+      '2005',
+      '2006',
+      '2007',
       '2101',
       '2102',
       '2103',
-      '3001',
-      '3002',
+      '2104',
+      '2105',
+      '2106',
+      '2107',
+      '2108',
+      '2109',
+      '2110',
+      '2201',
+      '2202',
+      '2203',
+      '2204',
+      '2205',
+      '2206',
+      '2207',
+      '2208',
+      '2209',
+      '2210',
+      '2211',
       '3101',
       '3102',
       '3199',
@@ -684,16 +875,15 @@ function generateRandom() {
       '3401',
       '3402',
       '3403',
-      '3404',
       '3499',
       '3501',
       '3502',
-      '3503',
-      '3504',
+      '3599',
       '3601',
       '3602',
-      '3604',
+      '3699',
       '4001',
+      '4002',
       '4101',
       '4102',
       '4103',
@@ -704,46 +894,40 @@ function generateRandom() {
       '4108',
       '4109',
       '4110',
-      '4111',
-      '4201',
-      '4202',
+      '5001',
+      '5002',
+      '5003',
+      '5004',
       '5101',
       '5102',
       '5103',
       '5104',
       '5105',
       '5106',
+      '5107',
       '5201',
       '5202',
-      '5203',
-      '5204',
-      '6101',
-      '6102',
-      '6103',
-      '6201',
-      '6301',
-      '6401',
-      '6402',
-      '6403',
-      '7101',
-      '7102',
-      '7103',
-      '7201',
-      '7202',
-      '7203',
-      '7204',
-      '7205',
-      '7206',
-      '7207',
-      '8101',
-      '0000',
-      '9999'
+      '5301',
+      '5302',
+      '5303',
+      '5401',
+      '5402',
+      '5501',
+      '5502',
+      '9999',
+      '9001',
+      '9002'
     ]
-    if (stateMachineReasons.length > 0) {
-      const idx = Math.floor(Math.random() * stateMachineReasons.length)
-      set('stateMachineReason', stateMachineReasons[idx] as string)
+    const fixedReason = String(formState.stateMachineReason || '').trim()
+    if (formState.stateMachineReasonMode === 'random') {
+      if (stateMachineReasons.length > 0) {
+        const idx = Math.floor(Math.random() * stateMachineReasons.length)
+        set('stateMachineReason', stateMachineReasons[idx] as string)
+      } else {
+        set('stateMachineReason', '1001')
+      }
     } else {
-      set('stateMachineReason', '1001')
+      set('stateMachineReason', fixedReason && fixedReason !== 'NULL_VALUE' ? fixedReason : 'NULL_VALUE')
     }
   } else {
     set('stateMachineReason', 'NULL_VALUE')
@@ -798,7 +982,7 @@ function generateRandom() {
     // challengeCancel 值：01, 02, 03, 04, 05, 06, 07, 09, 10
     const challengeCancelValues = ['01', '02', '03', '04', '05', '06', '07', '09', '10']
     // 8% 機率生成實際值，92% 機率為 NULL_VALUE（確保 NULL_VALUE > 90%）
-    const shouldSetValue = Math.random() < CHALLENGE_CANCEL_RATE
+    const shouldSetValue = Math.random() < challengeCancelRate
     if (shouldSetValue) {
       const cc = challengeCancelValues[
         Math.floor(Math.random() * challengeCancelValues.length)
@@ -1524,7 +1708,29 @@ defineExpose({
       v-model:rreqTransStatus="formState.rreqTransStatus"
       v-model:transStatusReason="formState.transStatusReason"
       v-model:stateMachineReason="formState.stateMachineReason"
+      v-model:transStatusReasonMode="formState.transStatusReasonMode"
+      v-model:stateMachineReasonMode="formState.stateMachineReasonMode"
       v-model:challengeCancel="formState.challengeCancel"
+      v-model:aresWeightY="formState.aresWeightY"
+      v-model:aresWeightN="formState.aresWeightN"
+      v-model:aresWeightR="formState.aresWeightR"
+      v-model:aresWeightC="formState.aresWeightC"
+      v-model:aresWeightD="formState.aresWeightD"
+      v-model:aresWeightA="formState.aresWeightA"
+      v-model:aresWeightI="formState.aresWeightI"
+      v-model:aresWeightS="formState.aresWeightS"
+      v-model:aresWeightU="formState.aresWeightU"
+      v-model:rreqWeightNull="formState.rreqWeightNull"
+      v-model:rreqWeightY="formState.rreqWeightY"
+      v-model:rreqWeightN="formState.rreqWeightN"
+      v-model:challengeCancelRate="formState.challengeCancelRate"
+      :aresWeightTotal="aresWeightTotal"
+      :aresWeightUnallocated="aresWeightUnallocated"
+      :rreqWeightTotal="rreqWeightTotal"
+      :rreqWeightUnallocated="rreqWeightUnallocated"
+      :expectedTransactionSuccessRate="expectedTransactionSuccessRate"
+      :expectedFrictionlessRate="expectedFrictionlessRate"
+      :expectedChallengeSuccessRate="expectedChallengeSuccessRate"
       :disableRreqTransStatus="formState.disableRreqTransStatus"
       :disableTransStatusReason="formState.disableTransStatusReason"
       :disableStateMachineReason="formState.disableStateMachineReason"

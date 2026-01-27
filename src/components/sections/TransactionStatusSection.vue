@@ -10,10 +10,32 @@ const props = defineProps<{
   transStatusReason: string
   stateMachineReason: string
   challengeCancel: string
+  transStatusReasonMode: 'random' | 'fixed'
+  stateMachineReasonMode: 'random' | 'fixed'
   disableRreqTransStatus: boolean
   disableTransStatusReason: boolean
   disableStateMachineReason: boolean
   disableChallengeCancel: boolean
+  aresWeightY: string
+  aresWeightN: string
+  aresWeightR: string
+  aresWeightC: string
+  aresWeightD: string
+  aresWeightA: string
+  aresWeightI: string
+  aresWeightS: string
+  aresWeightU: string
+  rreqWeightNull: string
+  rreqWeightY: string
+  rreqWeightN: string
+  challengeCancelRate: string
+  aresWeightTotal: number
+  aresWeightUnallocated: number
+  rreqWeightTotal: number
+  rreqWeightUnallocated: number
+  expectedTransactionSuccessRate: number
+  expectedFrictionlessRate: number
+  expectedChallengeSuccessRate: number
 }>()
 
 const emit = defineEmits<{
@@ -22,8 +44,159 @@ const emit = defineEmits<{
   'update:rreqTransStatus': [value: string]
   'update:transStatusReason': [value: string]
   'update:stateMachineReason': [value: string]
+  'update:transStatusReasonMode': [value: 'random' | 'fixed']
+  'update:stateMachineReasonMode': [value: 'random' | 'fixed']
   'update:challengeCancel': [value: string]
+  'update:aresWeightY': [value: string]
+  'update:aresWeightN': [value: string]
+  'update:aresWeightR': [value: string]
+  'update:aresWeightC': [value: string]
+  'update:aresWeightD': [value: string]
+  'update:aresWeightA': [value: string]
+  'update:aresWeightI': [value: string]
+  'update:aresWeightS': [value: string]
+  'update:aresWeightU': [value: string]
+  'update:rreqWeightNull': [value: string]
+  'update:rreqWeightY': [value: string]
+  'update:rreqWeightN': [value: string]
+  'update:challengeCancelRate': [value: string]
 }>()
+
+const getAresWeight = (key: string): number => {
+  switch (key) {
+    case 'aresWeightY':
+      return Number(props.aresWeightY) || 0
+    case 'aresWeightN':
+      return Number(props.aresWeightN) || 0
+    case 'aresWeightR':
+      return Number(props.aresWeightR) || 0
+    case 'aresWeightC':
+      return Number(props.aresWeightC) || 0
+    case 'aresWeightD':
+      return Number(props.aresWeightD) || 0
+    case 'aresWeightA':
+      return Number(props.aresWeightA) || 0
+    case 'aresWeightI':
+      return Number(props.aresWeightI) || 0
+    case 'aresWeightS':
+      return Number(props.aresWeightS) || 0
+    case 'aresWeightU':
+      return Number(props.aresWeightU) || 0
+    default:
+      return 0
+  }
+}
+
+const onAresWeightInput = (key: string, event: Event) => {
+  const target = event.target as HTMLInputElement
+  let nextValue = Number(target.value) || 0
+  if (nextValue < 0) nextValue = 0
+  if (nextValue > 100) nextValue = 100
+  const currentValue = getAresWeight(key)
+  const baseTotal = props.aresWeightTotal - currentValue
+  if (baseTotal + nextValue > 100) {
+    nextValue = Math.max(0, 100 - baseTotal)
+  }
+  if (target.value !== String(nextValue)) {
+    target.value = String(nextValue)
+  }
+  switch (key) {
+    case 'aresWeightY':
+      emit('update:aresWeightY', String(nextValue))
+      break
+    case 'aresWeightN':
+      emit('update:aresWeightN', String(nextValue))
+      break
+    case 'aresWeightR':
+      emit('update:aresWeightR', String(nextValue))
+      break
+    case 'aresWeightC':
+      emit('update:aresWeightC', String(nextValue))
+      break
+    case 'aresWeightD':
+      emit('update:aresWeightD', String(nextValue))
+      break
+    case 'aresWeightA':
+      emit('update:aresWeightA', String(nextValue))
+      break
+    case 'aresWeightI':
+      emit('update:aresWeightI', String(nextValue))
+      break
+    case 'aresWeightS':
+      emit('update:aresWeightS', String(nextValue))
+      break
+    case 'aresWeightU':
+      emit('update:aresWeightU', String(nextValue))
+      break
+  }
+}
+
+const getRreqWeight = (key: string): number => {
+  switch (key) {
+    case 'rreqWeightNull':
+      return Number(props.rreqWeightNull) || 0
+    case 'rreqWeightY':
+      return Number(props.rreqWeightY) || 0
+    case 'rreqWeightN':
+      return Number(props.rreqWeightN) || 0
+    default:
+      return 0
+  }
+}
+
+const onRreqWeightInput = (key: string, event: Event) => {
+  const target = event.target as HTMLInputElement
+  let nextValue = Number(target.value) || 0
+  if (nextValue < 0) nextValue = 0
+  if (nextValue > 100) nextValue = 100
+  const currentValue = getRreqWeight(key)
+  const baseTotal = props.rreqWeightTotal - currentValue
+  if (baseTotal + nextValue > 100) {
+    nextValue = Math.max(0, 100 - baseTotal)
+  }
+  if (target.value !== String(nextValue)) {
+    target.value = String(nextValue)
+  }
+  switch (key) {
+    case 'rreqWeightNull':
+      emit('update:rreqWeightNull', String(nextValue))
+      break
+    case 'rreqWeightY':
+      emit('update:rreqWeightY', String(nextValue))
+      break
+    case 'rreqWeightN':
+      emit('update:rreqWeightN', String(nextValue))
+      break
+  }
+}
+
+const onReasonModeChange = (
+  key: 'transStatusReasonMode' | 'stateMachineReasonMode',
+  value: string
+) => {
+  const mode = value === 'fixed' ? 'fixed' : 'random'
+  if (key === 'transStatusReasonMode') {
+    emit('update:transStatusReasonMode', mode)
+    if (mode === 'random') emit('update:transStatusReason', 'NULL_VALUE')
+  } else {
+    emit('update:stateMachineReasonMode', mode)
+    if (mode === 'random') emit('update:stateMachineReason', 'NULL_VALUE')
+  }
+}
+
+const onReasonValueChange = (
+  key: 'transStatusReason' | 'stateMachineReason',
+  value: string
+) => {
+  if (key === 'transStatusReason') {
+    emit('update:transStatusReason', value || 'NULL_VALUE')
+    emit('update:transStatusReasonMode', 'fixed')
+  } else {
+    emit('update:stateMachineReason', value || 'NULL_VALUE')
+    emit('update:stateMachineReasonMode', 'fixed')
+  }
+}
+
 
 const aresOptions: SelectOption[] = [
   { value: 'Y', label: 'Y' },
@@ -97,89 +270,96 @@ const transStatusReasonOptions: SelectOption[] = [
 
 const stateMachineReasonOptions: SelectOption[] = [
   { value: 'NULL_VALUE', label: 'NULL_VALUE' },
-  { value: '1001', label: '1001 - Device not support' },
-  { value: '1002', label: '1002 - Exceeds amount limit' },
-  { value: '1003', label: '1003 - Exceeds auth frequency limit' },
-  { value: '1004', label: '1004 - User abandon' },
-  { value: '1005', label: '1005 - Trans timeout' },
-  { value: '1006', label: '1006 - Card scheme not supported' },
-  { value: '1007', label: '1007 - Invalid trans status' },
-  { value: '1008', label: '1008 - CReq not received' },
-  { value: '1009', label: '1009 - User not responsed' },
-  { value: '1010', label: '1010 - Dec auth not performed' },
-  { value: '2001', label: '2001 - Invalid message' },
-  { value: '2002', label: '2002 - Invalid message out of BIN range' },
-  { value: '2101', label: '2101 - Invalid ISO currency code' },
-  { value: '2102', label: '2102 - Invalid ISO currency exponent' },
-  { value: '2103', label: '2103 - Invalid ISO country code' },
-  { value: '3001', label: '3001 - Network connect timeout' },
-  { value: '3002', label: '3002 - Network read timeout' },
-  { value: '3101', label: '3101 - DS connect failed' },
-  { value: '3102', label: '3102 - DS read timeout' },
-  { value: '3199', label: '3199 - DS error' },
-  { value: '3201', label: '3201 - Card system connect failed' },
-  { value: '3202', label: '3202 - Card system read timeout' },
-  { value: '3299', label: '3299 - Card system error' },
-  { value: '3301', label: '3301 - HSM connect failed' },
-  { value: '3302', label: '3302 - HSM read timeout' },
-  { value: '3399', label: '3399 - HSM error' },
-  { value: '3401', label: '3401 - OTP sender connect failed' },
-  { value: '3402', label: '3402 - OTP sender read timeout' },
-  { value: '3403', label: '3403 - OTP sender exceeds frequency limit' },
-  { value: '3404', label: '3404 - OTP sender less than resend interval' },
-  { value: '3499', label: '3499 - OTP sender error' },
-  { value: '3501', label: '3501 - RReq connect failed' },
-  { value: '3502', label: '3502 - RReq read timeout' },
-  { value: '3503', label: '3503 - RRes response failed' },
-  { value: '3504', label: '3504 - RRes response error' },
-  { value: '3601', label: '3601 - OOB connect failed' },
-  { value: '3602', label: '3602 - OOB read timeout' },
-  { value: '3604', label: '3604 - OOBS response error' },
-  { value: '4001', label: '4001 - High risk' },
-  { value: '4101', label: '4101 - Black list' },
-  { value: '4102', label: '4102 - Black list IP' },
-  { value: '4103', label: '4103 - Black list email' },
-  { value: '4104', label: '4104 - Black list MID' },
-  { value: '4105', label: '4105 - Black list device ID' },
-  { value: '4106', label: '4106 - Black list acct number' },
-  { value: '4107', label: '4107 - Black list acct ID' },
-  { value: '4108', label: '4108 - Black list phone' },
-  { value: '4109', label: '4109 - Black list src country' },
-  { value: '4110', label: '4110 - Black list mer URL' },
-  { value: '4111', label: '4111 - Black list mer country' },
-  { value: '4201', label: '4201 - High risk RBA' },
-  { value: '4202', label: '4202 - 3RI challenge not support' },
-  { value: '5101', label: '5101 - Invalid acct number' },
-  { value: '5102', label: '5102 - Invalid expiry date' },
-  { value: '5103', label: '5103 - Acct number locked' },
-  { value: '5104', label: '5104 - Acct number not enrolled' },
-  { value: '5105', label: '5105 - Acct number not effective' },
-  { value: '5106', label: '5106 - Acct number expired' },
-  { value: '5201', label: '5201 - Invalid acct ID' },
-  { value: '5202', label: '5202 - Acct ID lock' },
-  { value: '5203', label: '5203 - Acct ID not enrolled' },
-  { value: '5204', label: '5204 - Acct ID not effective' },
-  { value: '6101', label: '6101 - Passcode invalid' },
-  { value: '6102', label: '6102 - Passcode expired' },
-  { value: '6103', label: '6103 - Passcode used' },
-  { value: '6201', label: '6201 - OOB not completed' },
-  { value: '6301', label: '6301 - KBA answer invalid' },
-  { value: '6401', label: '6401 - FIDO not completed' },
-  { value: '6402', label: '6402 - FIDO connect failed' },
-  { value: '6403', label: '6403 - FIDO read timeout' },
-  { value: '7101', label: '7101 - 3RI not support' },
-  { value: '7102', label: '7102 - 3RI invalid 3RI ind' },
-  { value: '7103', label: '7103 - 3RI NPA frictionless' },
-  { value: '7201', label: '7201 - 3RI recurring prior trans not found' },
-  { value: '7202', label: '7202 - 3RI recurring prior trans not auth' },
-  { value: '7203', label: '7203 - 3RI recurring prior trans expiried' },
-  { value: '7204', label: '7204 - 3RI recurring currency different' },
-  { value: '7205', label: '7205 - 3RI recurring amount over prior trans' },
-  { value: '7206', label: '7206 - 3RI recurring acct number different' },
-  { value: '7207', label: '7207 - 3RI instaldata over limit' },
-  { value: '8101', label: '8101 - Recurring date expiried' },
-  { value: '0000', label: '0000 - Completed' },
-  { value: '9999', label: '9999 - Unexcepted error' }
+  { value: '0000', label: '0000 - 驗證成功' },
+  { value: '0001', label: '0001 - 挑戰驗證成功' },
+  { value: '0002', label: '0002 - 報文已受理' },
+  { value: '1001', label: '1001 - 設備裝置不支援' },
+  { value: '1002', label: '1002 - 不支援該卡別' },
+  { value: '1003', label: '1003 - 交易逾時' },
+  { value: '1004', label: '1004 - 交易逾時(首CReq未收到)' },
+  { value: '1005', label: '1005 - 交易逾時(非首CReq未收到)' },
+  { value: '2001', label: '2001 - 請求訊息錯誤(AReq)' },
+  { value: '2002', label: '2002 - 請求訊息錯誤 CReq' },
+  { value: '2003', label: '2003 - 不在BIN範圍內' },
+  { value: '2004', label: '2004 - 請求端點錯誤 issuerOid' },
+  { value: '2005', label: '2005 - 幣別代碼錯誤' },
+  { value: '2006', label: '2006 - 幣別小數位錯誤' },
+  { value: '2007', label: '2007 - 國別代碼錯誤' },
+  { value: '2101', label: '2101 - 卡號錯誤' },
+  { value: '2102', label: '2102 - 卡號有效期錯誤' },
+  { value: '2103', label: '2103 - 卡號已鎖卡' },
+  { value: '2104', label: '2104 - 卡號未開通 3DS' },
+  { value: '2105', label: '2105 - 卡號異常' },
+  { value: '2106', label: '2106 - 卡號有效期已過期' },
+  { value: '2107', label: '2107 - 證件號碼錯誤' },
+  { value: '2108', label: '2108 - 持卡人鎖卡' },
+  { value: '2109', label: '2109 - 持卡人未開通 3DS' },
+  { value: '2110', label: '2110 - 持卡人異常' },
+  { value: '2201', label: '2201 - 指定的 3RI 場景不支援 PA 交易' },
+  { value: '2202', label: '2202 - 指定的 3RI 場景不支援 NPA 交易' },
+  { value: '2203', label: '2203 - 3RI 後續交易-查無原始交易' },
+  { value: '2204', label: '2204 - 3RI 後續交易-原始交易驗證未成功' },
+  { value: '2205', label: '2205 - 3RI 後續交易-已超過期限' },
+  { value: '2206', label: '2206 - 3RI 後續交易-交易幣別不同' },
+  { value: '2207', label: '2207 - 3RI 後續交易-交易金額超過原始金額' },
+  { value: '2208', label: '2208 - 3RI 後續交易-卡號不同' },
+  { value: '2209', label: '2209 - 3RI 後續交易-超過分期次數限制' },
+  { value: '2210', label: '2210 - 3RI 後續交易-循環效期錯誤' },
+  { value: '2211', label: '2211 - 3RI Agent Payment-後續金額總額超過首筆金額' },
+  { value: '3101', label: '3101 - 卡核心系統連線失敗' },
+  { value: '3102', label: '3102 - 卡核心系統讀取超時' },
+  { value: '3199', label: '3199 - 卡核心系統響應異常' },
+  { value: '3201', label: '3201 - 加密機接口連線失敗' },
+  { value: '3202', label: '3202 - 加密機接口讀取超時' },
+  { value: '3299', label: '3299 - 加密機接口響應異常' },
+  { value: '3301', label: '3301 - OTP 系統連線失敗' },
+  { value: '3302', label: '3302 - OTP 系統讀取超時' },
+  { value: '3399', label: '3399 - OTP 系統響應異常' },
+  { value: '3401', label: '3401 - RReq 連線失敗' },
+  { value: '3402', label: '3402 - RReq 讀取超時' },
+  { value: '3403', label: '3403 - RRes 校驗失敗' },
+  { value: '3499', label: '3499 - RRes 返回錯誤' },
+  { value: '3501', label: '3501 - OOB 接口連線超時' },
+  { value: '3502', label: '3502 - OOB 接口讀取超時' },
+  { value: '3599', label: '3599 - OOB 接口響應異常' },
+  { value: '3601', label: '3601 - 離線驗證系統連線超時' },
+  { value: '3602', label: '3602 - 離線驗證系統讀取超時' },
+  { value: '3699', label: '3699 - 離線驗證系統響應異常' },
+  { value: '4001', label: '4001 - 高風險' },
+  { value: '4002', label: '4002 - 3RI 場景無法執行挑戰驗證' },
+  { value: '4101', label: '4101 - 黑名單-IP' },
+  { value: '4102', label: '4102 - 黑名單-Email' },
+  { value: '4103', label: '4103 - 黑名單-商店代號' },
+  { value: '4104', label: '4104 - 黑名單-設備識別碼' },
+  { value: '4105', label: '4105 - 黑名單-卡號' },
+  { value: '4106', label: '4106 - 黑名單-證件號碼' },
+  { value: '4107', label: '4107 - 黑名單-電話號碼' },
+  { value: '4108', label: '4108 - 黑名單-來源國別' },
+  { value: '4109', label: '4109 - 黑名單-商店網址' },
+  { value: '4110', label: '4110 - 黑名單-商店國別' },
+  { value: '5001', label: '5001 - 等待持卡人選擇驗證方式' },
+  { value: '5002', label: '5002 - 持卡人取消' },
+  { value: '5003', label: '5003 - 超過驗證次數限制' },
+  { value: '5004', label: '5004 - 尚未收到 CReq' },
+  { value: '5101', label: '5101 - 已發送 OTP' },
+  { value: '5102', label: '5102 - 已重送 OTP' },
+  { value: '5103', label: '5103 - 請求重送超過次數限制' },
+  { value: '5104', label: '5104 - 請求重送時間間隔過短' },
+  { value: '5105', label: '5105 - 驗證碼錯誤' },
+  { value: '5106', label: '5106 - 驗證碼已過期' },
+  { value: '5107', label: '5107 - 驗證碼已使用' },
+  { value: '5201', label: '5201 - OOB 初始化' },
+  { value: '5202', label: '5202 - OOB 驗證失敗' },
+  { value: '5301', label: '5301 - KBA 答覆錯誤' },
+  { value: '5302', label: '5302 - 無法取得 KBA 題目' },
+  { value: '5303', label: '5303 - 已完成 OTP，進入第二階段 KBA 提問' },
+  { value: '5401', label: '5401 - FIDO 註冊' },
+  { value: '5402', label: '5402 - FIDO 驗證失敗，返回驗證方式選擇' },
+  { value: '5501', label: '5501 - 尚未收到離線驗證結果' },
+  { value: '5502', label: '5502 - 離線驗證失敗' },
+  { value: '9999', label: '9999 - 系統錯誤' },
+  { value: '9001', label: '9001 - 收到 Error' },
+  { value: '9002', label: '9002 - 偵測到 DDOS 攻擊' }
 ]
 
 const challengeCancelOptions: SelectOption[] = [
@@ -193,6 +373,11 @@ const challengeCancelOptions: SelectOption[] = [
   { value: '07', label: '07 - 未知' },
   { value: '09', label: '09 - Error Message in response to the CRes message' },
   { value: '10', label: '10 - Error Message in response to the CReq message' }
+]
+
+const reasonModeOptions: SelectOption[] = [
+  { value: 'random', label: '全隨機' },
+  { value: 'fixed', label: '固定代碼' }
 ]
 </script>
 
@@ -242,7 +427,7 @@ const challengeCancelOptions: SelectOption[] = [
             :modelValue="props.transStatusReason"
             :options="transStatusReasonOptions"
             :disabled="props.disableTransStatusReason"
-            @update:modelValue="(value) => emit('update:transStatusReason', String(value))"
+            @update:modelValue="(value) => onReasonValueChange('transStatusReason', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">只有當 ARes 狀態為 R 時才可選擇</p>
           <p class="text-xs text-error mt-1">可隨機生成</p>
@@ -254,7 +439,7 @@ const challengeCancelOptions: SelectOption[] = [
             :modelValue="props.stateMachineReason"
             :options="stateMachineReasonOptions"
             :disabled="props.disableStateMachineReason"
-            @update:modelValue="(value) => emit('update:stateMachineReason', String(value))"
+            @update:modelValue="(value) => onReasonValueChange('stateMachineReason', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">只有當 ARes 狀態為 R 時才可選擇</p>
           <p class="text-xs text-error mt-1">可隨機生成</p>
@@ -274,6 +459,335 @@ const challengeCancelOptions: SelectOption[] = [
           <p class="text-xs text-error mt-1">可隨機生成</p>
           <p class="text-xs text-error mt-1">
             Edit 8 監控指標：challengeCancel ≠ null / ARes=C 的放棄率需 ≤ 10%
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-4 rounded-md bg-base-200 p-4">
+        <div class="text-sm font-semibold text-base-content/80 mb-3">隨機機率設定</div>
+        <div class="mt-4 mb-2 rounded-md border border-base-300 bg-base-100 px-3 py-2 text-sm font-semibold text-base-content shadow-sm">
+          交易成功率：{{ props.expectedTransactionSuccessRate.toFixed(2) }}% ・免密驗證率：{{
+            props.expectedFrictionlessRate.toFixed(2)
+          }}% ・挑戰驗證成功率：{{ props.expectedChallengeSuccessRate.toFixed(2) }}%
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label class="label">
+              <span class="label-text">
+                ARes Y 權重% (ares_transStatus=Y)
+                <span class="text-xs text-base-content/60 ml-2">{{ props.aresWeightY }}%</span>
+              </span>
+            </label>
+            <input
+              id="aresWeightY"
+              type="range"
+              class="range range-sm"
+              min="0"
+              max="100"
+              step="1"
+              :value="props.aresWeightY"
+              @input="(event) => onAresWeightInput('aresWeightY', event)"
+            />
+          </div>
+          <div>
+            <label class="label">
+              <span class="label-text">
+                ARes A 權重% (ares_transStatus=A)
+                <span class="text-xs text-base-content/60 ml-2">{{ props.aresWeightA }}%</span>
+              </span>
+            </label>
+            <input
+              id="aresWeightA"
+              type="range"
+              class="range range-sm"
+              min="0"
+              max="100"
+              step="1"
+              :value="props.aresWeightA"
+              @input="(event) => onAresWeightInput('aresWeightA', event)"
+            />
+          </div>
+          <div>
+            <label class="label">
+              <span class="label-text">
+                ARes I 權重% (ares_transStatus=I)
+                <span class="text-xs text-base-content/60 ml-2">{{ props.aresWeightI }}%</span>
+              </span>
+            </label>
+            <input
+              id="aresWeightI"
+              type="range"
+              class="range range-sm"
+              min="0"
+              max="100"
+              step="1"
+              :value="props.aresWeightI"
+              @input="(event) => onAresWeightInput('aresWeightI', event)"
+            />
+          </div>
+          <div>
+            <label class="label">
+              <span class="label-text">
+                ARes C 權重% (ares_transStatus=C)
+                <span class="text-xs text-base-content/60 ml-2">{{ props.aresWeightC }}%</span>
+              </span>
+            </label>
+            <input
+              id="aresWeightC"
+              type="range"
+              class="range range-sm"
+              min="0"
+              max="100"
+              step="1"
+              :value="props.aresWeightC"
+              @input="(event) => onAresWeightInput('aresWeightC', event)"
+            />
+          </div>
+          <div>
+            <label class="label">
+              <span class="label-text">
+                ARes D 權重% (ares_transStatus=D)
+                <span class="text-xs text-base-content/60 ml-2">{{ props.aresWeightD }}%</span>
+              </span>
+            </label>
+            <input
+              id="aresWeightD"
+              type="range"
+              class="range range-sm"
+              min="0"
+              max="100"
+              step="1"
+              :value="props.aresWeightD"
+              @input="(event) => onAresWeightInput('aresWeightD', event)"
+            />
+          </div>
+          <div>
+            <label class="label">
+              <span class="label-text">
+                ARes S 權重% (ares_transStatus=S)
+                <span class="text-xs text-base-content/60 ml-2">{{ props.aresWeightS }}%</span>
+              </span>
+            </label>
+            <input
+              id="aresWeightS"
+              type="range"
+              class="range range-sm"
+              min="0"
+              max="100"
+              step="1"
+              :value="props.aresWeightS"
+              @input="(event) => onAresWeightInput('aresWeightS', event)"
+            />
+          </div>
+          <div>
+            <label class="label">
+              <span class="label-text">
+                ARes N 權重% (ares_transStatus=N)
+                <span class="text-xs text-base-content/60 ml-2">{{ props.aresWeightN }}%</span>
+              </span>
+            </label>
+            <input
+              id="aresWeightN"
+              type="range"
+              class="range range-sm"
+              min="0"
+              max="100"
+              step="1"
+              :value="props.aresWeightN"
+              @input="(event) => onAresWeightInput('aresWeightN', event)"
+            />
+          </div>
+          <div>
+            <label class="label">
+              <span class="label-text">
+                ARes R 權重% (ares_transStatus=R)
+                <span class="text-xs text-base-content/60 ml-2">{{ props.aresWeightR }}%</span>
+              </span>
+            </label>
+            <input
+              id="aresWeightR"
+              type="range"
+              class="range range-sm"
+              min="0"
+              max="100"
+              step="1"
+              :value="props.aresWeightR"
+              @input="(event) => onAresWeightInput('aresWeightR', event)"
+            />
+          </div>
+          <div>
+            <label class="label">
+              <span class="label-text">
+                ARes U 權重% (ares_transStatus=U)
+                <span class="text-xs text-base-content/60 ml-2">{{ props.aresWeightU }}%</span>
+              </span>
+            </label>
+            <input
+              id="aresWeightU"
+              type="range"
+              class="range range-sm"
+              min="0"
+              max="100"
+              step="1"
+              :value="props.aresWeightU"
+              @input="(event) => onAresWeightInput('aresWeightU', event)"
+            />
+          </div>
+        </div>
+        <p class="text-xs text-base-content/60 mt-2">
+          ARes 權重合計：{{ props.aresWeightTotal }}%，未分配：{{ props.aresWeightUnallocated }}%。
+        </p>
+        <div class="mt-4 border-t border-base-300 pt-4">
+          <div class="text-sm font-semibold text-base-content/80 mb-3">
+            RReq 比率隨機分配（當 ARes 狀態為 C 或 D 時）
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="md:row-start-1 md:col-start-1">
+              <label class="label">
+                <span class="label-text">
+                  RReq Y 權重% (rreq_transStatus=Y)
+                  <span class="text-xs text-base-content/60 ml-2"> {{ props.rreqWeightY }}% </span>
+                </span>
+              </label>
+              <input
+                id="rreqWeightY"
+                type="range"
+                class="range range-sm"
+                min="0"
+                max="100"
+                step="1"
+                :value="props.rreqWeightY"
+                @input="(event) => onRreqWeightInput('rreqWeightY', event)"
+              />
+            </div>
+            <div class="md:row-start-2 md:col-start-1">
+              <label class="label">
+                <span class="label-text">
+                  RReq N 權重% (rreq_transStatus=N)
+                  <span class="text-xs text-base-content/60 ml-2"> {{ props.rreqWeightN }}% </span>
+                </span>
+              </label>
+              <input
+                id="rreqWeightN"
+                type="range"
+                class="range range-sm"
+                min="0"
+                max="100"
+                step="1"
+                :value="props.rreqWeightN"
+                @input="(event) => onRreqWeightInput('rreqWeightN', event)"
+              />
+            </div>
+            <div class="md:row-start-3 md:col-start-1">
+              <label class="label">
+                <span class="label-text">
+                  RReq NULL_VALUE 權重% (rreq_transStatus=NULL_VALUE)
+                  <span class="text-xs text-base-content/60 ml-2">
+                    {{ props.rreqWeightNull }}%
+                  </span>
+                </span>
+              </label>
+              <input
+                id="rreqWeightNull"
+                type="range"
+                class="range range-sm"
+                min="0"
+                max="100"
+                step="1"
+                :value="props.rreqWeightNull"
+                @input="(event) => onRreqWeightInput('rreqWeightNull', event)"
+              />
+            </div>
+            <div class="md:row-start-2 md:col-start-2">
+              <label class="label">
+                <span class="label-text">
+                  ChallengeCancel 觸發率 (0~100%) (challengeCancelRate)
+                  <span class="text-xs text-base-content/60 ml-2">
+                    {{ props.challengeCancelRate }}%
+                  </span>
+                </span>
+              </label>
+              <input
+                id="challengeCancelRate"
+                type="range"
+                class="range range-sm"
+                min="0"
+                max="100"
+                step="1"
+                :value="props.challengeCancelRate"
+                @input="
+                  (event) =>
+                    emit('update:challengeCancelRate', (event.target as HTMLInputElement).value)
+                "
+              />
+            </div>
+          </div>
+        </div>
+        <p class="text-xs text-base-content/60 mt-2">
+          RReq 權重合計：{{ props.rreqWeightTotal }}%，未分配：{{ props.rreqWeightUnallocated }}%。
+        </p>
+        <div class="mt-4 border-t border-base-300 pt-4">
+          <div class="text-sm font-semibold text-base-content/80 mb-3">
+            stateMachineReason / transStatusReason 隨機分配（當 ARes 狀態為 R 時）
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="rounded-md border border-base-300 bg-base-100 p-3">
+              <div class="text-sm font-semibold text-base-content/80 mb-2">transStatusReason</div>
+              <Select
+                id="transStatusReasonMode"
+                label="模式"
+                :modelValue="props.transStatusReasonMode"
+                :options="reasonModeOptions"
+                @update:modelValue="(value) => onReasonModeChange('transStatusReasonMode', String(value))"
+              />
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                <Input
+                  id="transStatusReasonInput"
+                  label="輸入代碼"
+                  :modelValue="props.transStatusReason"
+                  :disabled="props.transStatusReasonMode === 'random'"
+                  @update:modelValue="(value) => onReasonValueChange('transStatusReason', String(value))"
+                />
+                <Select
+                  id="transStatusReasonSelect"
+                  label="下拉選單"
+                  :modelValue="props.transStatusReason"
+                  :options="transStatusReasonOptions"
+                  :disabled="props.transStatusReasonMode === 'random'"
+                  @update:modelValue="(value) => onReasonValueChange('transStatusReason', String(value))"
+                />
+              </div>
+            </div>
+            <div class="rounded-md border border-base-300 bg-base-100 p-3">
+              <div class="text-sm font-semibold text-base-content/80 mb-2">stateMachineReason</div>
+              <Select
+                id="stateMachineReasonMode"
+                label="模式"
+                :modelValue="props.stateMachineReasonMode"
+                :options="reasonModeOptions"
+                @update:modelValue="(value) => onReasonModeChange('stateMachineReasonMode', String(value))"
+              />
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                <Input
+                  id="stateMachineReasonInput"
+                  label="輸入代碼"
+                  :modelValue="props.stateMachineReason"
+                  :disabled="props.stateMachineReasonMode === 'random'"
+                  @update:modelValue="(value) => onReasonValueChange('stateMachineReason', String(value))"
+                />
+                <Select
+                  id="stateMachineReasonSelect"
+                  label="下拉選單"
+                  :modelValue="props.stateMachineReason"
+                  :options="stateMachineReasonOptions"
+                  :disabled="props.stateMachineReasonMode === 'random'"
+                  @update:modelValue="(value) => onReasonValueChange('stateMachineReason', String(value))"
+                />
+              </div>
+            </div>
+          </div>
+          <p class="text-xs text-base-content/60 mt-2">
+            選「全隨機」才會隨機；選「固定代碼」可輸入或下拉選取，並同步到上方欄位。
           </p>
         </div>
       </div>
