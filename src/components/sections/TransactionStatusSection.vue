@@ -192,7 +192,7 @@ const onReasonValueChange = (
     emit('update:transStatusReason', value || 'NULL_VALUE')
     emit('update:transStatusReasonMode', 'fixed')
   } else {
-    emit('update:stateMachineReason', value || 'NULL_VALUE')
+    emit('update:stateMachineReason', value || '0000')
     emit('update:stateMachineReasonMode', 'fixed')
   }
 }
@@ -269,7 +269,6 @@ const transStatusReasonOptions: SelectOption[] = [
 ]
 
 const stateMachineReasonOptions: SelectOption[] = [
-  { value: 'NULL_VALUE', label: 'NULL_VALUE' },
   { value: '0000', label: '0000 - 驗證成功' },
   { value: '0001', label: '0001 - 挑戰驗證成功' },
   { value: '0002', label: '0002 - 報文已受理' },
@@ -426,7 +425,7 @@ const reasonModeOptions: SelectOption[] = [
             label="交易狀態原因 (transStatusReason)"
             :modelValue="props.transStatusReason"
             :options="transStatusReasonOptions"
-            :disabled="props.disableTransStatusReason"
+            :disabled="props.disableTransStatusReason || props.transStatusReasonMode === 'random'"
             @update:modelValue="(value) => onReasonValueChange('transStatusReason', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">只有當 ARes 狀態為 R 時才可選擇</p>
@@ -438,7 +437,7 @@ const reasonModeOptions: SelectOption[] = [
             label="狀態機原因 (stateMachineReason)"
             :modelValue="props.stateMachineReason"
             :options="stateMachineReasonOptions"
-            :disabled="props.disableStateMachineReason"
+            :disabled="props.disableStateMachineReason || props.stateMachineReasonMode === 'random'"
             @update:modelValue="(value) => onReasonValueChange('stateMachineReason', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">只有當 ARes 狀態為 R 時才可選擇</p>

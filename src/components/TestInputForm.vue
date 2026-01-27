@@ -60,7 +60,7 @@ const formState = reactive({
   transStatus: 'N',
   rreqTransStatus: 'NULL_VALUE',
   transStatusReason: 'NULL_VALUE',
-  stateMachineReason: 'NULL_VALUE',
+  stateMachineReason: '0000',
   transStatusReasonMode: 'random' as 'random' | 'fixed',
   stateMachineReasonMode: 'random' as 'random' | 'fixed',
   challengeCancel: 'NULL_VALUE',
@@ -490,7 +490,6 @@ function syncStatusDependencies() {
   const ares = formState.aresTransStatus
   if (ares === 'C' || ares === 'D') {
     formState.disableRreqTransStatus = false
-    if (formState.rreqTransStatus === 'NULL_VALUE') setField('rreqTransStatus', 'Y')
     setField('transStatus', formState.rreqTransStatus)
   } else {
     formState.disableRreqTransStatus = true
@@ -501,13 +500,30 @@ function syncStatusDependencies() {
   if (ares === 'R') {
     formState.disableTransStatusReason = false
     if (formState.transStatusReason === 'NULL_VALUE') setField('transStatusReason', '01')
-    formState.disableStateMachineReason = false
-    if (formState.stateMachineReason === 'NULL_VALUE') setField('stateMachineReason', '1001')
   } else {
     formState.disableTransStatusReason = true
     if (formState.transStatusReason !== 'NULL_VALUE') setField('transStatusReason', 'NULL_VALUE')
+  }
+  if (ares === 'Y') {
     formState.disableStateMachineReason = true
-    if (formState.stateMachineReason !== 'NULL_VALUE') setField('stateMachineReason', 'NULL_VALUE')
+    setField('stateMachineReasonMode', 'fixed')
+    setField('stateMachineReason', '0000')
+  } else if (ares === 'C' || ares === 'D') {
+    if (formState.rreqTransStatus === 'Y') {
+      formState.disableStateMachineReason = true
+      setField('stateMachineReasonMode', 'fixed')
+      setField('stateMachineReason', '0001')
+    } else if (formState.rreqTransStatus === 'NULL_VALUE') {
+      formState.disableStateMachineReason = true
+      setField('stateMachineReasonMode', 'fixed')
+      setField('stateMachineReason', '0002')
+    } else {
+      formState.disableStateMachineReason = false
+      if (formState.stateMachineReason === 'NULL_VALUE') setField('stateMachineReason', '0000')
+    }
+  } else {
+    formState.disableStateMachineReason = false
+    if (formState.stateMachineReason === 'NULL_VALUE') setField('stateMachineReason', '0000')
   }
 
   if (ares === 'C' && formState.rreqTransStatus === 'N') {
@@ -625,7 +641,7 @@ function loadDefaults() {
   setField('transStatus', 'N')
   setField('rreqTransStatus', 'NULL_VALUE')
   setField('transStatusReason', 'NULL_VALUE')
-  setField('stateMachineReason', 'NULL_VALUE')
+  setField('stateMachineReason', '0000')
   setField('transStatusReasonMode', 'random')
   setField('stateMachineReasonMode', 'random')
   setField('merchantName', 'HiTRUST EMV Demo Merchant')
@@ -824,8 +840,8 @@ function generateRandom() {
   } else {
     set('transStatusReason', 'NULL_VALUE')
   }
-  // 當 ARes 為 R 時，stateMachineReason 依模式固定或全隨機；否則為 NULL_VALUE
-  if (st === 'R') {
+  // stateMachineReason 依模式固定或全隨機
+  {
     const stateMachineReasons: string[] = [
       '0000',
       '0001',
@@ -920,17 +936,35 @@ function generateRandom() {
     ]
     const fixedReason = String(formState.stateMachineReason || '').trim()
     if (formState.stateMachineReasonMode === 'random') {
-      if (stateMachineReasons.length > 0) {
-        const idx = Math.floor(Math.random() * stateMachineReasons.length)
-        set('stateMachineReason', stateMachineReasons[idx] as string)
+      if (st === 'Y') {
+        set('stateMachineReason', '0000')
+      } else if (st === 'C' || st === 'D') {
+        if (formState.rreqTransStatus === 'Y') {
+          set('stateMachineReason', '0001')
+        } else if (formState.rreqTransStatus === 'NULL_VALUE') {
+          set('stateMachineReason', '0002')
+        } else {
+          const candidates = stateMachineReasons.filter(
+            (reason) => !['0000', '0001', '0002'].includes(reason)
+          )
+          const pickFrom = candidates.length > 0 ? candidates : stateMachineReasons
+          const idx = Math.floor(Math.random() * pickFrom.length)
+          set('stateMachineReason', pickFrom[idx] as string)
+        }
       } else {
-        set('stateMachineReason', '1001')
+        const candidates = stateMachineReasons.filter(
+          (reason) => !['0000', '0001', '0002'].includes(reason)
+        )
+        const pickFrom = candidates.length > 0 ? candidates : stateMachineReasons
+        const idx = Math.floor(Math.random() * pickFrom.length)
+        set('stateMachineReason', pickFrom[idx] as string)
       }
     } else {
-      set('stateMachineReason', fixedReason && fixedReason !== 'NULL_VALUE' ? fixedReason : 'NULL_VALUE')
+      set(
+        'stateMachineReason',
+        fixedReason && fixedReason !== 'NULL_VALUE' ? fixedReason : '0000'
+      )
     }
-  } else {
-    set('stateMachineReason', 'NULL_VALUE')
   }
   // 帳號原始值（依卡別前綴）- 僅在勾選時隨機
   if (formState.enableAcctNumberRandom) {
