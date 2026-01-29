@@ -11,6 +11,7 @@ const props = defineProps<{
   mcc: string
   enableAcquirerMerchantIdRandom: boolean
   enableMerchantCountryCodeRandom: boolean
+  enableMerchantCountryAsiaOnly: boolean
 }>()
 
 const emit = defineEmits<{
@@ -21,6 +22,7 @@ const emit = defineEmits<{
   'update:mcc': [value: string]
   'update:enableAcquirerMerchantIdRandom': [value: boolean]
   'update:enableMerchantCountryCodeRandom': [value: boolean]
+  'update:enableMerchantCountryAsiaOnly': [value: boolean]
 }>()
 
 const merchantCountryOptions: SelectOption[] = [
@@ -35,6 +37,7 @@ const merchantCountryOptions: SelectOption[] = [
   { value: '124', label: '124 - 加拿大 (CA)' },
   { value: '978', label: '978 - 歐元區 (EU)' },
   { value: '826', label: '826 - 英國 (GB)' },
+  { value: '116', label: '116 - 柬埔寨 (KH)' },
   { value: '764', label: '764 - 泰國 (TH)' },
   { value: '704', label: '704 - 越南 (VN)' },
   { value: '458', label: '458 - 馬來西亞 (MY)' },
@@ -82,6 +85,29 @@ const merchantCountryOptions: SelectOption[] = [
             />
             <label for="enableMerchantCountryCodeRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
+            </label>
+          </div>
+          <div class="flex items-center gap-2 mt-2">
+            <input
+              type="checkbox"
+              id="enableMerchantCountryAsiaOnly"
+              class="checkbox checkbox-sm"
+              :checked="props.enableMerchantCountryAsiaOnly"
+              :disabled="!props.enableMerchantCountryCodeRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableMerchantCountryAsiaOnly',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
+            />
+            <label
+              for="enableMerchantCountryAsiaOnly"
+              class="text-sm text-base-content/60"
+              :class="!props.enableMerchantCountryCodeRandom ? 'opacity-50' : ''"
+            >
+              只隨機亞洲國家
             </label>
           </div>
         </div>

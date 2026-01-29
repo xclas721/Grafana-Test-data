@@ -128,7 +128,8 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
   { value: '036', label: '036 - 澳洲 (AU)' },
   { value: '124', label: '124 - 加拿大 (CA)' },
   { value: '978', label: '978 - 歐元區 (EU)' },
-  { value: '826', label: '826 - 英國 (GB)' }
+  { value: '826', label: '826 - 英國 (GB)' },
+  { value: '116', label: '116 - 柬埔寨 (KH)' }
 ]
 </script>
 

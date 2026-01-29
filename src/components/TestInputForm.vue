@@ -140,6 +140,7 @@ const formState = reactive({
   enableAcquirerMerchantIdRandom: true,
   enableAcctNumberRandom: true,
   enableMerchantCountryCodeRandom: true,
+  enableMerchantCountryAsiaOnly: false,
   enableCardSchemeRandom: false,
   enableMastercardExtension: false,
   enableMastercardExtensionRandom: false,
@@ -354,7 +355,23 @@ const MERCHANT_COUNTRY_CODE_STR_VALUES = [
   '036',
   '124',
   '978',
-  '826'
+  '826',
+  '116'
+]
+
+const MERCHANT_COUNTRY_CODE_ASIA_VALUES = [
+  '156', // China
+  '158', // Taiwan
+  '392', // Japan
+  '344', // Hong Kong
+  '410', // South Korea
+  '702', // Singapore
+  '116', // Cambodia
+  '764', // Thailand
+  '704', // Vietnam
+  '458', // Malaysia
+  '360', // Indonesia
+  '608' // Philippines
 ]
 
 const COUNTRY_NUMERIC_MAP: Record<string, { alpha2: string; alpha3: string; name: string }> = {
@@ -365,6 +382,7 @@ const COUNTRY_NUMERIC_MAP: Record<string, { alpha2: string; alpha3: string; name
   '344': { alpha2: 'HK', alpha3: 'HKG', name: 'Hong Kong' },
   '410': { alpha2: 'KR', alpha3: 'KOR', name: 'South Korea' },
   '702': { alpha2: 'SG', alpha3: 'SGP', name: 'Singapore' },
+  '116': { alpha2: 'KH', alpha3: 'KHM', name: 'Cambodia' },
   '036': { alpha2: 'AU', alpha3: 'AUS', name: 'Australia' },
   '124': { alpha2: 'CA', alpha3: 'CAN', name: 'Canada' },
   '978': { alpha2: 'EU', alpha3: 'EUR', name: 'European Union' },
@@ -386,6 +404,7 @@ const CURRENCY_NUMERIC_MAP: Record<
   '124': { alphabetic: 'CAD', name: 'Canadian Dollar', minorUnit: '2' },
   '978': { alphabetic: 'EUR', name: 'Euro', minorUnit: '2' },
   '826': { alphabetic: 'GBP', name: 'Pound Sterling', minorUnit: '2' },
+  '116': { alphabetic: 'KHR', name: 'Riel', minorUnit: '2' },
   '764': { alphabetic: 'THB', name: 'Baht', minorUnit: '2' },
   '704': { alphabetic: 'VND', name: 'Dong', minorUnit: '0' },
   '458': { alphabetic: 'MYR', name: 'Malaysian Ringgit', minorUnit: '2' },
@@ -765,6 +784,7 @@ function loadDefaults() {
   formState.enableAcquirerMerchantIdRandom = true
   formState.enableAcctNumberRandom = true
   formState.enableMerchantCountryCodeRandom = true
+  formState.enableMerchantCountryAsiaOnly = false
   formState.enableMastercardExtension = false
   formState.enableMastercardExtensionRandom = false
   formState.enableVisaScoreRandom = false
@@ -1042,7 +1062,7 @@ function generateRandom() {
   }
   // cardScheme 隨機（獨立開關）
   if (formState.enableCardSchemeRandom) {
-    const schemePool = ['V', 'M', 'J', 'D', 'P']
+    const schemePool = ['V', 'M', 'J', 'U', 'A']
     const picked = schemePool[Math.floor(Math.random() * schemePool.length)] ?? formState.cardScheme
     if (picked) {
       set('cardScheme', picked)
@@ -1162,10 +1182,10 @@ function generateRandom() {
 
   // merchantCountryCode 隨機（僅在勾選時）
   if (formState.enableMerchantCountryCodeRandom) {
-    const randomValue =
-      MERCHANT_COUNTRY_CODE_STR_VALUES[
-        Math.floor(Math.random() * MERCHANT_COUNTRY_CODE_STR_VALUES.length)
-      ] || '156'
+    const pool = formState.enableMerchantCountryAsiaOnly
+      ? MERCHANT_COUNTRY_CODE_ASIA_VALUES
+      : MERCHANT_COUNTRY_CODE_STR_VALUES
+    const randomValue = pool[Math.floor(Math.random() * pool.length)] || '156'
     syncCountryByNumeric(randomValue)
   } else {
     syncCountryByNumeric(formState.merchantCountryCode || formState.merchantCountryCodeStr || '156')
@@ -1195,8 +1215,8 @@ function generateRandomAcctNumber() {
   if (scheme === 'V') prefix = '414352'
   else if (scheme === 'M') prefix = '515352'
   else if (scheme === 'J') prefix = '313352'
-  else if (scheme === 'D') prefix = '656352'
-  else if (scheme === 'P') prefix = '818352'
+  else if (scheme === 'A') prefix = '656352'
+  else if (scheme === 'U') prefix = '818352'
   // 產出 13 位亂數字串
   let suffix = ''
   for (let i = 0; i < 13; i++) suffix += Math.floor(Math.random() * 10)
@@ -1571,6 +1591,7 @@ function buildDocument(
     '344': { name: 'Hong Kong', alpha2: 'HK' },
     '410': { name: 'South Korea', alpha2: 'KR' },
     '702': { name: 'Singapore', alpha2: 'SG' },
+    '116': { name: 'Cambodia', alpha2: 'KH' },
     '036': { name: 'Australia', alpha2: 'AU' },
     '124': { name: 'Canada', alpha2: 'CA' },
     '978': { name: 'Eurozone', alpha2: 'EU' },
@@ -1672,6 +1693,12 @@ function buildDocument(
         { name: 'East Region', lat: 1.3441, lon: 103.9442, region: 'SG' },
         { name: 'West Region', lat: 1.3574, lon: 103.7058, region: 'SG' }
       ],
+      '116': [
+        { name: 'Phnom Penh', lat: 11.5564, lon: 104.9282, region: 'KH-12' },
+        { name: 'Siem Reap', lat: 13.3671, lon: 103.8448, region: 'KH-17' },
+        { name: 'Battambang', lat: 13.0957, lon: 103.2022, region: 'KH-2' },
+        { name: 'Sihanoukville', lat: 10.6253, lon: 103.5234, region: 'KH-18' }
+      ],
       '036': [
         { name: 'Sydney', lat: -33.8688, lon: 151.2093, region: 'AU-NSW' },
         { name: 'Melbourne', lat: -37.8136, lon: 144.9631, region: 'AU-VIC' },
@@ -1714,7 +1741,7 @@ function buildDocument(
     const city = cityList[Math.floor(Math.random() * cityList.length)]!
     // 判斷洲名
     let continentName = 'Unknown'
-    if (['156', '158', '392', '344', '410', '702'].includes(countryCode)) {
+    if (['156', '158', '392', '344', '410', '702', '116'].includes(countryCode)) {
       continentName = 'Asia'
     } else if (['840', '124'].includes(countryCode)) {
       continentName = 'North America'
@@ -1909,6 +1936,7 @@ defineExpose({
       v-model:mcc="formState.mcc"
       v-model:enableAcquirerMerchantIdRandom="formState.enableAcquirerMerchantIdRandom"
       v-model:enableMerchantCountryCodeRandom="formState.enableMerchantCountryCodeRandom"
+      v-model:enableMerchantCountryAsiaOnly="formState.enableMerchantCountryAsiaOnly"
     />
 
     <PurchaseAmountSection

@@ -33,6 +33,7 @@ const purchaseCurrencyOptions: SelectOption[] = [
   { value: '124', label: '124 - 加拿大加幣（加元） (CAD)' },
   { value: '978', label: '978 - 歐元區歐元 (EUR)' },
   { value: '826', label: '826 - 英國英鎊 (GBP)' },
+  { value: '116', label: '116 - 柬埔寨瑞爾 (KHR)' },
   { value: '764', label: '764 - 泰國泰銖 (THB)' },
   { value: '704', label: '704 - 越南越南盾 (VND)' },
   { value: '458', label: '458 - 馬來西亞馬幣（令吉） (MYR)' },
