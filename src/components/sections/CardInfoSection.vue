@@ -86,27 +86,25 @@ const mastercardDecisionOptions: SelectOption[] = [
           />
           <div class="flex items-center gap-2 mt-2">
             <input
-            type="checkbox"
-            id="enableCardSchemeRandom"
-            class="checkbox checkbox-sm"
-                :checked="props.enableCardSchemeRandom"
-                @change="
-                  (event) =>
-                    emit('update:enableCardSchemeRandom', (event.target as HTMLInputElement).checked)
-                "
-              />
-              <label for="enableCardSchemeRandom" class="text-sm text-base-content/60">
-                隨機生成時包含此欄位
-              </label>
-            </div>
-            <p class="text-xs text-base-content/60 mt-1">
+              type="checkbox"
+              id="enableCardSchemeRandom"
+              class="checkbox checkbox-sm"
+              :checked="props.enableCardSchemeRandom"
+              @change="
+                (event) =>
+                  emit('update:enableCardSchemeRandom', (event.target as HTMLInputElement).checked)
+              "
+            />
+            <label for="enableCardSchemeRandom" class="text-sm text-base-content/60">
+              隨機生成時包含此欄位
+            </label>
+          </div>
+          <p class="text-xs text-base-content/60 mt-1">
             提示：
-            <br>
+            <br />
             切到 Visa 會自動勾選隨機 DAF 訊息擴展
-            <br>切到 Mastercard隨機 會自動勾選 M card 訊息擴展
-            <br>須解除啟用才能修改
+            <br />切到 Mastercard隨機 會自動勾選 M card 訊息擴展 <br />須解除啟用才能修改
           </p>
-
         </div>
         <div>
           <Input

@@ -136,8 +136,10 @@ const formState = reactive({
   errorDetail: 'NULL_VALUE',
   errorMessageType: 'NULL_VALUE',
   enablePurchaseAmountRandom: true,
+  enablePurchaseCurrencyRandom: true,
   enableAcquirerMerchantIdRandom: true,
   enableAcctNumberRandom: true,
+  enableMerchantCountryCodeRandom: true,
   enableCardSchemeRandom: false,
   enableMastercardExtension: false,
   enableMastercardExtensionRandom: false,
@@ -159,7 +161,7 @@ const formState = reactive({
   enableDeviceLocaleRandom: true,
   enableDeviceAdvertisingIdRandom: true,
   enableThreeDSCompIndRandom: true,
-  enableMerchantCountryCodeStrRandom: true,
+  enableMerchantCountryCodeStrRandom: false,
   enableBrowserGeoIPRandom: true,
   enableDeviceGeoIPRandom: true,
   disableRreqTransStatus: true,
@@ -354,6 +356,42 @@ const MERCHANT_COUNTRY_CODE_STR_VALUES = [
   '978',
   '826'
 ]
+
+const COUNTRY_NUMERIC_MAP: Record<string, { alpha2: string; alpha3: string; name: string }> = {
+  '156': { alpha2: 'CN', alpha3: 'CHN', name: 'China' },
+  '158': { alpha2: 'TW', alpha3: 'TWN', name: 'Taiwan' },
+  '840': { alpha2: 'US', alpha3: 'USA', name: 'United States' },
+  '392': { alpha2: 'JP', alpha3: 'JPN', name: 'Japan' },
+  '344': { alpha2: 'HK', alpha3: 'HKG', name: 'Hong Kong' },
+  '410': { alpha2: 'KR', alpha3: 'KOR', name: 'South Korea' },
+  '702': { alpha2: 'SG', alpha3: 'SGP', name: 'Singapore' },
+  '036': { alpha2: 'AU', alpha3: 'AUS', name: 'Australia' },
+  '124': { alpha2: 'CA', alpha3: 'CAN', name: 'Canada' },
+  '978': { alpha2: 'EU', alpha3: 'EUR', name: 'European Union' },
+  '826': { alpha2: 'GB', alpha3: 'GBR', name: 'United Kingdom' }
+}
+
+const CURRENCY_NUMERIC_MAP: Record<
+  string,
+  { alphabetic: string; name: string; minorUnit: string }
+> = {
+  '156': { alphabetic: 'CNY', name: 'Yuan Renminbi', minorUnit: '2' },
+  '901': { alphabetic: 'TWD', name: 'New Taiwan Dollar', minorUnit: '2' },
+  '840': { alphabetic: 'USD', name: 'US Dollar', minorUnit: '2' },
+  '392': { alphabetic: 'JPY', name: 'Yen', minorUnit: '0' },
+  '344': { alphabetic: 'HKD', name: 'Hong Kong Dollar', minorUnit: '2' },
+  '410': { alphabetic: 'KRW', name: 'Won', minorUnit: '0' },
+  '702': { alphabetic: 'SGD', name: 'Singapore Dollar', minorUnit: '2' },
+  '036': { alphabetic: 'AUD', name: 'Australian Dollar', minorUnit: '2' },
+  '124': { alphabetic: 'CAD', name: 'Canadian Dollar', minorUnit: '2' },
+  '978': { alphabetic: 'EUR', name: 'Euro', minorUnit: '2' },
+  '826': { alphabetic: 'GBP', name: 'Pound Sterling', minorUnit: '2' },
+  '764': { alphabetic: 'THB', name: 'Baht', minorUnit: '2' },
+  '704': { alphabetic: 'VND', name: 'Dong', minorUnit: '0' },
+  '458': { alphabetic: 'MYR', name: 'Malaysian Ringgit', minorUnit: '2' },
+  '360': { alphabetic: 'IDR', name: 'Rupiah', minorUnit: '0' },
+  '608': { alphabetic: 'PHP', name: 'Philippine Peso', minorUnit: '2' }
+}
 
 const MASTERCARD_DECISIONS = ['Not Low Risk', 'Low Risk']
 
@@ -723,8 +761,10 @@ function loadDefaults() {
   setField('rreqWeightN', '9')
   setField('challengeCancelRate', '8')
   formState.enablePurchaseAmountRandom = true
+  formState.enablePurchaseCurrencyRandom = true
   formState.enableAcquirerMerchantIdRandom = true
   formState.enableAcctNumberRandom = true
+  formState.enableMerchantCountryCodeRandom = true
   formState.enableMastercardExtension = false
   formState.enableMastercardExtensionRandom = false
   formState.enableVisaScoreRandom = false
@@ -745,7 +785,7 @@ function loadDefaults() {
   formState.enableDeviceLocaleRandom = true
   formState.enableDeviceAdvertisingIdRandom = true
   formState.enableThreeDSCompIndRandom = true
-  formState.enableMerchantCountryCodeStrRandom = true
+  formState.enableMerchantCountryCodeStrRandom = false
   formState.enableBrowserGeoIPRandom = true
   formState.enableDeviceGeoIPRandom = true
   setStatus('預設值已載入 (Vue 移植版)', 'success')
@@ -754,6 +794,31 @@ function loadDefaults() {
 function generateRandom() {
   const set = (id: string, val: string) => {
     setField(id, val)
+  }
+  const syncCountryByNumeric = (numeric: string) => {
+    const code = String(numeric || '').trim() || '156'
+    const info = COUNTRY_NUMERIC_MAP[code]
+    set('merchantCountryCode', code)
+    set('merchantCountryCodeStr', code)
+    set('countryNumeric', code)
+    if (info) {
+      set('countryAlpha2', info.alpha2)
+      set('countryAlpha3', info.alpha3)
+      set('countryName', info.name)
+    }
+  }
+  const syncCurrencyByNumeric = (numeric: string) => {
+    const code = String(numeric || '').trim() || '156'
+    const info = CURRENCY_NUMERIC_MAP[code]
+    set('purchaseCurrency', code)
+    set('currencyNumericCode', code)
+    if (info) {
+      set('currencyAlphabeticCode', info.alphabetic)
+      set('currencyName', info.name)
+      set('currencyMinorUnit', info.minorUnit)
+      set('currencyCodeForRate', info.alphabetic)
+      set('purchaseExponent', info.minorUnit)
+    }
   }
   set('acsTransId', cryptoRandomUUID())
   set('threeDSServerTransId', cryptoRandomUUID().toLowerCase())
@@ -768,6 +833,14 @@ function generateRandom() {
   // 金額
   if (formState.enablePurchaseAmountRandom) {
     set('purchaseAmount', (Math.random() * 990 + 10).toFixed(2))
+  }
+  // purchaseCurrency 隨機（僅在勾選時）
+  if (formState.enablePurchaseCurrencyRandom) {
+    const currencyKeys = Object.keys(CURRENCY_NUMERIC_MAP)
+    const picked = currencyKeys[Math.floor(Math.random() * currencyKeys.length)] || '156'
+    syncCurrencyByNumeric(picked)
+  } else {
+    syncCurrencyByNumeric(formState.purchaseCurrency || '156')
   }
   // 執行時間
   if (formState.enableExecTimeRandom) {
@@ -970,8 +1043,7 @@ function generateRandom() {
   // cardScheme 隨機（獨立開關）
   if (formState.enableCardSchemeRandom) {
     const schemePool = ['V', 'M', 'J', 'D', 'P']
-    const picked =
-      schemePool[Math.floor(Math.random() * schemePool.length)] ?? formState.cardScheme
+    const picked = schemePool[Math.floor(Math.random() * schemePool.length)] ?? formState.cardScheme
     if (picked) {
       set('cardScheme', picked)
       syncCardSchemeToggles(picked)
@@ -1088,13 +1160,15 @@ function generateRandom() {
     set('threeDSCompInd', compInd)
   }
 
-  // merchantCountryCodeStr 隨機（僅在勾選時）
-  if (formState.enableMerchantCountryCodeStrRandom) {
+  // merchantCountryCode 隨機（僅在勾選時）
+  if (formState.enableMerchantCountryCodeRandom) {
     const randomValue =
       MERCHANT_COUNTRY_CODE_STR_VALUES[
         Math.floor(Math.random() * MERCHANT_COUNTRY_CODE_STR_VALUES.length)
       ] || '156'
-    set('merchantCountryCodeStr', randomValue)
+    syncCountryByNumeric(randomValue)
+  } else {
+    syncCountryByNumeric(formState.merchantCountryCode || formState.merchantCountryCodeStr || '156')
   }
   // 如果沒有勾選，使用當前選單中的值（不需要額外設置，因為 getFormData 會讀取）
 
@@ -1662,8 +1736,8 @@ function buildDocument(
       region_name: city.name
     }
   }
-  // 使用 merchantCountryCodeStr 來生成 GeoIP（如果有的話，否則使用 merchantCountryCode）
-  const countryCodeForGeoIP = form.merchantCountryCodeStr || form.merchantCountryCode || '156'
+  // 使用 merchantCountryCode 來生成 GeoIP（如果有的話，否則使用 merchantCountryCodeStr）
+  const countryCodeForGeoIP = form.merchantCountryCode || form.merchantCountryCodeStr || '156'
   const countryInfo = countryCodeMap[countryCodeForGeoIP] || countryCodeMap['156']!
   // browserGeoIP（預設生成，基於 merchantCountryCodeStr）
   // 預設生成，除非 checkbox 明確取消勾選
@@ -1834,6 +1908,7 @@ defineExpose({
       v-model:acquirerBin="formState.acquirerBin"
       v-model:mcc="formState.mcc"
       v-model:enableAcquirerMerchantIdRandom="formState.enableAcquirerMerchantIdRandom"
+      v-model:enableMerchantCountryCodeRandom="formState.enableMerchantCountryCodeRandom"
     />
 
     <PurchaseAmountSection
@@ -1842,6 +1917,7 @@ defineExpose({
       v-model:purchaseExponent="formState.purchaseExponent"
       v-model:usdAmount="formState.usdAmount"
       v-model:enablePurchaseAmountRandom="formState.enablePurchaseAmountRandom"
+      v-model:enablePurchaseCurrencyRandom="formState.enablePurchaseCurrencyRandom"
     />
 
     <CountryCurrencySection

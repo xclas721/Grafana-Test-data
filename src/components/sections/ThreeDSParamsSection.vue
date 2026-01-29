@@ -441,6 +441,7 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
             label="商戶國家代碼 (字串) (merchantCountryCodeStr)"
             :modelValue="props.merchantCountryCodeStr"
             :options="merchantCountryCodeStrOptions"
+            :disabled="true"
             @update:modelValue="(value) => emit('update:merchantCountryCodeStr', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
@@ -449,6 +450,7 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
               id="enableMerchantCountryCodeStrRandom"
               class="checkbox checkbox-sm"
               :checked="props.enableMerchantCountryCodeStrRandom"
+              :disabled="true"
               @change="
                 (event) =>
                   emit(
@@ -461,7 +463,9 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
               隨機生成時包含此欄位
             </label>
           </div>
-          <p class="text-xs text-error mt-2">可隨機生成，從選單中隨機選擇</p>
+          <p class="text-xs text-base-content/60 mt-2">
+            由 merchantCountryCode 同步產生，無需手動調整
+          </p>
         </div>
         <div>
           <label class="label">

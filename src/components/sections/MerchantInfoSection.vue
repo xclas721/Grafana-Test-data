@@ -10,6 +10,7 @@ const props = defineProps<{
   acquirerBin: string
   mcc: string
   enableAcquirerMerchantIdRandom: boolean
+  enableMerchantCountryCodeRandom: boolean
 }>()
 
 const emit = defineEmits<{
@@ -19,6 +20,7 @@ const emit = defineEmits<{
   'update:acquirerBin': [value: string]
   'update:mcc': [value: string]
   'update:enableAcquirerMerchantIdRandom': [value: boolean]
+  'update:enableMerchantCountryCodeRandom': [value: boolean]
 }>()
 
 const merchantCountryOptions: SelectOption[] = [
@@ -64,6 +66,24 @@ const merchantCountryOptions: SelectOption[] = [
             @update:modelValue="(value) => emit('update:merchantCountryCode', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">選擇商戶所在國家/地區</p>
+          <div class="flex items-center gap-2 mt-2">
+            <input
+              type="checkbox"
+              id="enableMerchantCountryCodeRandom"
+              class="checkbox checkbox-sm"
+              :checked="props.enableMerchantCountryCodeRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableMerchantCountryCodeRandom',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
+            />
+            <label for="enableMerchantCountryCodeRandom" class="text-sm text-base-content/60">
+              隨機生成時包含此欄位
+            </label>
+          </div>
         </div>
         <div>
           <Input

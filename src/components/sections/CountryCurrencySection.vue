@@ -30,56 +30,88 @@ const emit = defineEmits<{
   <section id="country-currency" class="scroll-mt-24">
     <Card>
       <h3 class="text-base font-semibold text-base-content/80 mb-3">5.國家和貨幣信息</h3>
+      <p class="text-xs text-error mb-3">
+        提示：隨機生成時會以 merchantCountryCode 為準同步這些國家欄位， 並作為
+        browserGeoIP/deviceGeoIP 的來源
+      </p>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Input
-          id="countryAlpha2"
-          label="國家代碼 (Alpha-2) (countryAlpha2)"
-          :modelValue="props.countryAlpha2"
-          @update:modelValue="(value) => emit('update:countryAlpha2', String(value))"
-        />
-        <Input
-          id="countryNumeric"
-          label="國家代碼 (數字) (countryNumeric)"
-          :modelValue="props.countryNumeric"
-          @update:modelValue="(value) => emit('update:countryNumeric', String(value))"
-        />
-        <Input
-          id="countryAlpha3"
-          label="國家代碼 (Alpha-3) (countryAlpha3)"
-          :modelValue="props.countryAlpha3"
-          @update:modelValue="(value) => emit('update:countryAlpha3', String(value))"
-        />
-        <Input
-          id="countryName"
-          label="國家名稱 (英文) (countryName)"
-          :modelValue="props.countryName"
-          @update:modelValue="(value) => emit('update:countryName', String(value))"
-        />
-        <Input
-          id="currencyMinorUnit"
-          type="number"
-          label="貨幣小數位數 (currencyMinorUnit)"
-          :modelValue="props.currencyMinorUnit"
-          @update:modelValue="(value) => emit('update:currencyMinorUnit', String(value))"
-        />
-        <Input
-          id="currencyName"
-          label="貨幣名稱 (英文) (currencyName)"
-          :modelValue="props.currencyName"
-          @update:modelValue="(value) => emit('update:currencyName', String(value))"
-        />
-        <Input
-          id="currencyAlphabeticCode"
-          label="貨幣代碼 (字母) (currencyAlphabeticCode)"
-          :modelValue="props.currencyAlphabeticCode"
-          @update:modelValue="(value) => emit('update:currencyAlphabeticCode', String(value))"
-        />
-        <Input
-          id="currencyNumericCode"
-          label="貨幣代碼 (數字) (currencyNumericCode)"
-          :modelValue="props.currencyNumericCode"
-          @update:modelValue="(value) => emit('update:currencyNumericCode', String(value))"
-        />
+        <div>
+          <Input
+            id="countryAlpha2"
+            label="國家代碼 (Alpha-2) (countryAlpha2)"
+            :modelValue="props.countryAlpha2"
+            :disabled="true"
+            @update:modelValue="(value) => emit('update:countryAlpha2', String(value))"
+          />
+          <p class="text-xs text-error mt-1">可隨機生成，以 merchantCountryCode 為準</p>
+        </div>
+        <div>
+          <Input
+            id="countryNumeric"
+            label="國家代碼 (數字) (countryNumeric)"
+            :modelValue="props.countryNumeric"
+            :disabled="true"
+            @update:modelValue="(value) => emit('update:countryNumeric', String(value))"
+          />
+          <p class="text-xs text-error mt-1">可隨機生成，以 merchantCountryCode 為準</p>
+        </div>
+        <div>
+          <Input
+            id="countryAlpha3"
+            label="國家代碼 (Alpha-3) (countryAlpha3)"
+            :modelValue="props.countryAlpha3"
+            :disabled="true"
+            @update:modelValue="(value) => emit('update:countryAlpha3', String(value))"
+          />
+          <p class="text-xs text-error mt-1">可隨機生成，以 merchantCountryCode 為準</p>
+        </div>
+        <div>
+          <Input
+            id="countryName"
+            label="國家名稱 (英文) (countryName)"
+            :modelValue="props.countryName"
+            :disabled="true"
+            @update:modelValue="(value) => emit('update:countryName', String(value))"
+          />
+          <p class="text-xs text-error mt-1">可隨機生成，以 merchantCountryCode 為準</p>
+        </div>
+        <div>
+          <Input
+            id="currencyMinorUnit"
+            type="number"
+            label="貨幣小數位數 (currencyMinorUnit)"
+            :modelValue="props.currencyMinorUnit"
+            @update:modelValue="(value) => emit('update:currencyMinorUnit', String(value))"
+          />
+          <p class="text-xs text-error mt-1">可隨機生成，以 merchantCountryCode 為準</p>
+        </div>
+        <div>
+          <Input
+            id="currencyName"
+            label="貨幣名稱 (英文) (currencyName)"
+            :modelValue="props.currencyName"
+            @update:modelValue="(value) => emit('update:currencyName', String(value))"
+          />
+          <p class="text-xs text-error mt-1">可隨機生成，以 merchantCountryCode 為準</p>
+        </div>
+        <div>
+          <Input
+            id="currencyAlphabeticCode"
+            label="貨幣代碼 (字母) (currencyAlphabeticCode)"
+            :modelValue="props.currencyAlphabeticCode"
+            @update:modelValue="(value) => emit('update:currencyAlphabeticCode', String(value))"
+          />
+          <p class="text-xs text-error mt-1">可隨機生成，以 merchantCountryCode 為準</p>
+        </div>
+        <div>
+          <Input
+            id="currencyNumericCode"
+            label="貨幣代碼 (數字) (currencyNumericCode)"
+            :modelValue="props.currencyNumericCode"
+            @update:modelValue="(value) => emit('update:currencyNumericCode', String(value))"
+          />
+          <p class="text-xs text-error mt-1">可隨機生成，以 merchantCountryCode 為準</p>
+        </div>
       </div>
     </Card>
   </section>

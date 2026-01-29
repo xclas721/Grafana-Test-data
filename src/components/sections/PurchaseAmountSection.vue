@@ -9,6 +9,7 @@ const props = defineProps<{
   purchaseExponent: string
   usdAmount: string
   enablePurchaseAmountRandom: boolean
+  enablePurchaseCurrencyRandom: boolean
 }>()
 
 const emit = defineEmits<{
@@ -17,6 +18,7 @@ const emit = defineEmits<{
   'update:purchaseExponent': [value: string]
   'update:usdAmount': [value: string]
   'update:enablePurchaseAmountRandom': [value: boolean]
+  'update:enablePurchaseCurrencyRandom': [value: boolean]
 }>()
 
 const purchaseCurrencyOptions: SelectOption[] = [
@@ -84,12 +86,31 @@ const purchaseCurrencyOptions: SelectOption[] = [
             @update:modelValue="(value) => emit('update:purchaseCurrency', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">選擇貨幣類型</p>
+          <div class="flex items-center gap-2 mt-2">
+            <input
+              type="checkbox"
+              id="enablePurchaseCurrencyRandom"
+              class="checkbox checkbox-sm"
+              :checked="props.enablePurchaseCurrencyRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enablePurchaseCurrencyRandom',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
+            />
+            <label for="enablePurchaseCurrencyRandom" class="text-sm text-base-content/60">
+              隨機生成時包含此欄位
+            </label>
+          </div>
         </div>
         <Input
           id="purchaseExponent"
           type="number"
           label="購買金額指數 (purchaseExponent)"
           :modelValue="props.purchaseExponent"
+          :disabled="true"
           required
           @update:modelValue="(value) => emit('update:purchaseExponent', String(value))"
         />
