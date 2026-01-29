@@ -14,6 +14,12 @@ export default defineConfig({
   ],
   server: {
     port: 6600,
+    proxy: {
+      '/acs-auth': {
+        target: 'http://localhost:30100',
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     port: 6600,

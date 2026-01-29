@@ -184,10 +184,7 @@ const onReasonModeChange = (
   }
 }
 
-const onReasonValueChange = (
-  key: 'transStatusReason' | 'stateMachineReason',
-  value: string
-) => {
+const onReasonValueChange = (key: 'transStatusReason' | 'stateMachineReason', value: string) => {
   if (key === 'transStatusReason') {
     emit('update:transStatusReason', value || 'NULL_VALUE')
     emit('update:transStatusReasonMode', 'fixed')
@@ -196,7 +193,6 @@ const onReasonValueChange = (
     emit('update:stateMachineReasonMode', 'fixed')
   }
 }
-
 
 const aresOptions: SelectOption[] = [
   { value: 'Y', label: 'Y' },
@@ -464,7 +460,9 @@ const reasonModeOptions: SelectOption[] = [
 
       <div class="mt-4 rounded-md bg-base-200 p-4">
         <div class="text-sm font-semibold text-base-content/80 mb-3">隨機機率設定</div>
-        <div class="mt-4 mb-2 rounded-md border border-base-300 bg-base-100 px-3 py-2 text-sm font-semibold text-base-content shadow-sm">
+        <div
+          class="mt-4 mb-2 rounded-md border border-base-300 bg-base-100 px-3 py-2 text-sm font-semibold text-base-content shadow-sm"
+        >
           交易成功率：{{ props.expectedTransactionSuccessRate.toFixed(2) }}% ・免密驗證率：{{
             props.expectedFrictionlessRate.toFixed(2)
           }}% ・挑戰驗證成功率：{{ props.expectedChallengeSuccessRate.toFixed(2) }}%
@@ -737,7 +735,9 @@ const reasonModeOptions: SelectOption[] = [
                 label="模式"
                 :modelValue="props.transStatusReasonMode"
                 :options="reasonModeOptions"
-                @update:modelValue="(value) => onReasonModeChange('transStatusReasonMode', String(value))"
+                @update:modelValue="
+                  (value) => onReasonModeChange('transStatusReasonMode', String(value))
+                "
               />
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                 <Input
@@ -745,7 +745,9 @@ const reasonModeOptions: SelectOption[] = [
                   label="輸入代碼"
                   :modelValue="props.transStatusReason"
                   :disabled="props.transStatusReasonMode === 'random'"
-                  @update:modelValue="(value) => onReasonValueChange('transStatusReason', String(value))"
+                  @update:modelValue="
+                    (value) => onReasonValueChange('transStatusReason', String(value))
+                  "
                 />
                 <Select
                   id="transStatusReasonSelect"
@@ -753,7 +755,9 @@ const reasonModeOptions: SelectOption[] = [
                   :modelValue="props.transStatusReason"
                   :options="transStatusReasonOptions"
                   :disabled="props.transStatusReasonMode === 'random'"
-                  @update:modelValue="(value) => onReasonValueChange('transStatusReason', String(value))"
+                  @update:modelValue="
+                    (value) => onReasonValueChange('transStatusReason', String(value))
+                  "
                 />
               </div>
             </div>
@@ -764,7 +768,9 @@ const reasonModeOptions: SelectOption[] = [
                 label="模式"
                 :modelValue="props.stateMachineReasonMode"
                 :options="reasonModeOptions"
-                @update:modelValue="(value) => onReasonModeChange('stateMachineReasonMode', String(value))"
+                @update:modelValue="
+                  (value) => onReasonModeChange('stateMachineReasonMode', String(value))
+                "
               />
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                 <Input
@@ -772,7 +778,9 @@ const reasonModeOptions: SelectOption[] = [
                   label="輸入代碼"
                   :modelValue="props.stateMachineReason"
                   :disabled="props.stateMachineReasonMode === 'random'"
-                  @update:modelValue="(value) => onReasonValueChange('stateMachineReason', String(value))"
+                  @update:modelValue="
+                    (value) => onReasonValueChange('stateMachineReason', String(value))
+                  "
                 />
                 <Select
                   id="stateMachineReasonSelect"
@@ -780,7 +788,9 @@ const reasonModeOptions: SelectOption[] = [
                   :modelValue="props.stateMachineReason"
                   :options="stateMachineReasonOptions"
                   :disabled="props.stateMachineReasonMode === 'random'"
-                  @update:modelValue="(value) => onReasonValueChange('stateMachineReason', String(value))"
+                  @update:modelValue="
+                    (value) => onReasonValueChange('stateMachineReason', String(value))
+                  "
                 />
               </div>
             </div>
