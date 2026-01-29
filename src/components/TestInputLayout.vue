@@ -1,5 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
+
+const route = useRoute()
+
+// 判斷 DDoS 限流測試區塊是否應該展開
+const isDDoSActive = () => {
+  return route.path === '/rate-limit-test'
+}
+
+// 判斷 Grafana Test Data 區塊是否應該展開
+const isGrafanaActive = () => {
+  return route.path === '/'
+}
 
 const props = defineProps<{
   activeMode: 'unified' | 'acs' | 'dss'
@@ -214,95 +227,152 @@ onBeforeUnmount(() => {
           <div class="text-xs text-neutral-content/60 mt-1">Grafana Test Data</div>
         </div>
         <nav class="flex-1 overflow-y-auto p-4 pr-2 max-h-[calc(100vh-120px)]">
-          <div class="text-xs text-neutral-content/60">快速導覽</div>
-          <ul class="menu gap-1 mt-2">
+          <ul
+            class="menu gap-1 flex-1 [&_a.active]:bg-neutral-focus [&_a.active]:text-neutral-content [&_summary.active]:bg-neutral-focus [&_summary.active]:text-neutral-content"
+          >
+            <!-- Grafana Test Data 區塊 -->
             <li>
-              <a
-                href="#base-config"
-                class="quick-link text-neutral-content/80 hover:bg-neutral-focus/60 hover:text-neutral-content"
-              >
-                基礎配置
-              </a>
+              <details :open="isGrafanaActive()" class="group">
+                <summary
+                  :class="{ active: isGrafanaActive() }"
+                  class="flex items-center gap-3 rounded-lg transition-all cursor-pointer"
+                >
+                  <span class="flex-1">Grafana Test Data</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    class="w-4 h-4 transition-transform group-open:rotate-90"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" />
+                  </svg>
+                </summary>
+                <ul class="mt-1 space-y-1 pl-8 transition-all duration-200">
+                  <li>
+                    <a
+                      href="#base-config"
+                      class="flex items-center gap-2 rounded-lg transition-all text-sm"
+                    >
+                      <span>基礎配置</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#transaction-id"
+                      class="flex items-center gap-2 rounded-lg transition-all text-sm"
+                    >
+                      <span>交易識別</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#transaction-status"
+                      class="flex items-center gap-2 rounded-lg transition-all text-sm"
+                    >
+                      <span>交易狀態</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#merchant-info"
+                      class="flex items-center gap-2 rounded-lg transition-all text-sm"
+                    >
+                      <span>商戶信息</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#purchase-amount"
+                      class="flex items-center gap-2 rounded-lg transition-all text-sm"
+                    >
+                      <span>交易金額</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#country-currency"
+                      class="flex items-center gap-2 rounded-lg transition-all text-sm"
+                    >
+                      <span>國家/貨幣</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#exchange-rate"
+                      class="flex items-center gap-2 rounded-lg transition-all text-sm"
+                    >
+                      <span>匯率信息</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#card-info"
+                      class="flex items-center gap-2 rounded-lg transition-all text-sm"
+                    >
+                      <span>卡片信息</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#three-ds-params"
+                      class="flex items-center gap-2 rounded-lg transition-all text-sm"
+                    >
+                      <span>3DS 參數</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#performance"
+                      class="flex items-center gap-2 rounded-lg transition-all text-sm"
+                    >
+                      <span>效能監控</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#error-handling"
+                      class="flex items-center gap-2 rounded-lg transition-all text-sm"
+                    >
+                      <span>錯誤處理</span>
+                    </a>
+                  </li>
+                </ul>
+              </details>
             </li>
+
+            <!-- DDoS 限流測試區塊 -->
             <li>
-              <a
-                href="#transaction-id"
-                class="quick-link text-neutral-content/80 hover:bg-neutral-focus/60 hover:text-neutral-content"
-              >
-                交易識別
-              </a>
-            </li>
-            <li>
-              <a
-                href="#transaction-status"
-                class="quick-link text-neutral-content/80 hover:bg-neutral-focus/60 hover:text-neutral-content"
-              >
-                交易狀態
-              </a>
-            </li>
-            <li>
-              <a
-                href="#merchant-info"
-                class="quick-link text-neutral-content/80 hover:bg-neutral-focus/60 hover:text-neutral-content"
-              >
-                商戶信息
-              </a>
-            </li>
-            <li>
-              <a
-                href="#purchase-amount"
-                class="quick-link text-neutral-content/80 hover:bg-neutral-focus/60 hover:text-neutral-content"
-              >
-                交易金額
-              </a>
-            </li>
-            <li>
-              <a
-                href="#country-currency"
-                class="quick-link text-neutral-content/80 hover:bg-neutral-focus/60 hover:text-neutral-content"
-              >
-                國家/貨幣
-              </a>
-            </li>
-            <li>
-              <a
-                href="#exchange-rate"
-                class="quick-link text-neutral-content/80 hover:bg-neutral-focus/60 hover:text-neutral-content"
-              >
-                匯率信息
-              </a>
-            </li>
-            <li>
-              <a
-                href="#card-info"
-                class="quick-link text-neutral-content/80 hover:bg-neutral-focus/60 hover:text-neutral-content"
-              >
-                卡片信息
-              </a>
-            </li>
-            <li>
-              <a
-                href="#three-ds-params"
-                class="quick-link text-neutral-content/80 hover:bg-neutral-focus/60 hover:text-neutral-content"
-              >
-                3DS 參數
-              </a>
-            </li>
-            <li>
-              <a
-                href="#performance"
-                class="quick-link text-neutral-content/80 hover:bg-neutral-focus/60 hover:text-neutral-content"
-              >
-                效能監控
-              </a>
-            </li>
-            <li>
-              <a
-                href="#error-handling"
-                class="quick-link text-neutral-content/80 hover:bg-neutral-focus/60 hover:text-neutral-content"
-              >
-                錯誤處理
-              </a>
+              <details :open="isDDoSActive()" class="group">
+                <summary
+                  :class="{ active: isDDoSActive() }"
+                  class="flex items-center gap-3 rounded-lg transition-all cursor-pointer"
+                >
+                  <span class="flex-1">DDoS 限流測試</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    class="w-4 h-4 transition-transform group-open:rotate-90"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" />
+                  </svg>
+                </summary>
+                <ul class="mt-1 space-y-1 pl-8 transition-all duration-200">
+                  <li>
+                    <RouterLink
+                      to="/rate-limit-test"
+                      :class="{ active: route.path === '/rate-limit-test' }"
+                      class="flex items-center gap-2 rounded-lg transition-all text-sm"
+                    >
+                      <span>卡BIN攻擊</span>
+                    </RouterLink>
+                  </li>
+                </ul>
+              </details>
             </li>
           </ul>
         </nav>

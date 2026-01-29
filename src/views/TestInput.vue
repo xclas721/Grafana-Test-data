@@ -314,19 +314,19 @@ async function batchInsert() {
 
 <template>
   <TestInputLayout
-    :activeMode="mode"
-    v-model:batchCount="batchCount"
-    v-model:batchDays="batchDays"
-    @changeMode="onChangeMode"
-    @loadDefaults="onLoadDefaults"
-    @generateRandom="onGenerateRandom"
-    @insertData="onInsertData"
-    @batchInsert="onBatchInsert"
-  >
-    <TestInputForm ref="formRef" :activeMode="mode" :batchDays="batchDays" />
-    <NotificationPanel ref="panelRef" />
-    <CurrencyModal v-model="currencyModalVisible" @select="onCurrencySelect" />
-  </TestInputLayout>
+      :activeMode="mode"
+      v-model:batchCount="batchCount"
+      v-model:batchDays="batchDays"
+      @changeMode="onChangeMode"
+      @loadDefaults="onLoadDefaults"
+      @generateRandom="onGenerateRandom"
+      @insertData="onInsertData"
+      @batchInsert="onBatchInsert"
+    >
+      <TestInputForm ref="formRef" :activeMode="mode" :batchDays="batchDays" />
+      <NotificationPanel ref="panelRef" />
+      <CurrencyModal v-model="currencyModalVisible" @select="onCurrencySelect" />
+    </TestInputLayout>
 </template>
 
 <style scoped></style>
