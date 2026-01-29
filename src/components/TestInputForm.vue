@@ -64,18 +64,18 @@ const formState = reactive({
   transStatusReasonMode: 'random' as 'random' | 'fixed',
   stateMachineReasonMode: 'random' as 'random' | 'fixed',
   challengeCancel: 'NULL_VALUE',
-  aresWeightY: '51',
-  aresWeightN: '1',
-  aresWeightR: '1',
-  aresWeightC: '20',
-  aresWeightD: '5',
-  aresWeightA: '10',
-  aresWeightI: '10',
-  aresWeightS: '1',
-  aresWeightU: '1',
+  aresWeightY: '6',
+  aresWeightN: '4',
+  aresWeightR: '3',
+  aresWeightC: '84',
+  aresWeightD: '0',
+  aresWeightA: '0',
+  aresWeightI: '1',
+  aresWeightS: '0',
+  aresWeightU: '2',
   rreqWeightNull: '0',
-  rreqWeightY: '80',
-  rreqWeightN: '20',
+  rreqWeightY: '91',
+  rreqWeightN: '9',
   challengeCancelRate: '8',
   merchantName: 'HiTRUST EMV Demo Merchant',
   merchantCountryCode: '156',
@@ -708,18 +708,18 @@ function loadDefaults() {
   setField('currencyAlphabeticCode', 'CNY')
   setField('currencyNumericCode', '156')
   syncStatusDependencies()
-  setField('aresWeightY', '51')
-  setField('aresWeightN', '1')
-  setField('aresWeightR', '1')
-  setField('aresWeightC', '20')
-  setField('aresWeightD', '5')
-  setField('aresWeightA', '10')
-  setField('aresWeightI', '10')
-  setField('aresWeightS', '1')
-  setField('aresWeightU', '1')
+  setField('aresWeightY', '6')
+  setField('aresWeightN', '4')
+  setField('aresWeightR', '3')
+  setField('aresWeightC', '84')
+  setField('aresWeightD', '0')
+  setField('aresWeightA', '0')
+  setField('aresWeightI', '1')
+  setField('aresWeightS', '0')
+  setField('aresWeightU', '2')
   setField('rreqWeightNull', '0')
-  setField('rreqWeightY', '80')
-  setField('rreqWeightN', '20')
+  setField('rreqWeightY', '91')
+  setField('rreqWeightN', '9')
   setField('challengeCancelRate', '8')
   formState.enablePurchaseAmountRandom = true
   formState.enableAcquirerMerchantIdRandom = true
