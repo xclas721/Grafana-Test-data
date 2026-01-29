@@ -22,7 +22,7 @@ const isGrafanaActive = () => {
 // 配置參數（對應 PowerShell 腳本的配置區塊）
 // ========================================
 const config = reactive({
-  baseUrl: 'http://localhost:30100',
+  baseUrl: '',
   cardScheme: 'V',
   version: '2.2.0',
   issuerOids: ['06b4b203-da05-73f9-256f-454929df6076'], // Issuer OID 列表
@@ -144,7 +144,7 @@ function addLog(type: LogEntry['type'], message: string, details?: string) {
  * 載入預設值（對應 PowerShell 腳本的預設配置）
  */
 function loadDefaults() {
-  config.baseUrl = 'http://localhost:30100'
+  config.baseUrl = ''
   config.cardScheme = 'V'
   config.version = '2.2.0'
   config.issuerOids = ['06b4b203-da05-73f9-256f-454929df6076']
@@ -169,11 +169,7 @@ function sleep(ms: number): Promise<void> {
  */
 async function sendRequest(
   cardNumber: string,
-  issuerOid: string,
-  requestIndex: number,
-  totalRequests: number,
-  cardIndex: number,
-  totalCards: number
+  issuerOid: string
 ): Promise<{
   success: boolean
   type: 'success' | 'rateLimit' | 'invalidEndpoint' | 'otherError'
@@ -183,13 +179,22 @@ async function sendRequest(
 }> {
   const startTime = Date.now()
 
+  type AreqResponse = {
+    messageType?: string
+    errorCode?: string
+    errorDescription?: string
+    errorDetail?: string
+    acsTransID?: string
+  }
+
   // 生成交易 ID
   const dsTransID = generateUUID().toUpperCase()
   const threeDSServerTransID = generateUUID()
 
   // 構建請求 URL
   const endpoint = `/acs-auth/auth/${config.cardScheme}/${config.version}/${issuerOid}/${config.projectId}/areq`
-  const url = `${config.baseUrl}${endpoint}`
+  const resolvedBaseUrl = config.baseUrl.trim().replace(/\/+$/, '')
+  const url = `${resolvedBaseUrl}${endpoint}`
 
   // 構建請求 Body（對應 PowerShell 腳本第 63-109 行）
   const requestBody = {
@@ -236,7 +241,10 @@ async function sendRequest(
     purchaseAmount: '100',
     purchaseCurrency: '156',
     purchaseExponent: '2',
-    purchaseDate: new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14),
+    purchaseDate: new Date()
+      .toISOString()
+      .replace(/[-:T.]/g, '')
+      .slice(0, 14),
     transType: '01',
     browserJavascriptEnabled: false
   }
@@ -254,9 +262,9 @@ async function sendRequest(
     const duration = endTime - startTime
 
     // 嘗試解析回應 JSON
-    let responseData: any = null
+    let responseData: AreqResponse | null = null
     try {
-      responseData = await response.json()
+      responseData = (await response.json()) as AreqResponse
     } catch {
       // 如果無法解析 JSON，可能是空回應或其他格式
       if (!response.ok) {
@@ -384,7 +392,7 @@ async function runTest() {
 
   // 獲取有效的 Issuer OID 列表
   const issuerOids = getValidIssuerOids()
-  
+
   if (issuerOids.length === 0) {
     addLog('error', '錯誤：至少需要一個 Issuer OID')
     isTesting.value = false
@@ -396,7 +404,8 @@ async function runTest() {
   addLog('info', '========================================')
   addLog('info', 'DDoS AReq Card Number Rate Limit Test')
   addLog('info', '========================================')
-  addLog('info', `Base URL: ${config.baseUrl}`)
+  const resolvedBaseUrl = config.baseUrl.trim().replace(/\/+$/, '')
+  addLog('info', `Base URL: ${resolvedBaseUrl || '(同源代理)'}`)
   addLog('info', `Card Scheme: ${config.cardScheme}`)
   addLog('info', `Version: ${config.version}`)
   addLog('info', `Total Issuer OIDs: ${issuerOids.length}`)
@@ -433,7 +442,9 @@ async function runTest() {
 
     while (attempts < maxAttempts) {
       // 生成隨機後綴（3位數，範圍 000-999）
-      const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+      const randomSuffix = Math.floor(Math.random() * 1000)
+        .toString()
+        .padStart(3, '0')
       const cardNumber = `${config.cardPrefix}${randomSuffix}`
 
       if (!usedCardNumbers.has(cardNumber)) {
@@ -484,21 +495,20 @@ async function runTest() {
       currentRequestIndex++
 
       // 隨機選擇一個 issuerOid
-      const selectedIssuerOid = issuerOids[Math.floor(Math.random() * issuerOids.length)]
+      const selectedIssuerOid =
+        issuerOids[Math.floor(Math.random() * issuerOids.length)] ?? issuerOids[0]
+      if (!selectedIssuerOid) {
+        addLog('error', 'Issuer OID 清單為空，無法繼續測試')
+        shouldStop.value = true
+        break
+      }
       const selectedIssuerOidIndex = issuerOids.indexOf(selectedIssuerOid)
 
       // 顯示請求資訊
       const logPrefix = `[Request ${currentRequestIndex}/${totalRequestCount}] Card: ${testCardNumber} (${i}/${config.requestCount}) IssuerOid: ${selectedIssuerOid.substring(0, 8)}... [${selectedIssuerOidIndex + 1}]`
 
       // 發送請求
-      const result = await sendRequest(
-        testCardNumber,
-        selectedIssuerOid,
-        currentRequestIndex,
-        totalRequestCount,
-        cardIndex,
-        config.cardCount
-      )
+      const result = await sendRequest(testCardNumber, selectedIssuerOid)
 
       // 更新統計
       if (result.type === 'success') {
@@ -552,7 +562,10 @@ async function runTest() {
   addLog('info', `Requests per Card: ${config.requestCount}`)
   addLog('info', `Total Requests: ${totalRequestCount}`)
   addLog('info', `Success: ${testResults.successCount} (Expected: ${config.cardCount * 5})`)
-  addLog('info', `Rate Limited (403): ${testResults.rateLimitCount} (Expected: ${config.cardCount * (config.requestCount - 5)})`)
+  addLog(
+    'info',
+    `Rate Limited (403): ${testResults.rateLimitCount} (Expected: ${config.cardCount * (config.requestCount - 5)})`
+  )
   addLog('info', '  → 被 DDoS 檢測擋住')
   addLog('info', `Invalid Endpoint (303): ${testResults.invalidEndpointCount} → issuerOid 驗證失敗`)
   addLog('info', `Other Errors: ${testResults.otherErrorCount}`)
@@ -562,14 +575,20 @@ async function runTest() {
   const expectedSuccess = config.cardCount * 5
   const expectedRateLimit = config.cardCount * (config.requestCount - 5)
 
-  if (testResults.successCount === expectedSuccess && testResults.rateLimitCount >= expectedRateLimit) {
+  if (
+    testResults.successCount === expectedSuccess &&
+    testResults.rateLimitCount >= expectedRateLimit
+  ) {
     addLog('success', '')
     addLog('success', 'Test PASSED! Card number rate limiting is working correctly')
     addLog('success', '  Each card: First 5 requests passed, 6th+ requests triggered rate limit')
     addLog('success', `  Total ${config.cardCount} card(s) tested, all rate limited correctly`)
   } else if (testResults.successCount < expectedSuccess) {
     addLog('warning', '')
-    addLog('warning', `WARNING: Success count less than expected (${testResults.successCount} < ${expectedSuccess})`)
+    addLog(
+      'warning',
+      `WARNING: Success count less than expected (${testResults.successCount} < ${expectedSuccess})`
+    )
     addLog('warning', '  Possible reasons:')
     addLog('warning', '  1. Rate limit switch not enabled (acs.rate.limit.switch)')
     addLog('warning', '  2. Previous requests consumed tokens')
@@ -671,208 +690,208 @@ const getLogClass = (type: LogEntry['type']) => {
             </ul>
           </div>
 
-      <!-- 配置區塊 -->
-      <Card title="測試配置" subtitle="DDoS AReq 卡號限流測試配置">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Input
-            v-model="config.baseUrl"
-            label="Base URL (基礎 URL)"
-            placeholder="http://localhost:30100"
-            :disabled="isTesting"
-          />
-          <Select
-            v-model="config.cardScheme"
-            label="Card Scheme (卡組織)"
-            :options="cardSchemeOptions"
-            :disabled="isTesting"
-          />
-          <Input
-            v-model="config.version"
-            label="Version (版本號)"
-            placeholder="2.2.0"
-            :disabled="isTesting"
-          />
-          <!-- Issuer OID 列表 -->
-          <div class="form-control col-span-full">
-            <label class="label">
-              <span class="label-text">Issuer OID List (Issuer OID 列表)</span>
-              <span class="label-text-alt text-base-content/60">
-                每次請求會從列表中隨機選擇一個使用
-              </span>
-            </label>
-            <div class="space-y-2">
-              <div
-                v-for="(oid, index) in config.issuerOids"
-                :key="index"
-                class="flex items-center gap-2"
-              >
+          <!-- 配置區塊 -->
+          <Card title="測試配置" subtitle="DDoS AReq 卡號限流測試配置">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div class="col-span-full">
                 <Input
-                  v-model="config.issuerOids[index]"
-                  :placeholder="`Issuer OID ${index + 1} (UUID 格式)`"
+                  v-model="config.baseUrl"
+                  label="Base URL (基礎 URL)"
+                  placeholder="留空使用同源代理 (http://localhost:6600)"
                   :disabled="isTesting"
-                  class="flex-1"
                 />
-                <Button
-                  v-if="config.issuerOids.length > 1"
-                  variant="ghost"
-                  size="sm"
-                  @click="removeIssuerOid(index)"
-                  :disabled="isTesting"
-                  title="移除"
-                >
-                  ×
-                </Button>
+                <div class="mt-1 text-xs text-base-content/60">
+                  留空時走同源代理，會轉送到 http://localhost:30100
+                </div>
+                <div class="mt-1 text-xs text-warning">
+                  若填入外部網域，後端需開 CORS，否則瀏覽器會被擋下。
+                </div>
               </div>
-              <div class="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  @click="addIssuerOid"
-                  :disabled="isTesting"
-                >
-                  + 新增 Issuer OID
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  @click="generateAndAddRandomIssuerOid"
-                  :disabled="isTesting"
-                >
-                  + 生成隨機 Issuer OID
-                </Button>
+              <Select
+                v-model="config.cardScheme"
+                label="Card Scheme (卡組織)"
+                :options="cardSchemeOptions"
+                :disabled="isTesting"
+              />
+              <Input
+                v-model="config.version"
+                label="Version (版本號)"
+                placeholder="2.2.0"
+                :disabled="isTesting"
+              />
+              <!-- Issuer OID 列表 -->
+              <div class="form-control col-span-full">
+                <label class="label">
+                  <span class="label-text">Issuer OID List (Issuer OID 列表)</span>
+                  <span class="label-text-alt text-base-content/60">
+                    每次請求會從列表中隨機選擇一個使用
+                  </span>
+                </label>
+                <div class="space-y-2">
+                  <div
+                    v-for="(oid, index) in config.issuerOids"
+                    :key="index"
+                    class="flex items-center gap-2"
+                  >
+                    <Input
+                      v-model="config.issuerOids[index]"
+                      :placeholder="`Issuer OID ${index + 1} (UUID 格式)`"
+                      :disabled="isTesting"
+                      class="flex-1"
+                    />
+                    <Button
+                      v-if="config.issuerOids.length > 1"
+                      variant="ghost"
+                      size="sm"
+                      @click="removeIssuerOid(index)"
+                      :disabled="isTesting"
+                      title="移除"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                  <div class="flex gap-2">
+                    <Button variant="outline" size="sm" @click="addIssuerOid" :disabled="isTesting">
+                      + 新增 Issuer OID
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      @click="generateAndAddRandomIssuerOid"
+                      :disabled="isTesting"
+                    >
+                      + 生成隨機 Issuer OID
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <Input
-            v-model="config.projectId"
-            label="Project ID (專案 ID)"
-            placeholder="001"
-            :disabled="isTesting"
-          />
-          <Input
-            v-model="config.cardPrefix"
-            label="Card Prefix (卡號前綴)"
-            placeholder="4143520000000"
-            :disabled="isTesting"
-          />
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text">Card Count (卡號數量)</span>
-            </label>
-            <div class="join w-full">
-              <input
-                v-model.number="config.cardCount"
+              <Input
+                v-model="config.projectId"
+                label="Project ID (專案 ID)"
+                placeholder="001"
+                :disabled="isTesting"
+              />
+              <Input
+                v-model="config.cardPrefix"
+                label="Card Prefix (卡號前綴)"
+                placeholder="4143520000000"
+                :disabled="isTesting"
+              />
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">Card Count (卡號數量)</span>
+                </label>
+                <div class="join w-full">
+                  <input
+                    v-model.number="config.cardCount"
+                    type="number"
+                    min="1"
+                    max="100"
+                    class="input input-bordered input-sm join-item flex-1"
+                    :disabled="isTesting"
+                  />
+                </div>
+                <label class="label cursor-pointer justify-start gap-2 mt-2">
+                  <input
+                    v-model="config.noDuplicateCards"
+                    type="checkbox"
+                    class="checkbox checkbox-sm"
+                    :disabled="isTesting"
+                  />
+                  <span class="label-text text-xs">No Duplicate Cards (卡號不重複)</span>
+                </label>
+              </div>
+              <Input
+                v-model.number="config.requestCount"
+                label="Requests per Card (每張卡請求次數)"
                 type="number"
                 min="1"
                 max="100"
-                class="input input-bordered input-sm join-item flex-1"
+                :disabled="isTesting"
+              />
+              <Input
+                v-model="config.merchantID"
+                label="Merchant ID (商戶 ID)"
+                placeholder="8909191"
                 :disabled="isTesting"
               />
             </div>
-            <label class="label cursor-pointer justify-start gap-2 mt-2">
-              <input
-                v-model="config.noDuplicateCards"
-                type="checkbox"
-                class="checkbox checkbox-sm"
+
+            <div class="flex gap-2 mt-6">
+              <Button variant="outline" @click="loadDefaults" :disabled="isTesting"
+                >載入預設值</Button
+              >
+              <Button
+                v-if="!isTesting"
+                variant="success"
+                @click="runTest"
                 :disabled="isTesting"
-              />
-              <span class="label-text text-xs">No Duplicate Cards (卡號不重複)</span>
-            </label>
-          </div>
-          <Input
-            v-model.number="config.requestCount"
-            label="Requests per Card (每張卡請求次數)"
-            type="number"
-            min="1"
-            max="100"
-            :disabled="isTesting"
-          />
-          <Input
-            v-model="config.merchantID"
-            label="Merchant ID (商戶 ID)"
-            placeholder="8909191"
-            :disabled="isTesting"
-          />
-        </div>
+                :loading="isTesting"
+              >
+                開始測試
+              </Button>
+              <Button v-else variant="danger" @click="stopTest" :disabled="!isTesting">
+                停止測試
+              </Button>
+            </div>
+          </Card>
 
-        <div class="flex gap-2 mt-6">
-          <Button variant="outline" @click="loadDefaults" :disabled="isTesting">載入預設值</Button>
-          <Button
-            v-if="!isTesting"
-            variant="success"
-            @click="runTest"
-            :disabled="isTesting"
-            :loading="isTesting"
-          >
-            開始測試
-          </Button>
-          <Button
-            v-else
-            variant="error"
-            @click="stopTest"
-            :disabled="!isTesting"
-          >
-            停止測試
-          </Button>
-        </div>
-      </Card>
+          <!-- 統計摘要 -->
+          <Card title="測試結果摘要">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div class="stat bg-base-200 rounded-lg p-4">
+                <div class="stat-title text-xs">總請求數</div>
+                <div class="stat-value text-2xl">{{ totalRequests }}</div>
+              </div>
+              <div class="stat bg-success/10 rounded-lg p-4">
+                <div class="stat-title text-xs">成功</div>
+                <div class="stat-value text-2xl text-success">
+                  {{ testResults.successCount }}
+                </div>
+                <div class="stat-desc text-xs">預期: {{ expectedSuccess }}</div>
+              </div>
+              <div class="stat bg-error/10 rounded-lg p-4">
+                <div class="stat-title text-xs">限流 (403)</div>
+                <div class="stat-value text-2xl text-error">
+                  {{ testResults.rateLimitCount }}
+                </div>
+                <div class="stat-desc text-xs">預期: {{ expectedRateLimit }}</div>
+              </div>
+              <div class="stat bg-warning/10 rounded-lg p-4">
+                <div class="stat-title text-xs">其他錯誤</div>
+                <div class="stat-value text-2xl text-warning">
+                  {{ testResults.invalidEndpointCount + testResults.otherErrorCount }}
+                </div>
+                <div class="stat-desc text-xs">
+                  Invalid: {{ testResults.invalidEndpointCount }}, Other:
+                  {{ testResults.otherErrorCount }}
+                </div>
+              </div>
+            </div>
+          </Card>
 
-      <!-- 統計摘要 -->
-      <Card title="測試結果摘要">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div class="stat bg-base-200 rounded-lg p-4">
-            <div class="stat-title text-xs">總請求數</div>
-            <div class="stat-value text-2xl">{{ totalRequests }}</div>
-          </div>
-          <div class="stat bg-success/10 rounded-lg p-4">
-            <div class="stat-title text-xs">成功</div>
-            <div class="stat-value text-2xl text-success">
-              {{ testResults.successCount }}
+          <!-- 日誌顯示區塊 -->
+          <Card title="測試日誌" subtitle="即時顯示測試過程和結果">
+            <div
+              id="log-container"
+              class="bg-base-300 rounded-lg p-4 max-h-[600px] overflow-y-auto font-mono text-xs space-y-1"
+            >
+              <div
+                v-for="log in logs"
+                :key="log.id"
+                :class="['whitespace-pre-wrap', getLogClass(log.type)]"
+              >
+                <span class="text-base-content/60">[{{ log.time }}]</span>
+                {{ log.message }}
+                <div v-if="log.details" class="ml-8 text-base-content/80 text-[10px]">
+                  {{ log.details }}
+                </div>
+              </div>
+              <div v-if="logs.length === 0" class="text-base-content/40 text-center py-8">
+                尚未開始測試，請點擊「開始測試」按鈕
+              </div>
             </div>
-            <div class="stat-desc text-xs">預期: {{ expectedSuccess }}</div>
-          </div>
-          <div class="stat bg-error/10 rounded-lg p-4">
-            <div class="stat-title text-xs">限流 (403)</div>
-            <div class="stat-value text-2xl text-error">
-              {{ testResults.rateLimitCount }}
-            </div>
-            <div class="stat-desc text-xs">預期: {{ expectedRateLimit }}</div>
-          </div>
-          <div class="stat bg-warning/10 rounded-lg p-4">
-            <div class="stat-title text-xs">其他錯誤</div>
-            <div class="stat-value text-2xl text-warning">
-              {{ testResults.invalidEndpointCount + testResults.otherErrorCount }}
-            </div>
-            <div class="stat-desc text-xs">
-              Invalid: {{ testResults.invalidEndpointCount }}, Other:
-              {{ testResults.otherErrorCount }}
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      <!-- 日誌顯示區塊 -->
-      <Card title="測試日誌" subtitle="即時顯示測試過程和結果">
-        <div
-          id="log-container"
-          class="bg-base-300 rounded-lg p-4 max-h-[600px] overflow-y-auto font-mono text-xs space-y-1"
-        >
-          <div
-            v-for="log in logs"
-            :key="log.id"
-            :class="['whitespace-pre-wrap', getLogClass(log.type)]"
-          >
-            <span class="text-base-content/60">[{{ log.time }}]</span>
-            {{ log.message }}
-            <div v-if="log.details" class="ml-8 text-base-content/80 text-[10px]">
-              {{ log.details }}
-            </div>
-          </div>
-          <div v-if="logs.length === 0" class="text-base-content/40 text-center py-8">
-            尚未開始測試，請點擊「開始測試」按鈕
-          </div>
-        </div>
-      </Card>
+          </Card>
         </div>
       </main>
     </div>

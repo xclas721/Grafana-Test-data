@@ -835,7 +835,10 @@ function generateRandom() {
         set('transStatusReason', '01')
       }
     } else {
-      set('transStatusReason', fixedReason && fixedReason !== 'NULL_VALUE' ? fixedReason : 'NULL_VALUE')
+      set(
+        'transStatusReason',
+        fixedReason && fixedReason !== 'NULL_VALUE' ? fixedReason : 'NULL_VALUE'
+      )
     }
   } else {
     set('transStatusReason', 'NULL_VALUE')
@@ -960,10 +963,7 @@ function generateRandom() {
         set('stateMachineReason', pickFrom[idx] as string)
       }
     } else {
-      set(
-        'stateMachineReason',
-        fixedReason && fixedReason !== 'NULL_VALUE' ? fixedReason : '0000'
-      )
+      set('stateMachineReason', fixedReason && fixedReason !== 'NULL_VALUE' ? fixedReason : '0000')
     }
   }
   // 帳號原始值（依卡別前綴）- 僅在勾選時隨機
