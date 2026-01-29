@@ -172,18 +172,13 @@ onBeforeUnmount(() => {
                     type="number"
                     id="batchCount"
                     :value="props.batchCount ?? 10"
-                    min="1"
-                    max="100000"
                     class="input input-bordered input-sm w-24"
                     placeholder="10"
                     @input="
                       (event) =>
                         emit(
                           'update:batchCount',
-                          Math.max(
-                            1,
-                            Math.min(100000, Number((event.target as HTMLInputElement).value || 10))
-                          )
+                          Math.max(1, Number((event.target as HTMLInputElement).value || 10))
                         )
                     "
                   />
@@ -192,8 +187,6 @@ onBeforeUnmount(() => {
                     type="number"
                     id="batchDays"
                     :value="props.batchDays ?? 1"
-                    min="1"
-                    max="30"
                     class="input input-bordered input-sm w-20"
                     placeholder="1"
                     title="生成多少天的數據"
@@ -201,10 +194,7 @@ onBeforeUnmount(() => {
                       (event) =>
                         emit(
                           'update:batchDays',
-                          Math.max(
-                            1,
-                            Math.min(30, Number((event.target as HTMLInputElement).value || 1))
-                          )
+                          Math.max(1, Number((event.target as HTMLInputElement).value || 1))
                         )
                     "
                   />

@@ -30,6 +30,7 @@ const config = reactive({
   cardPrefix: '4143520000000',
   cardCount: 100,
   requestCount: 1,
+  merchantName: 'HiTRUST EMV Demo Merchant',
   merchantID: '8909191',
   mcc: '5661',
   merchantCountryCode: '156',
@@ -154,6 +155,7 @@ function loadDefaults() {
   config.cardPrefix = '4143520000000'
   config.cardCount = 15
   config.requestCount = 7
+  config.merchantName = 'HiTRUST EMV Demo Merchant'
   config.merchantID = '8909191'
   config.noDuplicateCards = false
   addLog('info', '預設值已載入')
@@ -237,7 +239,7 @@ async function sendRequest(
     dsURL: 'http://localhost:8020/api-proxy/challenge/2.3.1/001/rreq',
     mcc: config.mcc,
     merchantCountryCode: config.merchantCountryCode,
-    merchantName: 'HiTRUST EMV Demo Merchant',
+    merchantName: config.merchantName,
     messageCategory: '01',
     notificationURL: 'http://localhost:8040/cres',
     purchaseAmount: '100',
@@ -815,6 +817,12 @@ const getLogClass = (type: LogEntry['type']) => {
                 v-model="config.merchantID"
                 label="Merchant ID (商戶 ID)"
                 placeholder="8909191"
+                :disabled="isTesting"
+              />
+              <Input
+                v-model="config.merchantName"
+                label="Merchant Name (商戶名稱)"
+                placeholder="HiTRUST EMV Demo Merchant"
                 :disabled="isTesting"
               />
               <Input
