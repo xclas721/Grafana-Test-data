@@ -141,6 +141,7 @@ const formState = reactive({
   enableAcctNumberRandom: true,
   enableMerchantCountryCodeRandom: true,
   enableMerchantCountryAsiaOnly: false,
+  enableMccRandom: true,
   enableCardSchemeRandom: false,
   enableMastercardExtension: false,
   enableMastercardExtensionRandom: false,
@@ -785,6 +786,7 @@ function loadDefaults() {
   formState.enableAcctNumberRandom = true
   formState.enableMerchantCountryCodeRandom = true
   formState.enableMerchantCountryAsiaOnly = false
+  formState.enableMccRandom = true
   formState.enableMastercardExtension = false
   formState.enableMastercardExtensionRandom = false
   formState.enableVisaScoreRandom = false
@@ -1062,7 +1064,7 @@ function generateRandom() {
   }
   // cardScheme 隨機（獨立開關）
   if (formState.enableCardSchemeRandom) {
-    const schemePool = ['V', 'M', 'J', 'U', 'A']
+    const schemePool = ['V', 'M', 'J', 'C', 'A']
     const picked = schemePool[Math.floor(Math.random() * schemePool.length)] ?? formState.cardScheme
     if (picked) {
       set('cardScheme', picked)
@@ -1080,6 +1082,11 @@ function generateRandom() {
     for (let i = 0; i < len; i++) rnd += Math.floor(Math.random() * 10)
     if (rnd.startsWith('0')) rnd = '1' + rnd.substring(1)
     set('acquirerMerchantId', rnd)
+  }
+  // mcc 隨機（僅在勾選時）
+  if (formState.enableMccRandom) {
+    const mcc = String(Math.floor(Math.random() * 9000 + 1000))
+    set('mcc', mcc)
   }
   // Visa Score 隨機（僅在勾選時）
   if (formState.enableVisaScoreRandom) {
@@ -1216,7 +1223,7 @@ function generateRandomAcctNumber() {
   else if (scheme === 'M') prefix = '515352'
   else if (scheme === 'J') prefix = '313352'
   else if (scheme === 'A') prefix = '656352'
-  else if (scheme === 'U') prefix = '818352'
+  else if (scheme === 'C') prefix = '818352'
   // 產出 13 位亂數字串
   let suffix = ''
   for (let i = 0; i < 13; i++) suffix += Math.floor(Math.random() * 10)
@@ -1937,6 +1944,7 @@ defineExpose({
       v-model:enableAcquirerMerchantIdRandom="formState.enableAcquirerMerchantIdRandom"
       v-model:enableMerchantCountryCodeRandom="formState.enableMerchantCountryCodeRandom"
       v-model:enableMerchantCountryAsiaOnly="formState.enableMerchantCountryAsiaOnly"
+      v-model:enableMccRandom="formState.enableMccRandom"
     />
 
     <PurchaseAmountSection

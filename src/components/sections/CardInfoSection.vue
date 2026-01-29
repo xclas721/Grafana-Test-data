@@ -59,7 +59,7 @@ const cardSchemeOptions: SelectOption[] = [
   { value: 'P', label: 'P - PayNet' },
   { value: 'S', label: 'S - Saudi MADA' },
   { value: 'E', label: 'E - EftPos' },
-  { value: 'U', label: 'U - UL-STP' }
+  { value: 'U', label: 'U - EMVLab' }
 ]
 
 const mastercardDecisionOptions: SelectOption[] = [
@@ -143,11 +143,11 @@ const mastercardDecisionOptions: SelectOption[] = [
               </thead>
               <tbody>
                 <tr>
-                  <td>UL-STP</td>
+                  <td>UnionPay</td>
                   <td>8183520000000000 ~ 8183529999999999</td>
                 </tr>
                 <tr>
-                  <td>A</td>
+                  <td>American Express</td>
                   <td>6563520000000000 ~ 6563529999999999</td>
                 </tr>
                 <tr>

@@ -12,6 +12,7 @@ const props = defineProps<{
   enableAcquirerMerchantIdRandom: boolean
   enableMerchantCountryCodeRandom: boolean
   enableMerchantCountryAsiaOnly: boolean
+  enableMccRandom: boolean
 }>()
 
 const emit = defineEmits<{
@@ -23,6 +24,7 @@ const emit = defineEmits<{
   'update:enableAcquirerMerchantIdRandom': [value: boolean]
   'update:enableMerchantCountryCodeRandom': [value: boolean]
   'update:enableMerchantCountryAsiaOnly': [value: boolean]
+  'update:enableMccRandom': [value: boolean]
 }>()
 
 const merchantCountryOptions: SelectOption[] = [
@@ -146,13 +148,31 @@ const merchantCountryOptions: SelectOption[] = [
           required
           @update:modelValue="(value) => emit('update:acquirerBin', String(value))"
         />
-        <Input
-          id="mcc"
-          label="商戶類別代碼 (mcc)"
-          :modelValue="props.mcc"
-          required
-          @update:modelValue="(value) => emit('update:mcc', String(value))"
-        />
+        <div>
+          <Input
+            id="mcc"
+            label="商戶類別代碼 (mcc)"
+            :modelValue="props.mcc"
+            required
+            @update:modelValue="(value) => emit('update:mcc', String(value))"
+          />
+          <div class="flex items-center gap-2 mt-2">
+            <input
+              type="checkbox"
+              id="enableMccRandom"
+              class="checkbox checkbox-sm"
+              :checked="props.enableMccRandom"
+              @change="
+                (event) =>
+                  emit('update:enableMccRandom', (event.target as HTMLInputElement).checked)
+              "
+            />
+            <label for="enableMccRandom" class="text-sm text-base-content/60">
+              隨機生成時包含此欄位
+            </label>
+          </div>
+          <p class="text-xs text-error mt-2">可隨機生成 (1000-9999)</p>
+        </div>
       </div>
     </Card>
   </section>
