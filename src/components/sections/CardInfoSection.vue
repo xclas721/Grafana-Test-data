@@ -10,6 +10,7 @@ const props = defineProps<{
   acctNumberHashed: string
   acctNumberMask: string
   cardbin8: string
+  enableCardSchemeRandom: boolean
   visaDafMessageExtension: string
   mastercardScore: string
   mastercardDecision: string
@@ -34,6 +35,7 @@ const emit = defineEmits<{
   'update:acctNumberHashed': [value: string]
   'update:acctNumberMask': [value: string]
   'update:cardbin8': [value: string]
+  'update:enableCardSchemeRandom': [value: boolean]
   'update:visaDafMessageExtension': [value: string]
   'update:mastercardScore': [value: string]
   'update:mastercardDecision': [value: string]
@@ -53,6 +55,7 @@ const cardSchemeOptions: SelectOption[] = [
   { value: 'J', label: 'J - JCB' },
   { value: 'A', label: 'A - American Express' },
   { value: 'C', label: 'C - UnionPay' },
+  { value: 'D', label: 'D - Diners' },
   { value: 'P', label: 'P - PayNet' },
   { value: 'S', label: 'S - Saudi MADA' },
   { value: 'E', label: 'E - EftPos' },
@@ -71,15 +74,40 @@ const mastercardDecisionOptions: SelectOption[] = [
     <Card>
       <h3 class="text-base font-semibold text-base-content/80 mb-3">7.卡片信息</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Select
-          id="cardScheme"
-          label="卡片組織 (cardScheme)"
-          :modelValue="props.cardScheme"
-          :options="cardSchemeOptions"
-          required
-          :disabled="props.disableCardScheme"
-          @update:modelValue="(value) => emit('update:cardScheme', String(value))"
-        />
+        <div>
+          <Select
+            id="cardScheme"
+            label="卡片組織 (cardScheme)"
+            :modelValue="props.cardScheme"
+            :options="cardSchemeOptions"
+            required
+            :disabled="props.disableCardScheme"
+            @update:modelValue="(value) => emit('update:cardScheme', String(value))"
+          />
+          <div class="flex items-center gap-2 mt-2">
+            <input
+            type="checkbox"
+            id="enableCardSchemeRandom"
+            class="checkbox checkbox-sm"
+                :checked="props.enableCardSchemeRandom"
+                @change="
+                  (event) =>
+                    emit('update:enableCardSchemeRandom', (event.target as HTMLInputElement).checked)
+                "
+              />
+              <label for="enableCardSchemeRandom" class="text-sm text-base-content/60">
+                隨機生成時包含此欄位
+              </label>
+            </div>
+            <p class="text-xs text-base-content/60 mt-1">
+            提示：
+            <br>
+            切到 Visa 會自動勾選隨機 DAF 訊息擴展
+            <br>切到 Mastercard隨機 會自動勾選 M card 訊息擴展
+            <br>須解除啟用才能修改
+          </p>
+
+        </div>
         <div>
           <Input
             id="acctNumber"
@@ -104,8 +132,45 @@ const mastercardDecisionOptions: SelectOption[] = [
             </label>
           </div>
           <p class="text-xs text-error mt-2">此欄位不會 POST 出去，僅用於自動生成其他欄位</p>
-          <p class="text-xs text-error mt-1">Visa: 4143520000000000~4143529999999999</p>
-          <p class="text-xs text-error mt-1">MasterCard: 5153520000000000~5153529999999999</p>
+          <p class="text-xs text-base-content/60 mt-3">
+            勾選隨機生成時，會依卡組織前綴產生帳號原始值
+          </p>
+          <div class="mt-2 overflow-x-auto">
+            <table class="table table-xs">
+              <thead>
+                <tr>
+                  <th>卡組織</th>
+                  <th>範圍</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>PayNet</td>
+                  <td>8183520000000000 ~ 8183529999999999</td>
+                </tr>
+                <tr>
+                  <td>Diners</td>
+                  <td>6563520000000000 ~ 6563529999999999</td>
+                </tr>
+                <tr>
+                  <td>JCB</td>
+                  <td>3133520000000000 ~ 3133529999999999</td>
+                </tr>
+                <tr>
+                  <td>MasterCard</td>
+                  <td>5153520000000000 ~ 5153529999999999</td>
+                </tr>
+                <tr>
+                  <td>Visa</td>
+                  <td>4143520000000000 ~ 4143529999999999</td>
+                </tr>
+                <tr>
+                  <td>其他卡組織</td>
+                  <td>9999990000000000 ~ 9999999999999999</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
         <div>
           <Input

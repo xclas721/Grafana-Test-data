@@ -24,13 +24,15 @@ const isGrafanaActive = () => {
 const config = reactive({
   baseUrl: '',
   cardScheme: 'V',
-  version: '2.2.0',
+  version: '2.3.1',
   issuerOids: ['06b4b203-da05-73f9-256f-454929df6076'], // Issuer OID 列表
   projectId: '001',
   cardPrefix: '4143520000000',
-  cardCount: 15,
-  requestCount: 7,
+  cardCount: 100,
+  requestCount: 1,
   merchantID: '8909191',
+  mcc: '5661',
+  merchantCountryCode: '156',
   noDuplicateCards: false // 卡號不重複選項
 })
 
@@ -233,8 +235,8 @@ async function sendRequest(
     dsReferenceNumber: 'DsReferenceNumber12837129312',
     dsTransID: dsTransID,
     dsURL: 'http://localhost:8020/api-proxy/challenge/2.3.1/001/rreq',
-    mcc: '5661',
-    merchantCountryCode: '156',
+    mcc: config.mcc,
+    merchantCountryCode: config.merchantCountryCode,
     merchantName: 'HiTRUST EMV Demo Merchant',
     messageCategory: '01',
     notificationURL: 'http://localhost:8040/cres',
@@ -813,6 +815,18 @@ const getLogClass = (type: LogEntry['type']) => {
                 v-model="config.merchantID"
                 label="Merchant ID (商戶 ID)"
                 placeholder="8909191"
+                :disabled="isTesting"
+              />
+              <Input
+                v-model="config.mcc"
+                label="MCC (商店類別碼)"
+                placeholder="5661"
+                :disabled="isTesting"
+              />
+              <Input
+                v-model="config.merchantCountryCode"
+                label="Merchant Country Code (商店國別碼)"
+                placeholder="156"
                 :disabled="isTesting"
               />
             </div>

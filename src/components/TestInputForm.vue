@@ -138,6 +138,7 @@ const formState = reactive({
   enablePurchaseAmountRandom: true,
   enableAcquirerMerchantIdRandom: true,
   enableAcctNumberRandom: true,
+  enableCardSchemeRandom: false,
   enableMastercardExtension: false,
   enableMastercardExtensionRandom: false,
   enableVisaScoreRandom: false,
@@ -966,6 +967,16 @@ function generateRandom() {
       set('stateMachineReason', fixedReason && fixedReason !== 'NULL_VALUE' ? fixedReason : '0000')
     }
   }
+  // cardScheme 隨機（獨立開關）
+  if (formState.enableCardSchemeRandom) {
+    const schemePool = ['V', 'M', 'J', 'D', 'P']
+    const picked =
+      schemePool[Math.floor(Math.random() * schemePool.length)] ?? formState.cardScheme
+    if (picked) {
+      set('cardScheme', picked)
+      syncCardSchemeToggles(picked)
+    }
+  }
   // 帳號原始值（依卡別前綴）- 僅在勾選時隨機
   if (formState.enableAcctNumberRandom) {
     generateRandomAcctNumber()
@@ -1106,14 +1117,34 @@ function generateRandom() {
 
 function generateRandomAcctNumber() {
   const scheme = formState.cardScheme || 'V'
-  let prefix = '414352'
-  if (scheme === 'M') prefix = '515352'
+  let prefix = '999999'
+  if (scheme === 'V') prefix = '414352'
+  else if (scheme === 'M') prefix = '515352'
+  else if (scheme === 'J') prefix = '313352'
+  else if (scheme === 'D') prefix = '656352'
+  else if (scheme === 'P') prefix = '818352'
   // 產出 13 位亂數字串
   let suffix = ''
   for (let i = 0; i < 13; i++) suffix += Math.floor(Math.random() * 10)
   const acct = prefix + suffix
   setField('acctNumber', acct)
   updateCardInfoFromAcctNumber()
+}
+
+function syncCardSchemeToggles(scheme: string) {
+  if (scheme === 'V') {
+    formState.enableVisaScoreRandom = true
+    formState.enableMastercardExtension = false
+    formState.enableMastercardExtensionRandom = false
+  } else if (scheme === 'M') {
+    formState.enableVisaScoreRandom = false
+    formState.enableMastercardExtension = true
+    formState.enableMastercardExtensionRandom = true
+  } else {
+    formState.enableVisaScoreRandom = false
+    formState.enableMastercardExtension = false
+    formState.enableMastercardExtensionRandom = false
+  }
 }
 
 function setStatus(message: string, type: 'success' | 'error' | 'info' | 'warning') {
@@ -1197,6 +1228,31 @@ watch(
   (value) => {
     if (value && value !== formState.browserIP) setField('browserIP', value)
   }
+)
+
+watch(
+  () => formState.cardScheme,
+  (scheme) => {
+    if (scheme === 'V') {
+      if (!formState.enableVisaScoreRandom) formState.enableVisaScoreRandom = true
+      if (formState.enableMastercardExtension) formState.enableMastercardExtension = false
+      if (formState.enableMastercardExtensionRandom) {
+        formState.enableMastercardExtensionRandom = false
+      }
+    } else if (scheme === 'M') {
+      if (formState.enableVisaScoreRandom) formState.enableVisaScoreRandom = false
+      if (!formState.enableMastercardExtension) formState.enableMastercardExtension = true
+      if (!formState.enableMastercardExtensionRandom) {
+        formState.enableMastercardExtensionRandom = true
+      }
+    } else if (formState.enableVisaScoreRandom) {
+      formState.enableVisaScoreRandom = false
+    } else if (formState.enableMastercardExtension) {
+      formState.enableMastercardExtension = false
+      formState.enableMastercardExtensionRandom = false
+    }
+  },
+  { immediate: true }
 )
 
 type FormMap = Record<string, string>
@@ -1813,6 +1869,7 @@ defineExpose({
       v-model:acctNumberHashed="formState.acctNumberHashed"
       v-model:acctNumberMask="formState.acctNumberMask"
       v-model:cardbin8="formState.cardbin8"
+      v-model:enableCardSchemeRandom="formState.enableCardSchemeRandom"
       v-model:visaDafMessageExtension="formState.visaDafMessageExtension"
       v-model:mastercardScore="formState.mastercardScore"
       v-model:mastercardDecision="formState.mastercardDecision"
