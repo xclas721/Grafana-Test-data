@@ -35,7 +35,7 @@ const emit = defineEmits<{
         browserGeoIP/deviceGeoIP 的來源
       </p>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div>
+        <div class="rounded-md border border-error/40 bg-error/5 p-3">
           <Input
             id="countryAlpha2"
             label="國家代碼 (Alpha-2) (countryAlpha2)"
@@ -45,7 +45,7 @@ const emit = defineEmits<{
           />
           <p class="text-xs text-error mt-1">可隨機生成，以 merchantCountryCode 為準</p>
         </div>
-        <div>
+        <div class="rounded-md border border-error/40 bg-error/5 p-3">
           <Input
             id="countryNumeric"
             label="國家代碼 (數字) (countryNumeric)"
@@ -55,7 +55,7 @@ const emit = defineEmits<{
           />
           <p class="text-xs text-error mt-1">可隨機生成，以 merchantCountryCode 為準</p>
         </div>
-        <div>
+        <div class="rounded-md border border-error/40 bg-error/5 p-3">
           <Input
             id="countryAlpha3"
             label="國家代碼 (Alpha-3) (countryAlpha3)"
@@ -65,7 +65,7 @@ const emit = defineEmits<{
           />
           <p class="text-xs text-error mt-1">可隨機生成，以 merchantCountryCode 為準</p>
         </div>
-        <div>
+        <div class="rounded-md border border-error/40 bg-error/5 p-3">
           <Input
             id="countryName"
             label="國家名稱 (英文) (countryName)"

@@ -74,7 +74,7 @@ const mastercardDecisionOptions: SelectOption[] = [
     <Card>
       <h3 class="text-base font-semibold text-base-content/80 mb-3">7.卡片信息</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div>
+        <div class="rounded-md border border-info/40 bg-info/5 p-3">
           <Select
             id="cardScheme"
             label="卡片組織 (cardScheme)"
@@ -220,13 +220,15 @@ const mastercardDecisionOptions: SelectOption[] = [
         </div>
 
         <!-- 卡片組織擴展內容（Visa / Mastercard）-->
-        <Input
-          id="visaDafMessageExtension"
-          label="Visa DAF 訊息擴展 (visaDafMessageExtension)"
-          :modelValue="props.visaDafMessageExtension"
-          @update:modelValue="(value) => emit('update:visaDafMessageExtension', String(value))"
-        />
-        <div class="md:col-span-2">
+        <div class="rounded-md border border-info/40 bg-info/5 p-3">
+          <Input
+            id="visaDafMessageExtension"
+            label="Visa DAF 訊息擴展 (visaDafMessageExtension)"
+            :modelValue="props.visaDafMessageExtension"
+            @update:modelValue="(value) => emit('update:visaDafMessageExtension', String(value))"
+          />
+        </div>
+        <div class="md:col-span-2 rounded-md border border-info/40 bg-info/5 p-3">
           <label class="label">
             <span class="label-text">Mastercard 訊息擴展 (mastercardMessageExtension)</span>
           </label>
@@ -315,7 +317,7 @@ const mastercardDecisionOptions: SelectOption[] = [
             <p class="text-xs text-error mt-2">可隨機生成：Score、Decision，其他欄位保持預設值</p>
           </div>
         </div>
-        <div>
+        <div class="rounded-md border border-info/40 bg-info/5 p-3">
           <Input
             id="visaRiskBasedAuthenticationScore"
             type="number"

@@ -56,7 +56,7 @@ const merchantCountryOptions: SelectOption[] = [
           required
           @update:modelValue="(value) => emit('update:merchantName', String(value))"
         />
-        <div>
+        <div class="rounded-md border border-error/40 bg-error/5 p-3">
           <Select
             id="merchantCountryCode"
             label="商戶國家代碼 (merchantCountryCode)"

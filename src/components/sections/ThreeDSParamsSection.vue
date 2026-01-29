@@ -435,7 +435,7 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
           </div>
           <p class="text-xs text-error mt-2">可隨機生成 (Y/N)</p>
         </div>
-        <div>
+        <div class="rounded-md border border-error/40 bg-error/5 p-3">
           <Select
             id="merchantCountryCodeStr"
             label="商戶國家代碼 (字串) (merchantCountryCodeStr)"
