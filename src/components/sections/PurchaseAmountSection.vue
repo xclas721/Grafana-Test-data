@@ -9,6 +9,7 @@ const props = defineProps<{
   purchaseExponent: string
   usdAmount: string
   enablePurchaseAmountRandom: boolean
+  enablePurchaseCurrencyRandom: boolean
 }>()
 
 const emit = defineEmits<{
@@ -17,6 +18,7 @@ const emit = defineEmits<{
   'update:purchaseExponent': [value: string]
   'update:usdAmount': [value: string]
   'update:enablePurchaseAmountRandom': [value: boolean]
+  'update:enablePurchaseCurrencyRandom': [value: boolean]
 }>()
 
 const purchaseCurrencyOptions: SelectOption[] = [
@@ -31,6 +33,7 @@ const purchaseCurrencyOptions: SelectOption[] = [
   { value: '124', label: '124 - 加拿大加幣（加元） (CAD)' },
   { value: '978', label: '978 - 歐元區歐元 (EUR)' },
   { value: '826', label: '826 - 英國英鎊 (GBP)' },
+  { value: '116', label: '116 - 柬埔寨瑞爾 (KHR)' },
   { value: '764', label: '764 - 泰國泰銖 (THB)' },
   { value: '704', label: '704 - 越南越南盾 (VND)' },
   { value: '458', label: '458 - 馬來西亞馬幣（令吉） (MYR)' },
@@ -84,12 +87,31 @@ const purchaseCurrencyOptions: SelectOption[] = [
             @update:modelValue="(value) => emit('update:purchaseCurrency', String(value))"
           />
           <p class="text-xs text-base-content/60 mt-1">選擇貨幣類型</p>
+          <div class="flex items-center gap-2 mt-2">
+            <input
+              type="checkbox"
+              id="enablePurchaseCurrencyRandom"
+              class="checkbox checkbox-sm"
+              :checked="props.enablePurchaseCurrencyRandom"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enablePurchaseCurrencyRandom',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
+            />
+            <label for="enablePurchaseCurrencyRandom" class="text-sm text-base-content/60">
+              隨機生成時包含此欄位
+            </label>
+          </div>
         </div>
         <Input
           id="purchaseExponent"
           type="number"
           label="購買金額指數 (purchaseExponent)"
           :modelValue="props.purchaseExponent"
+          :disabled="true"
           required
           @update:modelValue="(value) => emit('update:purchaseExponent', String(value))"
         />

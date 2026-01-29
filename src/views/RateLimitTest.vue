@@ -24,13 +24,16 @@ const isGrafanaActive = () => {
 const config = reactive({
   baseUrl: '',
   cardScheme: 'V',
-  version: '2.2.0',
+  version: '2.3.1',
   issuerOids: ['06b4b203-da05-73f9-256f-454929df6076'], // Issuer OID 列表
   projectId: '001',
   cardPrefix: '4143520000000',
-  cardCount: 15,
-  requestCount: 7,
+  cardCount: 100,
+  requestCount: 1,
+  merchantName: 'HiTRUST EMV Demo Merchant',
   merchantID: '8909191',
+  mcc: '5661',
+  merchantCountryCode: '156',
   noDuplicateCards: false // 卡號不重複選項
 })
 
@@ -152,6 +155,7 @@ function loadDefaults() {
   config.cardPrefix = '4143520000000'
   config.cardCount = 15
   config.requestCount = 7
+  config.merchantName = 'HiTRUST EMV Demo Merchant'
   config.merchantID = '8909191'
   config.noDuplicateCards = false
   addLog('info', '預設值已載入')
@@ -233,9 +237,9 @@ async function sendRequest(
     dsReferenceNumber: 'DsReferenceNumber12837129312',
     dsTransID: dsTransID,
     dsURL: 'http://localhost:8020/api-proxy/challenge/2.3.1/001/rreq',
-    mcc: '5661',
-    merchantCountryCode: '156',
-    merchantName: 'HiTRUST EMV Demo Merchant',
+    mcc: config.mcc,
+    merchantCountryCode: config.merchantCountryCode,
+    merchantName: config.merchantName,
     messageCategory: '01',
     notificationURL: 'http://localhost:8040/cres',
     purchaseAmount: '100',
@@ -813,6 +817,24 @@ const getLogClass = (type: LogEntry['type']) => {
                 v-model="config.merchantID"
                 label="Merchant ID (商戶 ID)"
                 placeholder="8909191"
+                :disabled="isTesting"
+              />
+              <Input
+                v-model="config.merchantName"
+                label="Merchant Name (商戶名稱)"
+                placeholder="HiTRUST EMV Demo Merchant"
+                :disabled="isTesting"
+              />
+              <Input
+                v-model="config.mcc"
+                label="MCC (商店類別碼)"
+                placeholder="5661"
+                :disabled="isTesting"
+              />
+              <Input
+                v-model="config.merchantCountryCode"
+                label="Merchant Country Code (商店國別碼)"
+                placeholder="156"
                 :disabled="isTesting"
               />
             </div>

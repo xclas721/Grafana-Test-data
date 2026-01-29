@@ -13,6 +13,9 @@ import PerformanceSection from './sections/PerformanceSection.vue'
 import ErrorHandlingSection from './sections/ErrorHandlingSection.vue'
 
 const props = defineProps<{ activeMode?: 'unified' | 'acs' | 'dss'; batchDays?: number }>()
+const emit = defineEmits<{
+  (e: 'update:enableAutoTimeRange', value: boolean): void
+}>()
 
 const modeText = computed(() => {
   if (props.activeMode === 'acs') return 'ACS'
@@ -52,6 +55,10 @@ const formState = reactive({
   username: 'elastic',
   password: '123456',
   currentDate: '',
+  enableCustomTimeRange: true,
+  enableAutoTimeRange: true,
+  startDateTime: '',
+  endDateTime: '',
   timezone: 'browser',
   issuerOid: '06b4b203-da05-73f9-256f-454929df6076',
   acsTransId: '',
@@ -64,18 +71,18 @@ const formState = reactive({
   transStatusReasonMode: 'random' as 'random' | 'fixed',
   stateMachineReasonMode: 'random' as 'random' | 'fixed',
   challengeCancel: 'NULL_VALUE',
-  aresWeightY: '51',
-  aresWeightN: '1',
-  aresWeightR: '1',
-  aresWeightC: '20',
-  aresWeightD: '5',
-  aresWeightA: '10',
-  aresWeightI: '10',
-  aresWeightS: '1',
-  aresWeightU: '1',
+  aresWeightY: '6',
+  aresWeightN: '4',
+  aresWeightR: '3',
+  aresWeightC: '84',
+  aresWeightD: '0',
+  aresWeightA: '0',
+  aresWeightI: '1',
+  aresWeightS: '0',
+  aresWeightU: '2',
   rreqWeightNull: '0',
-  rreqWeightY: '80',
-  rreqWeightN: '20',
+  rreqWeightY: '91',
+  rreqWeightN: '9',
   challengeCancelRate: '8',
   merchantName: 'HiTRUST EMV Demo Merchant',
   merchantCountryCode: '156',
@@ -136,8 +143,14 @@ const formState = reactive({
   errorDetail: 'NULL_VALUE',
   errorMessageType: 'NULL_VALUE',
   enablePurchaseAmountRandom: true,
+  enablePurchaseCurrencyRandom: true,
   enableAcquirerMerchantIdRandom: true,
+  enableAcquirerBinRandom: true,
   enableAcctNumberRandom: true,
+  enableMerchantCountryCodeRandom: true,
+  enableMerchantCountryAsiaOnly: true,
+  enableMerchantRandom: true,
+  enableCardSchemeRandom: true,
   enableMastercardExtension: false,
   enableMastercardExtensionRandom: false,
   enableVisaScoreRandom: false,
@@ -158,7 +171,7 @@ const formState = reactive({
   enableDeviceLocaleRandom: true,
   enableDeviceAdvertisingIdRandom: true,
   enableThreeDSCompIndRandom: true,
-  enableMerchantCountryCodeStrRandom: true,
+  enableMerchantCountryCodeStrRandom: false,
   enableBrowserGeoIPRandom: true,
   enableDeviceGeoIPRandom: true,
   disableRreqTransStatus: true,
@@ -172,6 +185,8 @@ const stateBindings = {
   username: 'username',
   password: 'password',
   currentDate: 'currentDate',
+  startDateTime: 'startDateTime',
+  endDateTime: 'endDateTime',
   timezone: 'timezone',
   issuerOid: 'issuerOid',
   acsTransId: 'acsTransId',
@@ -342,7 +357,6 @@ const DEFAULT_CHALLENGE_CANCEL_RATE = 0.08
 
 const MERCHANT_COUNTRY_CODE_STR_VALUES = [
   '156',
-  '158',
   '840',
   '392',
   '344',
@@ -351,8 +365,88 @@ const MERCHANT_COUNTRY_CODE_STR_VALUES = [
   '036',
   '124',
   '978',
-  '826'
+  '826',
+  '116'
 ]
+
+const MERCHANT_COUNTRY_CODE_ASIA_VALUES = [
+  '156', // China
+  '392', // Japan
+  '344', // Hong Kong
+  '410', // South Korea
+  '702', // Singapore
+  '116', // Cambodia
+  '764', // Thailand
+  '704', // Vietnam
+  '458', // Malaysia
+  '360', // Indonesia
+  '608' // Philippines
+]
+
+const MERCHANT_MCC_OPTIONS = [
+  { name: 'HiTRUST EMV Demo Merchant', mcc: '5661' },
+  { name: "McDonald's", mcc: '5814' },
+  { name: 'Burger King', mcc: '5814' },
+  { name: 'KFC', mcc: '5814' },
+  { name: 'Starbucks', mcc: '5812' },
+  { name: 'Subway', mcc: '5814' },
+  { name: 'Pizza Hut', mcc: '5812' },
+  { name: "Domino's Pizza", mcc: '5812' },
+  { name: 'Walmart Supercenter', mcc: '5411' },
+  { name: 'Costco Wholesale', mcc: '5300' },
+  { name: 'Amazon Marketplace', mcc: '5262' },
+  { name: 'Apple Store', mcc: '5732' },
+  { name: 'Microsoft Store', mcc: '5732' },
+  { name: 'IKEA', mcc: '5712' },
+  { name: 'H&M', mcc: '5651' },
+  { name: 'Zara', mcc: '5691' },
+  { name: 'Nike Retail Store', mcc: '5651' },
+  { name: 'Adidas Retail Store', mcc: '5651' },
+  { name: 'Hilton Hotels', mcc: '7011' },
+  { name: 'Marriott Hotels', mcc: '7011' },
+  { name: 'Uber Rides', mcc: '4121' },
+  { name: 'Global Leisure Rewards', mcc: '5816' }
+] as const
+
+const ACQUIRER_BIN_OPTIONS = ['1231234', '1239999', '9991234', '9999999'] as const
+
+const COUNTRY_NUMERIC_MAP: Record<string, { alpha2: string; alpha3: string; name: string }> = {
+  '156': { alpha2: 'CN', alpha3: 'CHN', name: 'China' },
+  '158': { alpha2: 'TW', alpha3: 'TWN', name: 'Taiwan' },
+  '840': { alpha2: 'US', alpha3: 'USA', name: 'United States' },
+  '392': { alpha2: 'JP', alpha3: 'JPN', name: 'Japan' },
+  '344': { alpha2: 'HK', alpha3: 'HKG', name: 'Hong Kong' },
+  '410': { alpha2: 'KR', alpha3: 'KOR', name: 'South Korea' },
+  '702': { alpha2: 'SG', alpha3: 'SGP', name: 'Singapore' },
+  '116': { alpha2: 'KH', alpha3: 'KHM', name: 'Cambodia' },
+  '036': { alpha2: 'AU', alpha3: 'AUS', name: 'Australia' },
+  '124': { alpha2: 'CA', alpha3: 'CAN', name: 'Canada' },
+  '978': { alpha2: 'EU', alpha3: 'EUR', name: 'European Union' },
+  '826': { alpha2: 'GB', alpha3: 'GBR', name: 'United Kingdom' }
+}
+
+const CURRENCY_NUMERIC_MAP: Record<
+  string,
+  { alphabetic: string; name: string; minorUnit: string }
+> = {
+  '156': { alphabetic: 'CNY', name: 'Yuan Renminbi', minorUnit: '2' },
+  '901': { alphabetic: 'TWD', name: 'New Taiwan Dollar', minorUnit: '2' },
+  '840': { alphabetic: 'USD', name: 'US Dollar', minorUnit: '2' },
+  '392': { alphabetic: 'JPY', name: 'Yen', minorUnit: '0' },
+  '344': { alphabetic: 'HKD', name: 'Hong Kong Dollar', minorUnit: '2' },
+  '410': { alphabetic: 'KRW', name: 'Won', minorUnit: '0' },
+  '702': { alphabetic: 'SGD', name: 'Singapore Dollar', minorUnit: '2' },
+  '036': { alphabetic: 'AUD', name: 'Australian Dollar', minorUnit: '2' },
+  '124': { alphabetic: 'CAD', name: 'Canadian Dollar', minorUnit: '2' },
+  '978': { alphabetic: 'EUR', name: 'Euro', minorUnit: '2' },
+  '826': { alphabetic: 'GBP', name: 'Pound Sterling', minorUnit: '2' },
+  '116': { alphabetic: 'KHR', name: 'Riel', minorUnit: '2' },
+  '764': { alphabetic: 'THB', name: 'Baht', minorUnit: '2' },
+  '704': { alphabetic: 'VND', name: 'Dong', minorUnit: '0' },
+  '458': { alphabetic: 'MYR', name: 'Malaysian Ringgit', minorUnit: '2' },
+  '360': { alphabetic: 'IDR', name: 'Rupiah', minorUnit: '0' },
+  '608': { alphabetic: 'PHP', name: 'Philippine Peso', minorUnit: '2' }
+}
 
 const MASTERCARD_DECISIONS = ['Not Low Risk', 'Low Risk']
 
@@ -538,8 +632,9 @@ function syncStatusDependencies() {
 function updateTimeRangeDisplay() {
   const currentDate = formState.currentDate
   const timezone = (formState.timezone || 'browser') as string
-  const batchDays = Math.max(1, Math.floor(props.batchDays ?? 1))
-  if (!currentDate) {
+  const batchDays = Math.max(0, Math.floor(props.batchDays ?? 0))
+  const useCustomRange = formState.enableCustomTimeRange
+  if (!currentDate && !useCustomRange) {
     timeRangeHtml.value = '請選擇日期'
     return
   }
@@ -547,40 +642,23 @@ function updateTimeRangeDisplay() {
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
     now.getDate()
   ).padStart(2, '0')}`
-  function toUTC(date: Date): Date {
-    if (timezone === 'browser' || timezone === 'UTC') return date
-    try {
-      const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-        date.getDate()
-      ).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(
-        date.getMinutes()
-      ).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`
-      const test = new Date(iso + 'Z')
-      const fmt = new Intl.DateTimeFormat('en', { timeZone: timezone, timeZoneName: 'longOffset' })
-      const parts = fmt.formatToParts(test)
-      const off = parts.find((p) => p.type === 'timeZoneName')?.value || ''
-      const m = off.match(/GMT([+-])(\d{2}):(\d{2})/)
-      if (m) {
-        const sign = m[1] === '+' ? 1 : -1
-        const hh = parseInt(m[2] as string)
-        const mm = parseInt(m[3] as string)
-        const minutes = sign * (hh * 60 + mm)
-        return new Date(date.getTime() - minutes * 60000)
-      }
-    } catch {}
-    return new Date(date.getTime() + date.getTimezoneOffset() * 60000)
+  function getCustomRangeUtc() {
+    const startLocal = parseDateTimeLocal(formState.startDateTime)
+    const endLocal = parseDateTimeLocal(formState.endDateTime)
+    if (!startLocal || !endLocal) return null
+    let startUtc = convertToUTC(startLocal, timezone).getTime()
+    let endUtc = convertToUTC(endLocal, timezone).getTime()
+    if (endUtc < startUtc) {
+      const temp = startUtc
+      startUtc = endUtc
+      endUtc = temp
+    }
+    const nowUtc = Date.now()
+    const clampedEnd = Math.min(endUtc, nowUtc)
+    if (startUtc > clampedEnd) startUtc = clampedEnd
+    return { startUtc, endUtc, clampedEnd, clamped: clampedEnd !== endUtc }
   }
-  const startLocal = new Date(`${currentDate}T00:00:00`)
-  const endLocal =
-    currentDate === today
-      ? new Date(
-          `${currentDate}T${String(now.getHours()).padStart(2, '0')}:${String(
-            now.getMinutes()
-          ).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
-        )
-      : new Date(`${currentDate}T23:59:59`)
-  const utcStart = toUTC(startLocal).toISOString()
-  const utcEnd = toUTC(endLocal).toISOString()
+  const customRange = useCustomRange ? getCustomRangeUtc() : null
   const timezoneNames: Record<string, string> = {
     browser: `瀏覽器時區 (${Intl.DateTimeFormat().resolvedOptions().timeZone})`,
     'Asia/Taipei': '台灣 (UTC+8)',
@@ -597,7 +675,43 @@ function updateTimeRangeDisplay() {
     UTC: 'UTC (UTC+0)'
   }
   const tzName = timezoneNames[timezone] || timezone
-  if (batchDays === 1) {
+  if (useCustomRange) {
+    if (!customRange) {
+      timeRangeHtml.value = `<div style="font-size: 0.9em;">
+        <div><strong>選擇時區：</strong>${tzName}</div>
+        <div style="color:#666;margin-top:5px;">請選擇起訖時間</div>
+      </div>`
+      return
+    }
+    const utcStart = new Date(customRange.startUtc).toISOString()
+    const utcEnd = new Date(customRange.clampedEnd).toISOString()
+    const note = customRange.clamped
+      ? '<small>注意：結束時間超過現在，已限制到目前時間</small>'
+      : '<small>自訂時間區間</small>'
+    timeRangeHtml.value = `<div style="font-size: 0.9em;">
+      <div><strong>選擇時區：</strong>${tzName}</div>
+      <div><strong>UTC 時間範圍：</strong>${utcStart} ~ ${utcEnd}</div>
+      <div style="color:#666;margin-top:5px;">${note}</div>
+    </div>`
+  } else if (batchDays === 0) {
+    const utcNow = convertToUTC(now, timezone).toISOString()
+    timeRangeHtml.value = `<div style="font-size: 0.9em;">
+      <div><strong>選擇時區：</strong>${tzName}</div>
+      <div><strong>UTC 時間範圍：</strong>${utcNow} ~ ${utcNow}</div>
+      <div style="color:#666;margin-top:5px;"><small>僅使用現在時間</small></div>
+    </div>`
+  } else if (batchDays === 1) {
+    const startLocal = new Date(`${currentDate}T00:00:00`)
+    const endLocal =
+      currentDate === today
+        ? new Date(
+            `${currentDate}T${String(now.getHours()).padStart(2, '0')}:${String(
+              now.getMinutes()
+            ).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
+          )
+        : new Date(`${currentDate}T23:59:59`)
+    const utcStart = convertToUTC(startLocal, timezone).toISOString()
+    const utcEnd = convertToUTC(endLocal, timezone).toISOString()
     const note =
       currentDate === today
         ? '<small>注意：時間範圍限制在當前時間之前</small>'
@@ -608,6 +722,8 @@ function updateTimeRangeDisplay() {
       <div style="color:#666;margin-top:5px;">${note}</div>
     </div>`
   } else {
+    const startLocal = new Date(`${currentDate}T00:00:00`)
+    const utcStart = convertToUTC(startLocal, timezone).toISOString()
     const endDate = new Date(startLocal)
     endDate.setDate(startLocal.getDate() - (batchDays - 1))
     const endOfEnd = new Date(
@@ -615,7 +731,7 @@ function updateTimeRangeDisplay() {
         endDate.getDate()
       ).padStart(2, '0')}T23:59:59`
     )
-    const multiEndUTC = toUTC(endOfEnd).toISOString()
+    const multiEndUTC = convertToUTC(endOfEnd, timezone).toISOString()
     const dateRangeText = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')} ~ ${currentDate}`
     const note =
       currentDate === today
@@ -634,6 +750,11 @@ function loadDefaults() {
   setField('baseUrl', 'http://localhost:9200')
   setField('username', 'elastic')
   setField('password', '123456')
+  formState.enableCustomTimeRange = true
+  formState.enableAutoTimeRange = true
+  setField('startDateTime', '')
+  setField('endDateTime', '')
+  updateCustomTimeRangeFromNow()
   setField('issuerOid', '06b4b203-da05-73f9-256f-454929df6076')
   setField('acsTransId', cryptoRandomUUID())
   setField('threeDSServerTransId', cryptoRandomUUID().toLowerCase())
@@ -708,22 +829,28 @@ function loadDefaults() {
   setField('currencyAlphabeticCode', 'CNY')
   setField('currencyNumericCode', '156')
   syncStatusDependencies()
-  setField('aresWeightY', '51')
-  setField('aresWeightN', '1')
-  setField('aresWeightR', '1')
-  setField('aresWeightC', '20')
-  setField('aresWeightD', '5')
-  setField('aresWeightA', '10')
-  setField('aresWeightI', '10')
-  setField('aresWeightS', '1')
-  setField('aresWeightU', '1')
+  setField('aresWeightY', '6')
+  setField('aresWeightN', '4')
+  setField('aresWeightR', '3')
+  setField('aresWeightC', '84')
+  setField('aresWeightD', '0')
+  setField('aresWeightA', '0')
+  setField('aresWeightI', '1')
+  setField('aresWeightS', '0')
+  setField('aresWeightU', '2')
   setField('rreqWeightNull', '0')
-  setField('rreqWeightY', '80')
-  setField('rreqWeightN', '20')
+  setField('rreqWeightY', '91')
+  setField('rreqWeightN', '9')
   setField('challengeCancelRate', '8')
   formState.enablePurchaseAmountRandom = true
+  formState.enablePurchaseCurrencyRandom = true
   formState.enableAcquirerMerchantIdRandom = true
+  formState.enableAcquirerBinRandom = true
   formState.enableAcctNumberRandom = true
+  formState.enableMerchantCountryCodeRandom = true
+  formState.enableMerchantCountryAsiaOnly = true
+  formState.enableMerchantRandom = true
+  formState.enableCardSchemeRandom = true
   formState.enableMastercardExtension = false
   formState.enableMastercardExtensionRandom = false
   formState.enableVisaScoreRandom = false
@@ -744,7 +871,7 @@ function loadDefaults() {
   formState.enableDeviceLocaleRandom = true
   formState.enableDeviceAdvertisingIdRandom = true
   formState.enableThreeDSCompIndRandom = true
-  formState.enableMerchantCountryCodeStrRandom = true
+  formState.enableMerchantCountryCodeStrRandom = false
   formState.enableBrowserGeoIPRandom = true
   formState.enableDeviceGeoIPRandom = true
   setStatus('預設值已載入 (Vue 移植版)', 'success')
@@ -753,6 +880,31 @@ function loadDefaults() {
 function generateRandom() {
   const set = (id: string, val: string) => {
     setField(id, val)
+  }
+  const syncCountryByNumeric = (numeric: string) => {
+    const code = String(numeric || '').trim() || '156'
+    const info = COUNTRY_NUMERIC_MAP[code]
+    set('merchantCountryCode', code)
+    set('merchantCountryCodeStr', code)
+    set('countryNumeric', code)
+    if (info) {
+      set('countryAlpha2', info.alpha2)
+      set('countryAlpha3', info.alpha3)
+      set('countryName', info.name)
+    }
+  }
+  const syncCurrencyByNumeric = (numeric: string) => {
+    const code = String(numeric || '').trim() || '156'
+    const info = CURRENCY_NUMERIC_MAP[code]
+    set('purchaseCurrency', code)
+    set('currencyNumericCode', code)
+    if (info) {
+      set('currencyAlphabeticCode', info.alphabetic)
+      set('currencyName', info.name)
+      set('currencyMinorUnit', info.minorUnit)
+      set('currencyCodeForRate', info.alphabetic)
+      set('purchaseExponent', info.minorUnit)
+    }
   }
   set('acsTransId', cryptoRandomUUID())
   set('threeDSServerTransId', cryptoRandomUUID().toLowerCase())
@@ -767,6 +919,15 @@ function generateRandom() {
   // 金額
   if (formState.enablePurchaseAmountRandom) {
     set('purchaseAmount', (Math.random() * 990 + 10).toFixed(2))
+    set('usdAmount', (Math.random() * 990 + 10).toFixed(6))
+  }
+  // purchaseCurrency 隨機（僅在勾選時）
+  if (formState.enablePurchaseCurrencyRandom) {
+    const currencyKeys = Object.keys(CURRENCY_NUMERIC_MAP)
+    const picked = currencyKeys[Math.floor(Math.random() * currencyKeys.length)] || '156'
+    syncCurrencyByNumeric(picked)
+  } else {
+    syncCurrencyByNumeric(formState.purchaseCurrency || '156')
   }
   // 執行時間
   if (formState.enableExecTimeRandom) {
@@ -966,6 +1127,15 @@ function generateRandom() {
       set('stateMachineReason', fixedReason && fixedReason !== 'NULL_VALUE' ? fixedReason : '0000')
     }
   }
+  // cardScheme 隨機（獨立開關）
+  if (formState.enableCardSchemeRandom) {
+    const schemePool = ['V', 'M', 'J', 'C', 'A']
+    const picked = schemePool[Math.floor(Math.random() * schemePool.length)] ?? formState.cardScheme
+    if (picked) {
+      set('cardScheme', picked)
+      syncCardSchemeToggles(picked)
+    }
+  }
   // 帳號原始值（依卡別前綴）- 僅在勾選時隨機
   if (formState.enableAcctNumberRandom) {
     generateRandomAcctNumber()
@@ -977,6 +1147,23 @@ function generateRandom() {
     for (let i = 0; i < len; i++) rnd += Math.floor(Math.random() * 10)
     if (rnd.startsWith('0')) rnd = '1' + rnd.substring(1)
     set('acquirerMerchantId', rnd)
+  }
+  // acquirerBIN 隨機（僅在勾選時）
+  if (formState.enableAcquirerBinRandom) {
+    const pick =
+      ACQUIRER_BIN_OPTIONS[Math.floor(Math.random() * ACQUIRER_BIN_OPTIONS.length)] ||
+      ACQUIRER_BIN_OPTIONS[0]
+    if (pick) set('acquirerBin', pick)
+  }
+  // 商戶名稱 + MCC 隨機（僅在勾選時）
+  if (formState.enableMerchantRandom) {
+    const option =
+      MERCHANT_MCC_OPTIONS[Math.floor(Math.random() * MERCHANT_MCC_OPTIONS.length)] ||
+      MERCHANT_MCC_OPTIONS[0]
+    if (option) {
+      set('merchantName', option.name)
+      set('mcc', option.mcc)
+    }
   }
   // Visa Score 隨機（僅在勾選時）
   if (formState.enableVisaScoreRandom) {
@@ -1077,13 +1264,15 @@ function generateRandom() {
     set('threeDSCompInd', compInd)
   }
 
-  // merchantCountryCodeStr 隨機（僅在勾選時）
-  if (formState.enableMerchantCountryCodeStrRandom) {
-    const randomValue =
-      MERCHANT_COUNTRY_CODE_STR_VALUES[
-        Math.floor(Math.random() * MERCHANT_COUNTRY_CODE_STR_VALUES.length)
-      ] || '156'
-    set('merchantCountryCodeStr', randomValue)
+  // merchantCountryCode 隨機（僅在勾選時）
+  if (formState.enableMerchantCountryCodeRandom) {
+    const pool = formState.enableMerchantCountryAsiaOnly
+      ? MERCHANT_COUNTRY_CODE_ASIA_VALUES
+      : MERCHANT_COUNTRY_CODE_STR_VALUES
+    const randomValue = pool[Math.floor(Math.random() * pool.length)] || '156'
+    syncCountryByNumeric(randomValue)
+  } else {
+    syncCountryByNumeric(formState.merchantCountryCode || formState.merchantCountryCodeStr || '156')
   }
   // 如果沒有勾選，使用當前選單中的值（不需要額外設置，因為 getFormData 會讀取）
 
@@ -1106,14 +1295,34 @@ function generateRandom() {
 
 function generateRandomAcctNumber() {
   const scheme = formState.cardScheme || 'V'
-  let prefix = '414352'
-  if (scheme === 'M') prefix = '515352'
+  let prefix = '999999'
+  if (scheme === 'V') prefix = '414352'
+  else if (scheme === 'M') prefix = '515352'
+  else if (scheme === 'J') prefix = '313352'
+  else if (scheme === 'A') prefix = '656352'
+  else if (scheme === 'C') prefix = '818352'
   // 產出 13 位亂數字串
   let suffix = ''
   for (let i = 0; i < 13; i++) suffix += Math.floor(Math.random() * 10)
   const acct = prefix + suffix
   setField('acctNumber', acct)
   updateCardInfoFromAcctNumber()
+}
+
+function syncCardSchemeToggles(scheme: string) {
+  if (scheme === 'V') {
+    formState.enableVisaScoreRandom = true
+    formState.enableMastercardExtension = false
+    formState.enableMastercardExtensionRandom = false
+  } else if (scheme === 'M') {
+    formState.enableVisaScoreRandom = false
+    formState.enableMastercardExtension = true
+    formState.enableMastercardExtensionRandom = true
+  } else {
+    formState.enableVisaScoreRandom = false
+    formState.enableMastercardExtension = false
+    formState.enableMastercardExtensionRandom = false
+  }
 }
 
 function setStatus(message: string, type: 'success' | 'error' | 'info' | 'warning') {
@@ -1150,6 +1359,9 @@ onMounted(() => {
     today.getDate()
   ).padStart(2, '0')}`
   if (!formState.currentDate) setField('currentDate', dateStr)
+  if (formState.enableCustomTimeRange) {
+    updateCustomTimeRangeFromNow()
+  }
   // 時間區間顯示
   updateTimeRangeDisplay()
 
@@ -1171,8 +1383,25 @@ onMounted(() => {
 })
 
 watch(
-  () => [formState.currentDate, formState.timezone, props.batchDays],
+  () => formState.enableAutoTimeRange,
+  (value) => {
+    emit('update:enableAutoTimeRange', value)
+  },
+  { immediate: true }
+)
+
+watch(
+  () => [
+    formState.currentDate,
+    formState.enableCustomTimeRange,
+    formState.enableAutoTimeRange,
+    formState.timezone,
+    props.batchDays
+  ],
   () => {
+    if (formState.enableCustomTimeRange && formState.enableAutoTimeRange) {
+      updateCustomTimeRangeFromNow()
+    }
     updateTimeRangeDisplay()
   }
 )
@@ -1197,6 +1426,31 @@ watch(
   (value) => {
     if (value && value !== formState.browserIP) setField('browserIP', value)
   }
+)
+
+watch(
+  () => formState.cardScheme,
+  (scheme) => {
+    if (scheme === 'V') {
+      if (!formState.enableVisaScoreRandom) formState.enableVisaScoreRandom = true
+      if (formState.enableMastercardExtension) formState.enableMastercardExtension = false
+      if (formState.enableMastercardExtensionRandom) {
+        formState.enableMastercardExtensionRandom = false
+      }
+    } else if (scheme === 'M') {
+      if (formState.enableVisaScoreRandom) formState.enableVisaScoreRandom = false
+      if (!formState.enableMastercardExtension) formState.enableMastercardExtension = true
+      if (!formState.enableMastercardExtensionRandom) {
+        formState.enableMastercardExtensionRandom = true
+      }
+    } else if (formState.enableVisaScoreRandom) {
+      formState.enableVisaScoreRandom = false
+    } else if (formState.enableMastercardExtension) {
+      formState.enableMastercardExtension = false
+      formState.enableMastercardExtensionRandom = false
+    }
+  },
+  { immediate: true }
 )
 
 type FormMap = Record<string, string>
@@ -1238,7 +1492,77 @@ function convertToUTC(date: Date, timezone: string): Date {
   return new Date(date.getTime() + date.getTimezoneOffset() * 60000)
 }
 
+function formatZonedDateTime(date: Date, timezone: string): string {
+  const zone = timezone === 'browser' ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: zone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  })
+  const parts = formatter.formatToParts(date)
+  const lookup: Record<string, string> = {}
+  for (const part of parts) {
+    lookup[part.type] = part.value
+  }
+  return `${lookup.year}-${lookup.month}-${lookup.day}T${lookup.hour}:${lookup.minute}:${lookup.second}`
+}
+
+function parseDateTimeLocal(value: string): Date | null {
+  if (!value) return null
+  const [datePart, timePartRaw] = value.trim().split('T')
+  if (!datePart || !timePartRaw) return null
+  const [y, m, d] = datePart.split('-').map((v) => parseInt(v, 10))
+  const [hh, mm, ss] = timePartRaw.split(':').map((v) => parseInt(v, 10))
+  if (!y || !m || !d) return null
+  return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, ss || 0)
+}
+
+function getCustomRangeUtcFromForm(form: FormMap) {
+  if (form.enableCustomTimeRange !== 'on') return null
+  const tz = form.timezone || 'browser'
+  const startLocal = parseDateTimeLocal(form.startDateTime || '')
+  const endLocal = parseDateTimeLocal(form.endDateTime || '')
+  if (!startLocal || !endLocal) return null
+  let startUtcMs = convertToUTC(startLocal, tz).getTime()
+  let endUtcMs = convertToUTC(endLocal, tz).getTime()
+  if (endUtcMs < startUtcMs) {
+    const temp = startUtcMs
+    startUtcMs = endUtcMs
+    endUtcMs = temp
+  }
+  const nowUtc = Date.now()
+  const clampedEndUtcMs = Math.min(endUtcMs, nowUtc)
+  if (startUtcMs > clampedEndUtcMs) startUtcMs = clampedEndUtcMs
+  return { startUtcMs, endUtcMs, clampedEndUtcMs }
+}
+
+function updateCustomTimeRangeFromNow() {
+  if (!formState.enableCustomTimeRange || !formState.enableAutoTimeRange) return
+  const tz = formState.timezone || 'browser'
+  const days = Math.max(0, Math.floor(props.batchDays ?? 0))
+  const now = new Date()
+  const endStr = formatZonedDateTime(now, tz)
+  const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
+  const startStr = formatZonedDateTime(start, tz)
+  setField('endDateTime', endStr)
+  setField('startDateTime', startStr)
+}
+
 function generateSharedTimestamp(form: FormMap) {
+  const useCustomRange = form.enableCustomTimeRange === 'on'
+  if (useCustomRange) {
+    const range = getCustomRangeUtcFromForm(form)
+    if (range) {
+      const span = Math.max(0, range.endUtcMs - range.startUtcMs)
+      const pick = range.startUtcMs + Math.random() * (span || 1)
+      return new Date(pick).toISOString()
+    }
+  }
   const currentDate = form.currentDate
   const tz = form.timezone || 'browser'
   const now = new Date()
@@ -1441,6 +1765,7 @@ function buildDocument(
     '344': { name: 'Hong Kong', alpha2: 'HK' },
     '410': { name: 'South Korea', alpha2: 'KR' },
     '702': { name: 'Singapore', alpha2: 'SG' },
+    '116': { name: 'Cambodia', alpha2: 'KH' },
     '036': { name: 'Australia', alpha2: 'AU' },
     '124': { name: 'Canada', alpha2: 'CA' },
     '978': { name: 'Eurozone', alpha2: 'EU' },
@@ -1542,6 +1867,12 @@ function buildDocument(
         { name: 'East Region', lat: 1.3441, lon: 103.9442, region: 'SG' },
         { name: 'West Region', lat: 1.3574, lon: 103.7058, region: 'SG' }
       ],
+      '116': [
+        { name: 'Phnom Penh', lat: 11.5564, lon: 104.9282, region: 'KH-12' },
+        { name: 'Siem Reap', lat: 13.3671, lon: 103.8448, region: 'KH-17' },
+        { name: 'Battambang', lat: 13.0957, lon: 103.2022, region: 'KH-2' },
+        { name: 'Sihanoukville', lat: 10.6253, lon: 103.5234, region: 'KH-18' }
+      ],
       '036': [
         { name: 'Sydney', lat: -33.8688, lon: 151.2093, region: 'AU-NSW' },
         { name: 'Melbourne', lat: -37.8136, lon: 144.9631, region: 'AU-VIC' },
@@ -1584,7 +1915,7 @@ function buildDocument(
     const city = cityList[Math.floor(Math.random() * cityList.length)]!
     // 判斷洲名
     let continentName = 'Unknown'
-    if (['156', '158', '392', '344', '410', '702'].includes(countryCode)) {
+    if (['156', '158', '392', '344', '410', '702', '116'].includes(countryCode)) {
       continentName = 'Asia'
     } else if (['840', '124'].includes(countryCode)) {
       continentName = 'North America'
@@ -1606,8 +1937,8 @@ function buildDocument(
       region_name: city.name
     }
   }
-  // 使用 merchantCountryCodeStr 來生成 GeoIP（如果有的話，否則使用 merchantCountryCode）
-  const countryCodeForGeoIP = form.merchantCountryCodeStr || form.merchantCountryCode || '156'
+  // 使用 merchantCountryCode 來生成 GeoIP（如果有的話，否則使用 merchantCountryCodeStr）
+  const countryCodeForGeoIP = form.merchantCountryCode || form.merchantCountryCodeStr || '156'
   const countryInfo = countryCodeMap[countryCodeForGeoIP] || countryCodeMap['156']!
   // browserGeoIP（預設生成，基於 merchantCountryCodeStr）
   // 預設生成，除非 checkbox 明確取消勾選
@@ -1709,7 +2040,8 @@ defineExpose({
   buildDocument,
   generateSharedTimestamp,
   setStatus,
-  setFields
+  setFields,
+  updateCustomTimeRangeFromNow
 })
 </script>
 
@@ -1724,6 +2056,10 @@ defineExpose({
       v-model:username="formState.username"
       v-model:password="formState.password"
       v-model:currentDate="formState.currentDate"
+      v-model:enableCustomTimeRange="formState.enableCustomTimeRange"
+      v-model:enableAutoTimeRange="formState.enableAutoTimeRange"
+      v-model:startDateTime="formState.startDateTime"
+      v-model:endDateTime="formState.endDateTime"
       v-model:timezone="formState.timezone"
       :modeText="modeText"
       :modeClass="modeClass"
@@ -1778,6 +2114,10 @@ defineExpose({
       v-model:acquirerBin="formState.acquirerBin"
       v-model:mcc="formState.mcc"
       v-model:enableAcquirerMerchantIdRandom="formState.enableAcquirerMerchantIdRandom"
+      v-model:enableAcquirerBinRandom="formState.enableAcquirerBinRandom"
+      v-model:enableMerchantCountryCodeRandom="formState.enableMerchantCountryCodeRandom"
+      v-model:enableMerchantCountryAsiaOnly="formState.enableMerchantCountryAsiaOnly"
+      v-model:enableMerchantRandom="formState.enableMerchantRandom"
     />
 
     <PurchaseAmountSection
@@ -1786,6 +2126,7 @@ defineExpose({
       v-model:purchaseExponent="formState.purchaseExponent"
       v-model:usdAmount="formState.usdAmount"
       v-model:enablePurchaseAmountRandom="formState.enablePurchaseAmountRandom"
+      v-model:enablePurchaseCurrencyRandom="formState.enablePurchaseCurrencyRandom"
     />
 
     <CountryCurrencySection
@@ -1813,6 +2154,7 @@ defineExpose({
       v-model:acctNumberHashed="formState.acctNumberHashed"
       v-model:acctNumberMask="formState.acctNumberMask"
       v-model:cardbin8="formState.cardbin8"
+      v-model:enableCardSchemeRandom="formState.enableCardSchemeRandom"
       v-model:visaDafMessageExtension="formState.visaDafMessageExtension"
       v-model:mastercardScore="formState.mastercardScore"
       v-model:mastercardDecision="formState.mastercardDecision"

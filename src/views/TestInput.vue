@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onBeforeUnmount } from 'vue'
 import TestInputLayout from '@/components/TestInputLayout.vue'
 import TestInputForm from '@/components/TestInputForm.vue'
 import NotificationPanel from '@/components/NotificationPanel.vue'
@@ -11,6 +11,13 @@ const panelRef = ref<InstanceType<typeof NotificationPanel> | null>(null)
 const currencyModalVisible = ref(false)
 const batchCount = ref(10)
 const batchDays = ref(1)
+const enableAutoTimeRange = ref(true)
+const scheduleEnabled = ref(false)
+const scheduleIntervalSeconds = ref(60)
+const nextRunInSeconds = ref(0)
+const scheduleRunning = ref(false)
+const scheduleBusy = ref(false)
+let scheduleTimer: number | null = null
 
 function onChangeMode(m: 'unified' | 'acs' | 'dss') {
   mode.value = m
@@ -32,12 +39,83 @@ function onBatchInsert() {
   void batchInsert()
 }
 
+function clearScheduleTimer() {
+  if (scheduleTimer !== null) {
+    window.clearInterval(scheduleTimer)
+    scheduleTimer = null
+  }
+}
+
+async function runScheduledBatch() {
+  if (scheduleBusy.value) return
+  scheduleBusy.value = true
+  try {
+    await batchInsert()
+  } finally {
+    scheduleBusy.value = false
+  }
+}
+
+function onStartSchedule() {
+  if (!scheduleEnabled.value || scheduleRunning.value) return
+  batchDays.value = 0
+  scheduleRunning.value = true
+  nextRunInSeconds.value = Math.max(1, Math.floor(scheduleIntervalSeconds.value || 1))
+  void runScheduledBatch()
+  clearScheduleTimer()
+  scheduleTimer = window.setInterval(() => {
+    if (!scheduleRunning.value) return
+    if (nextRunInSeconds.value <= 1) {
+      nextRunInSeconds.value = Math.max(1, Math.floor(scheduleIntervalSeconds.value || 1))
+      void runScheduledBatch()
+      return
+    }
+    nextRunInSeconds.value -= 1
+  }, 1000)
+}
+
+function onStopSchedule() {
+  scheduleRunning.value = false
+  clearScheduleTimer()
+}
+
+function onToggleScheduleEnabled(value: boolean) {
+  scheduleEnabled.value = value
+  if (value) {
+    batchDays.value = 0
+  } else {
+    onStopSchedule()
+  }
+}
+
+function onUpdateScheduleIntervalSeconds(value: number) {
+  scheduleIntervalSeconds.value = value
+  if (scheduleRunning.value) {
+    nextRunInSeconds.value = Math.max(1, Math.floor(value || 1))
+  }
+}
+
+onBeforeUnmount(() => {
+  onStopSchedule()
+})
+
 async function insertOnce() {
   try {
     const form = formRef.value
     if (!form) return
     const data = form.getFormData?.()
     if (!data) return
+    const refreshNowOnly = batchDays.value === 0
+    if (
+      refreshNowOnly ||
+      (data.enableCustomTimeRange === 'on' && data.enableAutoTimeRange === 'on')
+    ) {
+      form.updateCustomTimeRangeFromNow?.()
+    }
+    if (data.enableCustomTimeRange === 'on' && (!data.startDateTime || !data.endDateTime)) {
+      form.setStatus?.('請先設定自訂時間區間的起訖時間', 'error')
+      return
+    }
     const baseUrl = data.baseUrl
     const auth = 'Basic ' + btoa(`${data.username}:${data.password}`)
     if (mode.value === 'unified') {
@@ -73,7 +151,8 @@ async function insertOnce() {
       form.setStatus?.('已插入到 ACS 與 3DSS 索引', 'success')
     } else {
       const indexBase = mode.value === 'acs' ? 'acs-transaction' : '3dss-transaction'
-      const built = form.buildDocument?.(data, mode.value, indexBase)
+      const sharedTs = form.generateSharedTimestamp?.(data)
+      const built = form.buildDocument?.(data, mode.value, indexBase, sharedTs)
       if (!built) return
       const fullIndex = `${indexBase}-${built.utcDateStr}`
       const bulk =
@@ -150,17 +229,28 @@ async function batchInsert() {
   const panel = panelRef.value
   if (!form || !panel) return
   const total = Math.max(1, parseInt(String(batchCount.value || 10)))
-  const days = Math.max(1, parseInt(String(batchDays.value || 1)))
+  const days = Math.max(0, parseInt(String(batchDays.value || 0)))
+  if (
+    days === 0 ||
+    (form.getFormData?.()?.enableCustomTimeRange === 'on' &&
+      form.getFormData?.()?.enableAutoTimeRange === 'on')
+  ) {
+    form.updateCustomTimeRangeFromNow?.()
+  }
   panel.show?.('正在批量處理...', total)
-  panel.addLog?.('info', `開始批量處理，共 ${total} 筆，天數 ${days}`)
+  panel.addLog?.(
+    'info',
+    `開始批量處理，共 ${total} 筆，天數 ${days}${days === 0 ? '（當前時間）' : ''}`
+  )
   const errorDetails: string[] = []
   // 計算每天分配
   const dailyCounts: number[] = []
-  const average = Math.max(1, Math.floor(total / days))
+  const distributionDays = Math.max(1, days)
+  const average = Math.max(1, Math.floor(total / distributionDays))
   let remaining = total
-  for (let d = 0; d < days; d++) {
+  for (let d = 0; d < distributionDays; d++) {
     const take =
-      d === days - 1
+      d === distributionDays - 1
         ? remaining
         : Math.min(remaining, Math.max(1, average + Math.floor((Math.random() - 0.5) * average)))
     dailyCounts.push(take)
@@ -194,24 +284,37 @@ async function batchInsert() {
     form.setStatus?.('表單資料為空', 'error')
     return
   }
+  const isCustomRange = dataBase.enableCustomTimeRange === 'on'
+  if (isCustomRange && (!dataBase.startDateTime || !dataBase.endDateTime)) {
+    form.setStatus?.('請先設定自訂時間區間的起訖時間', 'error')
+    return
+  }
   const baseUrl = dataBase.baseUrl
   const auth = 'Basic ' + btoa(`${dataBase.username}:${dataBase.password}`)
   // 逐日處理
-  const startDate = dataBase.currentDate
-  if (!startDate) {
+  const startDate = dataBase.currentDate || ''
+  if (!isCustomRange && !startDate) {
     form.setStatus?.('請先選擇日期', 'error')
     return
   }
-  const parts = startDate.split('-')
-  const y = parseInt(parts[0] || '0')
-  const m = parseInt(parts[1] || '1')
-  const dd = parseInt(parts[2] || '1')
-  const baseDate = new Date(y, m - 1, dd)
-  for (let d = 0; d < days; d++) {
-    const date = new Date(baseDate)
-    date.setDate(baseDate.getDate() - d)
-    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-    const count = dailyCounts[d] ?? 0
+  const loopDays = isCustomRange ? 1 : days
+  const dailyCountsFinal = isCustomRange ? [total] : dailyCounts
+  const baseDate = !isCustomRange
+    ? new Date(
+        parseInt(startDate.split('-')[0] || '0'),
+        parseInt(startDate.split('-')[1] || '1') - 1,
+        parseInt(startDate.split('-')[2] || '1')
+      )
+    : null
+  for (let d = 0; d < loopDays; d++) {
+    const date = baseDate ? new Date(baseDate) : null
+    if (date) date.setDate(baseDate!.getDate() - d)
+    const dateStr = date
+      ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+          date.getDate()
+        ).padStart(2, '0')}`
+      : `${dataBase.startDateTime} ~ ${dataBase.endDateTime}`
+    const count = dailyCountsFinal[d] ?? 0
     panel.addLog?.('info', `第 ${d + 1} 天 (${dateStr}) 開始，數量 ${count}`)
     panel.setText?.('progressStatus', `第 ${d + 1} 天 (${dateStr}) 處理中...`)
     const tasks: number[] = []
@@ -225,7 +328,7 @@ async function batchInsert() {
           const data = form.getFormData?.()
           if (!data) throw new Error('表單資料為空')
           // 覆寫當日日期
-          data.currentDate = dateStr
+          if (date) data.currentDate = dateStr
           if (mode.value === 'unified') {
             const sharedTs = form.generateSharedTimestamp?.(data)
             const acs = form.buildDocument?.(data, 'unified', 'acs-transaction', sharedTs)
@@ -263,7 +366,8 @@ async function batchInsert() {
             }
           } else {
             const indexBase = mode.value === 'acs' ? 'acs-transaction' : '3dss-transaction'
-            const built = form.buildDocument?.(data, mode.value, indexBase)
+            const sharedTs = form.generateSharedTimestamp?.(data)
+            const built = form.buildDocument?.(data, mode.value, indexBase, sharedTs)
             if (!built) throw new Error('構建文件失敗')
             const fullIndex = `${indexBase}-${built.utcDateStr}`
             const bulk =
@@ -317,13 +421,27 @@ async function batchInsert() {
     :activeMode="mode"
     v-model:batchCount="batchCount"
     v-model:batchDays="batchDays"
+    :disableBatchDays="!enableAutoTimeRange || scheduleEnabled"
+    :scheduleEnabled="scheduleEnabled"
+    :scheduleIntervalSeconds="scheduleIntervalSeconds"
+    :nextRunInSeconds="nextRunInSeconds"
+    :scheduleRunning="scheduleRunning"
     @changeMode="onChangeMode"
     @loadDefaults="onLoadDefaults"
     @generateRandom="onGenerateRandom"
     @insertData="onInsertData"
     @batchInsert="onBatchInsert"
+    @update:scheduleEnabled="onToggleScheduleEnabled"
+    @update:scheduleIntervalSeconds="onUpdateScheduleIntervalSeconds"
+    @startSchedule="onStartSchedule"
+    @stopSchedule="onStopSchedule"
   >
-    <TestInputForm ref="formRef" :activeMode="mode" :batchDays="batchDays" />
+    <TestInputForm
+      ref="formRef"
+      v-model:enableAutoTimeRange="enableAutoTimeRange"
+      :activeMode="mode"
+      :batchDays="batchDays"
+    />
     <NotificationPanel ref="panelRef" />
     <CurrencyModal v-model="currencyModalVisible" @select="onCurrencySelect" />
   </TestInputLayout>
