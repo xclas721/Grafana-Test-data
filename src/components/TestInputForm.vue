@@ -356,7 +356,6 @@ const DEFAULT_CHALLENGE_CANCEL_RATE = 0.08
 
 const MERCHANT_COUNTRY_CODE_STR_VALUES = [
   '156',
-  '158',
   '840',
   '392',
   '344',
@@ -371,7 +370,6 @@ const MERCHANT_COUNTRY_CODE_STR_VALUES = [
 
 const MERCHANT_COUNTRY_CODE_ASIA_VALUES = [
   '156', // China
-  '158', // Taiwan
   '392', // Japan
   '344', // Hong Kong
   '410', // South Korea
