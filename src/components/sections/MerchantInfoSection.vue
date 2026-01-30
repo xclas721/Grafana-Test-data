@@ -10,9 +10,10 @@ const props = defineProps<{
   acquirerBin: string
   mcc: string
   enableAcquirerMerchantIdRandom: boolean
+  enableAcquirerBinRandom: boolean
   enableMerchantCountryCodeRandom: boolean
   enableMerchantCountryAsiaOnly: boolean
-  enableMccRandom: boolean
+  enableMerchantRandom: boolean
 }>()
 
 const emit = defineEmits<{
@@ -22,9 +23,10 @@ const emit = defineEmits<{
   'update:acquirerBin': [value: string]
   'update:mcc': [value: string]
   'update:enableAcquirerMerchantIdRandom': [value: boolean]
+  'update:enableAcquirerBinRandom': [value: boolean]
   'update:enableMerchantCountryCodeRandom': [value: boolean]
   'update:enableMerchantCountryAsiaOnly': [value: boolean]
-  'update:enableMccRandom': [value: boolean]
+  'update:enableMerchantRandom': [value: boolean]
 }>()
 
 const merchantCountryOptions: SelectOption[] = [
@@ -54,13 +56,132 @@ const merchantCountryOptions: SelectOption[] = [
     <Card>
       <h3 class="text-base font-semibold text-base-content/80 mb-3">3.商戶信息</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Input
-          id="merchantName"
-          label="商戶名稱 (merchantName)"
-          :modelValue="props.merchantName"
-          required
-          @update:modelValue="(value) => emit('update:merchantName', String(value))"
-        />
+        <div>
+          <Input
+            id="merchantName"
+            label="商戶名稱 (merchantName)"
+            :modelValue="props.merchantName"
+            required
+            @update:modelValue="(value) => emit('update:merchantName', String(value))"
+          />
+          <div class="flex items-center gap-2 mt-2">
+            <input
+              type="checkbox"
+              id="enableMerchantRandom"
+              class="checkbox checkbox-sm"
+              :checked="props.enableMerchantRandom"
+              @change="
+                (event) =>
+                  emit('update:enableMerchantRandom', (event.target as HTMLInputElement).checked)
+              "
+            />
+            <label for="enableMerchantRandom" class="text-sm text-base-content/60">
+              隨機商戶名稱與 MCC
+            </label>
+          </div>
+          <p class="text-xs text-error mt-2">使用預設清單隨機配對</p>
+          <details class="mt-3">
+            <summary class="text-xs text-base-content/60 cursor-pointer">
+              商戶清單 (點我展開)
+            </summary>
+            <div class="mt-2 overflow-x-auto">
+              <table class="table table-xs">
+                <thead>
+                  <tr>
+                    <th>商戶</th>
+                    <th>MCC</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>McDonald's</td>
+                    <td>5814</td>
+                  </tr>
+                  <tr>
+                    <td>Burger King</td>
+                    <td>5814</td>
+                  </tr>
+                  <tr>
+                    <td>KFC</td>
+                    <td>5814</td>
+                  </tr>
+                  <tr>
+                    <td>Starbucks</td>
+                    <td>5812</td>
+                  </tr>
+                  <tr>
+                    <td>Subway</td>
+                    <td>5814</td>
+                  </tr>
+                  <tr>
+                    <td>Pizza Hut</td>
+                    <td>5812</td>
+                  </tr>
+                  <tr>
+                    <td>Domino's Pizza</td>
+                    <td>5812</td>
+                  </tr>
+                  <tr>
+                    <td>Walmart Supercenter</td>
+                    <td>5411</td>
+                  </tr>
+                  <tr>
+                    <td>Costco Wholesale</td>
+                    <td>5300</td>
+                  </tr>
+                  <tr>
+                    <td>Amazon Marketplace</td>
+                    <td>5262</td>
+                  </tr>
+                  <tr>
+                    <td>Apple Store</td>
+                    <td>5732</td>
+                  </tr>
+                  <tr>
+                    <td>Microsoft Store</td>
+                    <td>5732</td>
+                  </tr>
+                  <tr>
+                    <td>IKEA</td>
+                    <td>5712</td>
+                  </tr>
+                  <tr>
+                    <td>H&amp;M</td>
+                    <td>5651</td>
+                  </tr>
+                  <tr>
+                    <td>Zara</td>
+                    <td>5691</td>
+                  </tr>
+                  <tr>
+                    <td>Nike Retail Store</td>
+                    <td>5651</td>
+                  </tr>
+                  <tr>
+                    <td>Adidas Retail Store</td>
+                    <td>5651</td>
+                  </tr>
+                  <tr>
+                    <td>Hilton Hotels</td>
+                    <td>7011</td>
+                  </tr>
+                  <tr>
+                    <td>Marriott Hotels</td>
+                    <td>7011</td>
+                  </tr>
+                  <tr>
+                    <td>Uber Rides</td>
+                    <td>4121</td>
+                  </tr>
+                  <tr>
+                    <td>Global Leisure Rewards</td>
+                    <td>5816</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </div>
         <div class="rounded-md border border-error/40 bg-error/5 p-3">
           <Select
             id="merchantCountryCode"
@@ -141,38 +262,38 @@ const merchantCountryOptions: SelectOption[] = [
           </div>
           <p class="text-xs text-error mt-2">可隨機生成 (1-9999999)，預設關閉</p>
         </div>
-        <Input
-          id="acquirerBin"
-          label="收單機構 BIN (acquirerBIN)"
-          :modelValue="props.acquirerBin"
-          required
-          @update:modelValue="(value) => emit('update:acquirerBin', String(value))"
-        />
         <div>
           <Input
-            id="mcc"
-            label="商戶類別代碼 (mcc)"
-            :modelValue="props.mcc"
+            id="acquirerBin"
+            label="收單機構 BIN (acquirerBIN)"
+            :modelValue="props.acquirerBin"
             required
-            @update:modelValue="(value) => emit('update:mcc', String(value))"
+            @update:modelValue="(value) => emit('update:acquirerBin', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
-              id="enableMccRandom"
+              id="enableAcquirerBinRandom"
               class="checkbox checkbox-sm"
-              :checked="props.enableMccRandom"
+              :checked="props.enableAcquirerBinRandom"
               @change="
                 (event) =>
-                  emit('update:enableMccRandom', (event.target as HTMLInputElement).checked)
+                  emit('update:enableAcquirerBinRandom', (event.target as HTMLInputElement).checked)
               "
             />
-            <label for="enableMccRandom" class="text-sm text-base-content/60">
+            <label for="enableAcquirerBinRandom" class="text-sm text-base-content/60">
               隨機生成時包含此欄位
             </label>
           </div>
-          <p class="text-xs text-error mt-2">可隨機生成 (1000-9999)</p>
+          <p class="text-xs text-error mt-2">固定清單隨機：1231234 / 1239999 / 9991234 / 9999999</p>
         </div>
+        <Input
+          id="mcc"
+          label="商戶類別代碼 (mcc)"
+          :modelValue="props.mcc"
+          required
+          @update:modelValue="(value) => emit('update:mcc', String(value))"
+        />
       </div>
     </Card>
   </section>

@@ -145,11 +145,12 @@ const formState = reactive({
   enablePurchaseAmountRandom: true,
   enablePurchaseCurrencyRandom: true,
   enableAcquirerMerchantIdRandom: true,
+  enableAcquirerBinRandom: true,
   enableAcctNumberRandom: true,
   enableMerchantCountryCodeRandom: true,
-  enableMerchantCountryAsiaOnly: false,
-  enableMccRandom: true,
-  enableCardSchemeRandom: false,
+  enableMerchantCountryAsiaOnly: true,
+  enableMerchantRandom: true,
+  enableCardSchemeRandom: true,
   enableMastercardExtension: false,
   enableMastercardExtensionRandom: false,
   enableVisaScoreRandom: false,
@@ -381,6 +382,33 @@ const MERCHANT_COUNTRY_CODE_ASIA_VALUES = [
   '360', // Indonesia
   '608' // Philippines
 ]
+
+const MERCHANT_MCC_OPTIONS = [
+  { name: 'HiTRUST EMV Demo Merchant', mcc: '5661' },
+  { name: "McDonald's", mcc: '5814' },
+  { name: 'Burger King', mcc: '5814' },
+  { name: 'KFC', mcc: '5814' },
+  { name: 'Starbucks', mcc: '5812' },
+  { name: 'Subway', mcc: '5814' },
+  { name: 'Pizza Hut', mcc: '5812' },
+  { name: "Domino's Pizza", mcc: '5812' },
+  { name: 'Walmart Supercenter', mcc: '5411' },
+  { name: 'Costco Wholesale', mcc: '5300' },
+  { name: 'Amazon Marketplace', mcc: '5262' },
+  { name: 'Apple Store', mcc: '5732' },
+  { name: 'Microsoft Store', mcc: '5732' },
+  { name: 'IKEA', mcc: '5712' },
+  { name: 'H&M', mcc: '5651' },
+  { name: 'Zara', mcc: '5691' },
+  { name: 'Nike Retail Store', mcc: '5651' },
+  { name: 'Adidas Retail Store', mcc: '5651' },
+  { name: 'Hilton Hotels', mcc: '7011' },
+  { name: 'Marriott Hotels', mcc: '7011' },
+  { name: 'Uber Rides', mcc: '4121' },
+  { name: 'Global Leisure Rewards', mcc: '5816' }
+] as const
+
+const ACQUIRER_BIN_OPTIONS = ['1231234', '1239999', '9991234', '9999999'] as const
 
 const COUNTRY_NUMERIC_MAP: Record<string, { alpha2: string; alpha3: string; name: string }> = {
   '156': { alpha2: 'CN', alpha3: 'CHN', name: 'China' },
@@ -817,10 +845,12 @@ function loadDefaults() {
   formState.enablePurchaseAmountRandom = true
   formState.enablePurchaseCurrencyRandom = true
   formState.enableAcquirerMerchantIdRandom = true
+  formState.enableAcquirerBinRandom = true
   formState.enableAcctNumberRandom = true
   formState.enableMerchantCountryCodeRandom = true
-  formState.enableMerchantCountryAsiaOnly = false
-  formState.enableMccRandom = true
+  formState.enableMerchantCountryAsiaOnly = true
+  formState.enableMerchantRandom = true
+  formState.enableCardSchemeRandom = true
   formState.enableMastercardExtension = false
   formState.enableMastercardExtensionRandom = false
   formState.enableVisaScoreRandom = false
@@ -889,6 +919,7 @@ function generateRandom() {
   // 金額
   if (formState.enablePurchaseAmountRandom) {
     set('purchaseAmount', (Math.random() * 990 + 10).toFixed(2))
+    set('usdAmount', (Math.random() * 990 + 10).toFixed(6))
   }
   // purchaseCurrency 隨機（僅在勾選時）
   if (formState.enablePurchaseCurrencyRandom) {
@@ -1117,10 +1148,22 @@ function generateRandom() {
     if (rnd.startsWith('0')) rnd = '1' + rnd.substring(1)
     set('acquirerMerchantId', rnd)
   }
-  // mcc 隨機（僅在勾選時）
-  if (formState.enableMccRandom) {
-    const mcc = String(Math.floor(Math.random() * 9000 + 1000))
-    set('mcc', mcc)
+  // acquirerBIN 隨機（僅在勾選時）
+  if (formState.enableAcquirerBinRandom) {
+    const pick =
+      ACQUIRER_BIN_OPTIONS[Math.floor(Math.random() * ACQUIRER_BIN_OPTIONS.length)] ||
+      ACQUIRER_BIN_OPTIONS[0]
+    if (pick) set('acquirerBin', pick)
+  }
+  // 商戶名稱 + MCC 隨機（僅在勾選時）
+  if (formState.enableMerchantRandom) {
+    const option =
+      MERCHANT_MCC_OPTIONS[Math.floor(Math.random() * MERCHANT_MCC_OPTIONS.length)] ||
+      MERCHANT_MCC_OPTIONS[0]
+    if (option) {
+      set('merchantName', option.name)
+      set('mcc', option.mcc)
+    }
   }
   // Visa Score 隨機（僅在勾選時）
   if (formState.enableVisaScoreRandom) {
@@ -2071,9 +2114,10 @@ defineExpose({
       v-model:acquirerBin="formState.acquirerBin"
       v-model:mcc="formState.mcc"
       v-model:enableAcquirerMerchantIdRandom="formState.enableAcquirerMerchantIdRandom"
+      v-model:enableAcquirerBinRandom="formState.enableAcquirerBinRandom"
       v-model:enableMerchantCountryCodeRandom="formState.enableMerchantCountryCodeRandom"
       v-model:enableMerchantCountryAsiaOnly="formState.enableMerchantCountryAsiaOnly"
-      v-model:enableMccRandom="formState.enableMccRandom"
+      v-model:enableMerchantRandom="formState.enableMerchantRandom"
     />
 
     <PurchaseAmountSection
