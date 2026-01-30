@@ -8,6 +8,10 @@ const props = defineProps<{
   username: string
   password: string
   currentDate: string
+  enableCustomTimeRange: boolean
+  enableAutoTimeRange: boolean
+  startDateTime: string
+  endDateTime: string
   timezone: string
   modeText: string
   modeClass: string
@@ -19,6 +23,10 @@ const emit = defineEmits<{
   'update:username': [value: string]
   'update:password': [value: string]
   'update:currentDate': [value: string]
+  'update:enableCustomTimeRange': [value: boolean]
+  'update:enableAutoTimeRange': [value: boolean]
+  'update:startDateTime': [value: string]
+  'update:endDateTime': [value: string]
   'update:timezone': [value: string]
 }>()
 
@@ -76,16 +84,51 @@ const timezoneOptions: SelectOption[] = [
         />
         <div>
           <Input
-            id="currentDate"
-            type="date"
-            label="當前日期 (current_date)"
-            :modelValue="props.currentDate"
-            required
-            @update:modelValue="(value) => emit('update:currentDate', String(value))"
+            id="startDateTime"
+            type="datetime-local"
+            label="起始時間 (startDateTime)"
+            :modelValue="props.startDateTime"
+            :disabled="props.enableAutoTimeRange"
+            @update:modelValue="(value) => emit('update:startDateTime', String(value))"
           />
-          <p class="text-xs text-base-content/60 mt-1">交易日期 (YYYY-MM-DD-HH:MM:SS)</p>
-          <p class="text-xs text-error mt-1">
-            HH:MM:SS將自動生成隨機時間，並依據時區轉換為 UTC 時間，根據UTC時間決定儲存的索引名稱
+          <p class="text-xs text-base-content/60 mt-1">
+            {{ props.enableAutoTimeRange ? '依天數自動往前推' : '可手動調整' }}
+          </p>
+        </div>
+        <div>
+          <Input
+            id="endDateTime"
+            type="datetime-local"
+            label="結束時間 (endDateTime)"
+            :modelValue="props.endDateTime"
+            :disabled="props.enableAutoTimeRange"
+            @update:modelValue="(value) => emit('update:endDateTime', String(value))"
+          />
+          <p class="text-xs text-base-content/60 mt-1">
+            {{ props.enableAutoTimeRange ? '自動帶入現在時間' : '可手動調整' }}
+          </p>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 mt-1">
+            <input
+              id="enableAutoTimeRange"
+              type="checkbox"
+              class="checkbox checkbox-sm"
+              :checked="props.enableAutoTimeRange"
+              @change="
+                (event) =>
+                  emit(
+                    'update:enableAutoTimeRange',
+                    (event.target as HTMLInputElement).checked
+                  )
+              "
+            />
+            <label for="enableAutoTimeRange" class="text-sm text-base-content/60">
+              自動帶入起訖時間
+            </label>
+          </div>
+          <p class="text-xs text-base-content/60 mt-2">
+            取消勾選可自行輸入起訖時間
           </p>
         </div>
         <div>

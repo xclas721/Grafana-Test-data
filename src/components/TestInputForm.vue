@@ -13,6 +13,9 @@ import PerformanceSection from './sections/PerformanceSection.vue'
 import ErrorHandlingSection from './sections/ErrorHandlingSection.vue'
 
 const props = defineProps<{ activeMode?: 'unified' | 'acs' | 'dss'; batchDays?: number }>()
+const emit = defineEmits<{
+  (e: 'update:enableAutoTimeRange', value: boolean): void
+}>()
 
 const modeText = computed(() => {
   if (props.activeMode === 'acs') return 'ACS'
@@ -52,6 +55,10 @@ const formState = reactive({
   username: 'elastic',
   password: '123456',
   currentDate: '',
+  enableCustomTimeRange: true,
+  enableAutoTimeRange: true,
+  startDateTime: '',
+  endDateTime: '',
   timezone: 'browser',
   issuerOid: '06b4b203-da05-73f9-256f-454929df6076',
   acsTransId: '',
@@ -177,6 +184,8 @@ const stateBindings = {
   username: 'username',
   password: 'password',
   currentDate: 'currentDate',
+  startDateTime: 'startDateTime',
+  endDateTime: 'endDateTime',
   timezone: 'timezone',
   issuerOid: 'issuerOid',
   acsTransId: 'acsTransId',
@@ -597,8 +606,9 @@ function syncStatusDependencies() {
 function updateTimeRangeDisplay() {
   const currentDate = formState.currentDate
   const timezone = (formState.timezone || 'browser') as string
-  const batchDays = Math.max(1, Math.floor(props.batchDays ?? 1))
-  if (!currentDate) {
+  const batchDays = Math.max(0, Math.floor(props.batchDays ?? 0))
+  const useCustomRange = formState.enableCustomTimeRange
+  if (!currentDate && !useCustomRange) {
     timeRangeHtml.value = '請選擇日期'
     return
   }
@@ -606,40 +616,23 @@ function updateTimeRangeDisplay() {
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
     now.getDate()
   ).padStart(2, '0')}`
-  function toUTC(date: Date): Date {
-    if (timezone === 'browser' || timezone === 'UTC') return date
-    try {
-      const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-        date.getDate()
-      ).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(
-        date.getMinutes()
-      ).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`
-      const test = new Date(iso + 'Z')
-      const fmt = new Intl.DateTimeFormat('en', { timeZone: timezone, timeZoneName: 'longOffset' })
-      const parts = fmt.formatToParts(test)
-      const off = parts.find((p) => p.type === 'timeZoneName')?.value || ''
-      const m = off.match(/GMT([+-])(\d{2}):(\d{2})/)
-      if (m) {
-        const sign = m[1] === '+' ? 1 : -1
-        const hh = parseInt(m[2] as string)
-        const mm = parseInt(m[3] as string)
-        const minutes = sign * (hh * 60 + mm)
-        return new Date(date.getTime() - minutes * 60000)
-      }
-    } catch {}
-    return new Date(date.getTime() + date.getTimezoneOffset() * 60000)
+  function getCustomRangeUtc() {
+    const startLocal = parseDateTimeLocal(formState.startDateTime)
+    const endLocal = parseDateTimeLocal(formState.endDateTime)
+    if (!startLocal || !endLocal) return null
+    let startUtc = convertToUTC(startLocal, timezone).getTime()
+    let endUtc = convertToUTC(endLocal, timezone).getTime()
+    if (endUtc < startUtc) {
+      const temp = startUtc
+      startUtc = endUtc
+      endUtc = temp
+    }
+    const nowUtc = Date.now()
+    const clampedEnd = Math.min(endUtc, nowUtc)
+    if (startUtc > clampedEnd) startUtc = clampedEnd
+    return { startUtc, endUtc, clampedEnd, clamped: clampedEnd !== endUtc }
   }
-  const startLocal = new Date(`${currentDate}T00:00:00`)
-  const endLocal =
-    currentDate === today
-      ? new Date(
-          `${currentDate}T${String(now.getHours()).padStart(2, '0')}:${String(
-            now.getMinutes()
-          ).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
-        )
-      : new Date(`${currentDate}T23:59:59`)
-  const utcStart = toUTC(startLocal).toISOString()
-  const utcEnd = toUTC(endLocal).toISOString()
+  const customRange = useCustomRange ? getCustomRangeUtc() : null
   const timezoneNames: Record<string, string> = {
     browser: `瀏覽器時區 (${Intl.DateTimeFormat().resolvedOptions().timeZone})`,
     'Asia/Taipei': '台灣 (UTC+8)',
@@ -656,7 +649,43 @@ function updateTimeRangeDisplay() {
     UTC: 'UTC (UTC+0)'
   }
   const tzName = timezoneNames[timezone] || timezone
-  if (batchDays === 1) {
+  if (useCustomRange) {
+    if (!customRange) {
+      timeRangeHtml.value = `<div style="font-size: 0.9em;">
+        <div><strong>選擇時區：</strong>${tzName}</div>
+        <div style="color:#666;margin-top:5px;">請選擇起訖時間</div>
+      </div>`
+      return
+    }
+    const utcStart = new Date(customRange.startUtc).toISOString()
+    const utcEnd = new Date(customRange.clampedEnd).toISOString()
+    const note = customRange.clamped
+      ? '<small>注意：結束時間超過現在，已限制到目前時間</small>'
+      : '<small>自訂時間區間</small>'
+    timeRangeHtml.value = `<div style="font-size: 0.9em;">
+      <div><strong>選擇時區：</strong>${tzName}</div>
+      <div><strong>UTC 時間範圍：</strong>${utcStart} ~ ${utcEnd}</div>
+      <div style="color:#666;margin-top:5px;">${note}</div>
+    </div>`
+  } else if (batchDays === 0) {
+    const utcNow = convertToUTC(now, timezone).toISOString()
+    timeRangeHtml.value = `<div style="font-size: 0.9em;">
+      <div><strong>選擇時區：</strong>${tzName}</div>
+      <div><strong>UTC 時間範圍：</strong>${utcNow} ~ ${utcNow}</div>
+      <div style="color:#666;margin-top:5px;"><small>僅使用現在時間</small></div>
+    </div>`
+  } else if (batchDays === 1) {
+    const startLocal = new Date(`${currentDate}T00:00:00`)
+    const endLocal =
+      currentDate === today
+        ? new Date(
+            `${currentDate}T${String(now.getHours()).padStart(2, '0')}:${String(
+              now.getMinutes()
+            ).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
+          )
+        : new Date(`${currentDate}T23:59:59`)
+    const utcStart = convertToUTC(startLocal, timezone).toISOString()
+    const utcEnd = convertToUTC(endLocal, timezone).toISOString()
     const note =
       currentDate === today
         ? '<small>注意：時間範圍限制在當前時間之前</small>'
@@ -667,6 +696,8 @@ function updateTimeRangeDisplay() {
       <div style="color:#666;margin-top:5px;">${note}</div>
     </div>`
   } else {
+    const startLocal = new Date(`${currentDate}T00:00:00`)
+    const utcStart = convertToUTC(startLocal, timezone).toISOString()
     const endDate = new Date(startLocal)
     endDate.setDate(startLocal.getDate() - (batchDays - 1))
     const endOfEnd = new Date(
@@ -674,7 +705,7 @@ function updateTimeRangeDisplay() {
         endDate.getDate()
       ).padStart(2, '0')}T23:59:59`
     )
-    const multiEndUTC = toUTC(endOfEnd).toISOString()
+    const multiEndUTC = convertToUTC(endOfEnd, timezone).toISOString()
     const dateRangeText = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')} ~ ${currentDate}`
     const note =
       currentDate === today
@@ -693,6 +724,11 @@ function loadDefaults() {
   setField('baseUrl', 'http://localhost:9200')
   setField('username', 'elastic')
   setField('password', '123456')
+  formState.enableCustomTimeRange = true
+  formState.enableAutoTimeRange = true
+  setField('startDateTime', '')
+  setField('endDateTime', '')
+  updateCustomTimeRangeFromNow()
   setField('issuerOid', '06b4b203-da05-73f9-256f-454929df6076')
   setField('acsTransId', cryptoRandomUUID())
   setField('threeDSServerTransId', cryptoRandomUUID().toLowerCase())
@@ -1282,6 +1318,9 @@ onMounted(() => {
     today.getDate()
   ).padStart(2, '0')}`
   if (!formState.currentDate) setField('currentDate', dateStr)
+  if (formState.enableCustomTimeRange) {
+    updateCustomTimeRangeFromNow()
+  }
   // 時間區間顯示
   updateTimeRangeDisplay()
 
@@ -1303,8 +1342,25 @@ onMounted(() => {
 })
 
 watch(
-  () => [formState.currentDate, formState.timezone, props.batchDays],
+  () => formState.enableAutoTimeRange,
+  (value) => {
+    emit('update:enableAutoTimeRange', value)
+  },
+  { immediate: true }
+)
+
+watch(
+  () => [
+    formState.currentDate,
+    formState.enableCustomTimeRange,
+    formState.enableAutoTimeRange,
+    formState.timezone,
+    props.batchDays
+  ],
   () => {
+    if (formState.enableCustomTimeRange && formState.enableAutoTimeRange) {
+      updateCustomTimeRangeFromNow()
+    }
     updateTimeRangeDisplay()
   }
 )
@@ -1395,7 +1451,80 @@ function convertToUTC(date: Date, timezone: string): Date {
   return new Date(date.getTime() + date.getTimezoneOffset() * 60000)
 }
 
+function formatZonedDateTime(date: Date, timezone: string): string {
+  const zone =
+    timezone === 'browser'
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone
+      : timezone
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: zone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  })
+  const parts = formatter.formatToParts(date)
+  const lookup: Record<string, string> = {}
+  for (const part of parts) {
+    lookup[part.type] = part.value
+  }
+  return `${lookup.year}-${lookup.month}-${lookup.day}T${lookup.hour}:${lookup.minute}:${lookup.second}`
+}
+
+function parseDateTimeLocal(value: string): Date | null {
+  if (!value) return null
+  const [datePart, timePartRaw] = value.trim().split('T')
+  if (!datePart || !timePartRaw) return null
+  const [y, m, d] = datePart.split('-').map((v) => parseInt(v, 10))
+  const [hh, mm, ss] = timePartRaw.split(':').map((v) => parseInt(v, 10))
+  if (!y || !m || !d) return null
+  return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, ss || 0)
+}
+
+function getCustomRangeUtcFromForm(form: FormMap) {
+  if (form.enableCustomTimeRange !== 'on') return null
+  const tz = form.timezone || 'browser'
+  const startLocal = parseDateTimeLocal(form.startDateTime || '')
+  const endLocal = parseDateTimeLocal(form.endDateTime || '')
+  if (!startLocal || !endLocal) return null
+  let startUtcMs = convertToUTC(startLocal, tz).getTime()
+  let endUtcMs = convertToUTC(endLocal, tz).getTime()
+  if (endUtcMs < startUtcMs) {
+    const temp = startUtcMs
+    startUtcMs = endUtcMs
+    endUtcMs = temp
+  }
+  const nowUtc = Date.now()
+  const clampedEndUtcMs = Math.min(endUtcMs, nowUtc)
+  if (startUtcMs > clampedEndUtcMs) startUtcMs = clampedEndUtcMs
+  return { startUtcMs, endUtcMs, clampedEndUtcMs }
+}
+
+function updateCustomTimeRangeFromNow() {
+  if (!formState.enableCustomTimeRange || !formState.enableAutoTimeRange) return
+  const tz = formState.timezone || 'browser'
+  const days = Math.max(0, Math.floor(props.batchDays ?? 0))
+  const now = new Date()
+  const endStr = formatZonedDateTime(now, tz)
+  const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
+  const startStr = formatZonedDateTime(start, tz)
+  setField('endDateTime', endStr)
+  setField('startDateTime', startStr)
+}
+
 function generateSharedTimestamp(form: FormMap) {
+  const useCustomRange = form.enableCustomTimeRange === 'on'
+  if (useCustomRange) {
+    const range = getCustomRangeUtcFromForm(form)
+    if (range) {
+      const span = Math.max(0, range.endUtcMs - range.startUtcMs)
+      const pick = range.startUtcMs + Math.random() * (span || 1)
+      return new Date(pick).toISOString()
+    }
+  }
   const currentDate = form.currentDate
   const tz = form.timezone || 'browser'
   const now = new Date()
@@ -1873,7 +2002,8 @@ defineExpose({
   buildDocument,
   generateSharedTimestamp,
   setStatus,
-  setFields
+  setFields,
+  updateCustomTimeRangeFromNow
 })
 </script>
 
@@ -1888,6 +2018,10 @@ defineExpose({
       v-model:username="formState.username"
       v-model:password="formState.password"
       v-model:currentDate="formState.currentDate"
+      v-model:enableCustomTimeRange="formState.enableCustomTimeRange"
+      v-model:enableAutoTimeRange="formState.enableAutoTimeRange"
+      v-model:startDateTime="formState.startDateTime"
+      v-model:endDateTime="formState.endDateTime"
       v-model:timezone="formState.timezone"
       :modeText="modeText"
       :modeClass="modeClass"

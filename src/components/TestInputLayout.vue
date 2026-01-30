@@ -18,6 +18,7 @@ const props = defineProps<{
   activeMode: 'unified' | 'acs' | 'dss'
   batchCount?: number
   batchDays?: number
+  disableBatchDays?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -189,12 +190,15 @@ onBeforeUnmount(() => {
                     :value="props.batchDays ?? 1"
                     class="input input-bordered input-sm w-20"
                     placeholder="1"
-                    title="生成多少天的數據"
+                    :disabled="props.disableBatchDays"
+                    :title="
+                      props.disableBatchDays ? '手動時間區間時不使用天數' : '生成多少天的數據'
+                    "
                     @input="
                       (event) =>
                         emit(
                           'update:batchDays',
-                          Math.max(1, Number((event.target as HTMLInputElement).value || 1))
+                          Math.max(0, Number((event.target as HTMLInputElement).value || 0))
                         )
                     "
                   />
