@@ -117,19 +117,14 @@ const timezoneOptions: SelectOption[] = [
               :checked="props.enableAutoTimeRange"
               @change="
                 (event) =>
-                  emit(
-                    'update:enableAutoTimeRange',
-                    (event.target as HTMLInputElement).checked
-                  )
+                  emit('update:enableAutoTimeRange', (event.target as HTMLInputElement).checked)
               "
             />
             <label for="enableAutoTimeRange" class="text-sm text-base-content/60">
               自動帶入起訖時間
             </label>
           </div>
-          <p class="text-xs text-base-content/60 mt-2">
-            取消勾選可自行輸入起訖時間
-          </p>
+          <p class="text-xs text-base-content/60 mt-2">取消勾選可自行輸入起訖時間</p>
         </div>
         <div>
           <Select

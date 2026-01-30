@@ -559,7 +559,7 @@ function syncStatusDependencies() {
   if (ares === 'C' || ares === 'D') {
     formState.disableRreqTransStatus = false
     setField('transStatus', formState.rreqTransStatus)
-    } else {
+  } else {
     formState.disableRreqTransStatus = true
     if (formState.rreqTransStatus !== 'NULL_VALUE') setField('rreqTransStatus', 'NULL_VALUE')
     setField('transStatus', ares)
@@ -568,7 +568,7 @@ function syncStatusDependencies() {
   if (ares === 'R') {
     formState.disableTransStatusReason = false
     if (formState.transStatusReason === 'NULL_VALUE') setField('transStatusReason', '01')
-    } else {
+  } else {
     formState.disableTransStatusReason = true
     if (formState.transStatusReason !== 'NULL_VALUE') setField('transStatusReason', 'NULL_VALUE')
   }
@@ -954,10 +954,10 @@ function generateRandom() {
     set('transStatus', String(st))
   }
   // 當 ARes 為 R 時，transStatusReason 依模式固定或全隨機；否則為 NULL_VALUE
-    if (st === 'R') {
-      const reasons: string[] = []
-      for (let i = 1; i <= 30; i++) reasons.push(String(i).padStart(2, '0'))
-      reasons.push('81', '89', '90')
+  if (st === 'R') {
+    const reasons: string[] = []
+    for (let i = 1; i <= 30; i++) reasons.push(String(i).padStart(2, '0'))
+    reasons.push('81', '89', '90')
     const fixedReason = String(formState.transStatusReason || '').trim()
     if (formState.transStatusReasonMode === 'random') {
       if (reasons.length > 0) {
@@ -977,25 +977,25 @@ function generateRandom() {
   }
   // stateMachineReason 依模式固定或全隨機
   {
-      const stateMachineReasons: string[] = [
+    const stateMachineReasons: string[] = [
       '0000',
       '0001',
       '0002',
-        '1001',
-        '1002',
-        '1003',
-        '1004',
-        '1005',
-        '2001',
-        '2002',
+      '1001',
+      '1002',
+      '1003',
+      '1004',
+      '1005',
+      '2001',
+      '2002',
       '2003',
       '2004',
       '2005',
       '2006',
       '2007',
-        '2101',
-        '2102',
-        '2103',
+      '2101',
+      '2102',
+      '2103',
       '2104',
       '2105',
       '2106',
@@ -1014,50 +1014,50 @@ function generateRandom() {
       '2209',
       '2210',
       '2211',
-        '3101',
-        '3102',
-        '3199',
-        '3201',
-        '3202',
-        '3299',
-        '3301',
-        '3302',
-        '3399',
-        '3401',
-        '3402',
-        '3403',
-        '3499',
-        '3501',
-        '3502',
+      '3101',
+      '3102',
+      '3199',
+      '3201',
+      '3202',
+      '3299',
+      '3301',
+      '3302',
+      '3399',
+      '3401',
+      '3402',
+      '3403',
+      '3499',
+      '3501',
+      '3502',
       '3599',
-        '3601',
-        '3602',
+      '3601',
+      '3602',
       '3699',
-        '4001',
+      '4001',
       '4002',
-        '4101',
-        '4102',
-        '4103',
-        '4104',
-        '4105',
-        '4106',
-        '4107',
-        '4108',
-        '4109',
-        '4110',
+      '4101',
+      '4102',
+      '4103',
+      '4104',
+      '4105',
+      '4106',
+      '4107',
+      '4108',
+      '4109',
+      '4110',
       '5001',
       '5002',
       '5003',
       '5004',
-        '5101',
-        '5102',
-        '5103',
-        '5104',
-        '5105',
-        '5106',
+      '5101',
+      '5102',
+      '5103',
+      '5104',
+      '5105',
+      '5106',
       '5107',
-        '5201',
-        '5202',
+      '5201',
+      '5202',
       '5301',
       '5302',
       '5303',
@@ -1078,15 +1078,15 @@ function generateRandom() {
           set('stateMachineReason', '0001')
         } else if (formState.rreqTransStatus === 'NULL_VALUE') {
           set('stateMachineReason', '0002')
-      } else {
+        } else {
           const candidates = stateMachineReasons.filter(
             (reason) => !['0000', '0001', '0002'].includes(reason)
           )
           const pickFrom = candidates.length > 0 ? candidates : stateMachineReasons
           const idx = Math.floor(Math.random() * pickFrom.length)
           set('stateMachineReason', pickFrom[idx] as string)
-      }
-    } else {
+        }
+      } else {
         const candidates = stateMachineReasons.filter(
           (reason) => !['0000', '0001', '0002'].includes(reason)
         )
@@ -1265,7 +1265,7 @@ function generateRandomAcctNumber() {
   for (let i = 0; i < 13; i++) suffix += Math.floor(Math.random() * 10)
   const acct = prefix + suffix
   setField('acctNumber', acct)
-    updateCardInfoFromAcctNumber()
+  updateCardInfoFromAcctNumber()
 }
 
 function syncCardSchemeToggles(scheme: string) {
@@ -1327,15 +1327,15 @@ onMounted(() => {
   watch(
     () => [formState.enableVisaScoreRandom, formState.enableMastercardExtension],
     ([visaOn, mcOn]) => {
-    if (visaOn) {
+      if (visaOn) {
         setField('cardScheme', 'V')
-      setStatus('Visa Score 已開啟，卡別鎖定為 Visa，Mastercard 已禁用', 'info')
-    } else if (mcOn) {
+        setStatus('Visa Score 已開啟，卡別鎖定為 Visa，Mastercard 已禁用', 'info')
+      } else if (mcOn) {
         setField('cardScheme', 'M')
-      setStatus('Mastercard 擴展已開啟，卡別鎖定為 Mastercard，Visa Score 已禁用', 'info')
-    } else {
-      setStatus('卡別選擇與擴展設定恢復可調整', 'info')
-    }
+        setStatus('Mastercard 擴展已開啟，卡別鎖定為 Mastercard，Visa Score 已禁用', 'info')
+      } else {
+        setStatus('卡別選擇與擴展設定恢復可調整', 'info')
+      }
     },
     { immediate: true }
   )
@@ -1452,10 +1452,7 @@ function convertToUTC(date: Date, timezone: string): Date {
 }
 
 function formatZonedDateTime(date: Date, timezone: string): string {
-  const zone =
-    timezone === 'browser'
-      ? Intl.DateTimeFormat().resolvedOptions().timeZone
-      : timezone
+  const zone = timezone === 'browser' ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone
   const formatter = new Intl.DateTimeFormat('en-GB', {
     timeZone: zone,
     year: 'numeric',
@@ -2010,7 +2007,7 @@ defineExpose({
 <template>
   <div v-if="statusMessage" class="mb-4">
     <div :class="statusClass" class="text-sm">{{ statusMessage }}</div>
-    </div>
+  </div>
 
   <form id="acsForm" class="space-y-6">
     <BaseConfigSection

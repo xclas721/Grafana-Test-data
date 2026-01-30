@@ -112,10 +112,7 @@ async function insertOnce() {
     ) {
       form.updateCustomTimeRangeFromNow?.()
     }
-    if (
-      data.enableCustomTimeRange === 'on' &&
-      (!data.startDateTime || !data.endDateTime)
-    ) {
+    if (data.enableCustomTimeRange === 'on' && (!data.startDateTime || !data.endDateTime)) {
       form.setStatus?.('請先設定自訂時間區間的起訖時間', 'error')
       return
     }
