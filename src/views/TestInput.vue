@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onBeforeUnmount } from 'vue'
 import TestInputLayout from '@/components/TestInputLayout.vue'
 import TestInputForm from '@/components/TestInputForm.vue'
 import NotificationPanel from '@/components/NotificationPanel.vue'
@@ -12,6 +12,12 @@ const currencyModalVisible = ref(false)
 const batchCount = ref(10)
 const batchDays = ref(1)
 const enableAutoTimeRange = ref(true)
+const scheduleEnabled = ref(false)
+const scheduleIntervalSeconds = ref(60)
+const nextRunInSeconds = ref(0)
+const scheduleRunning = ref(false)
+const scheduleBusy = ref(false)
+let scheduleTimer: number | null = null
 
 function onChangeMode(m: 'unified' | 'acs' | 'dss') {
   mode.value = m
@@ -33,15 +39,79 @@ function onBatchInsert() {
   void batchInsert()
 }
 
+function clearScheduleTimer() {
+  if (scheduleTimer !== null) {
+    window.clearInterval(scheduleTimer)
+    scheduleTimer = null
+  }
+}
+
+async function runScheduledBatch() {
+  if (scheduleBusy.value) return
+  scheduleBusy.value = true
+  try {
+    await batchInsert()
+  } finally {
+    scheduleBusy.value = false
+  }
+}
+
+function onStartSchedule() {
+  if (!scheduleEnabled.value || scheduleRunning.value) return
+  batchDays.value = 0
+  scheduleRunning.value = true
+  nextRunInSeconds.value = Math.max(1, Math.floor(scheduleIntervalSeconds.value || 1))
+  void runScheduledBatch()
+  clearScheduleTimer()
+  scheduleTimer = window.setInterval(() => {
+    if (!scheduleRunning.value) return
+    if (nextRunInSeconds.value <= 1) {
+      nextRunInSeconds.value = Math.max(1, Math.floor(scheduleIntervalSeconds.value || 1))
+      void runScheduledBatch()
+      return
+    }
+    nextRunInSeconds.value -= 1
+  }, 1000)
+}
+
+function onStopSchedule() {
+  scheduleRunning.value = false
+  clearScheduleTimer()
+}
+
+function onToggleScheduleEnabled(value: boolean) {
+  scheduleEnabled.value = value
+  if (value) {
+    batchDays.value = 0
+  } else {
+    onStopSchedule()
+  }
+}
+
+function onUpdateScheduleIntervalSeconds(value: number) {
+  scheduleIntervalSeconds.value = value
+  if (scheduleRunning.value) {
+    nextRunInSeconds.value = Math.max(1, Math.floor(value || 1))
+  }
+}
+
+onBeforeUnmount(() => {
+  onStopSchedule()
+})
+
 async function insertOnce() {
   try {
     const form = formRef.value
     if (!form) return
     const data = form.getFormData?.()
     if (!data) return
-  if (data.enableCustomTimeRange === 'on' && data.enableAutoTimeRange === 'on') {
-    form.updateCustomTimeRangeFromNow?.()
-  }
+    const refreshNowOnly = batchDays.value === 0
+    if (
+      refreshNowOnly ||
+      (data.enableCustomTimeRange === 'on' && data.enableAutoTimeRange === 'on')
+    ) {
+      form.updateCustomTimeRangeFromNow?.()
+    }
     if (
       data.enableCustomTimeRange === 'on' &&
       (!data.startDateTime || !data.endDateTime)
@@ -162,23 +232,28 @@ async function batchInsert() {
   const panel = panelRef.value
   if (!form || !panel) return
   const total = Math.max(1, parseInt(String(batchCount.value || 10)))
-  const days = Math.max(1, parseInt(String(batchDays.value || 1)))
+  const days = Math.max(0, parseInt(String(batchDays.value || 0)))
   if (
-    form.getFormData?.()?.enableCustomTimeRange === 'on' &&
-    form.getFormData?.()?.enableAutoTimeRange === 'on'
+    days === 0 ||
+    (form.getFormData?.()?.enableCustomTimeRange === 'on' &&
+      form.getFormData?.()?.enableAutoTimeRange === 'on')
   ) {
     form.updateCustomTimeRangeFromNow?.()
   }
   panel.show?.('正在批量處理...', total)
-  panel.addLog?.('info', `開始批量處理，共 ${total} 筆，天數 ${days}`)
+  panel.addLog?.(
+    'info',
+    `開始批量處理，共 ${total} 筆，天數 ${days}${days === 0 ? '（當前時間）' : ''}`
+  )
   const errorDetails: string[] = []
   // 計算每天分配
   const dailyCounts: number[] = []
-  const average = Math.max(1, Math.floor(total / days))
+  const distributionDays = Math.max(1, days)
+  const average = Math.max(1, Math.floor(total / distributionDays))
   let remaining = total
-  for (let d = 0; d < days; d++) {
+  for (let d = 0; d < distributionDays; d++) {
     const take =
-      d === days - 1
+      d === distributionDays - 1
         ? remaining
         : Math.min(remaining, Math.max(1, average + Math.floor((Math.random() - 0.5) * average)))
     dailyCounts.push(take)
@@ -349,12 +424,20 @@ async function batchInsert() {
     :activeMode="mode"
     v-model:batchCount="batchCount"
     v-model:batchDays="batchDays"
-    :disableBatchDays="!enableAutoTimeRange"
+    :disableBatchDays="!enableAutoTimeRange || scheduleEnabled"
+    :scheduleEnabled="scheduleEnabled"
+    :scheduleIntervalSeconds="scheduleIntervalSeconds"
+    :nextRunInSeconds="nextRunInSeconds"
+    :scheduleRunning="scheduleRunning"
     @changeMode="onChangeMode"
     @loadDefaults="onLoadDefaults"
     @generateRandom="onGenerateRandom"
     @insertData="onInsertData"
     @batchInsert="onBatchInsert"
+    @update:scheduleEnabled="onToggleScheduleEnabled"
+    @update:scheduleIntervalSeconds="onUpdateScheduleIntervalSeconds"
+    @startSchedule="onStartSchedule"
+    @stopSchedule="onStopSchedule"
   >
     <TestInputForm
       ref="formRef"

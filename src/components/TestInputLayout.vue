@@ -19,6 +19,10 @@ const props = defineProps<{
   batchCount?: number
   batchDays?: number
   disableBatchDays?: boolean
+  scheduleEnabled?: boolean
+  scheduleIntervalSeconds?: number
+  nextRunInSeconds?: number
+  scheduleRunning?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -29,6 +33,10 @@ const emit = defineEmits<{
   (e: 'batchInsert'): void
   (e: 'update:batchCount', value: number): void
   (e: 'update:batchDays', value: number): void
+  (e: 'update:scheduleEnabled', value: boolean): void
+  (e: 'update:scheduleIntervalSeconds', value: number): void
+  (e: 'startSchedule'): void
+  (e: 'stopSchedule'): void
 }>()
 
 const isUnified = computed(() => props.activeMode === 'unified')
@@ -133,35 +141,27 @@ onBeforeUnmount(() => {
               <li>測試資料產生</li>
             </ul>
           </div>
-          <div class="card bg-base-100 border border-base-300 shadow-sm">
+          <div class="sticky top-4 z-30">
+            <div class="card bg-base-100 border border-base-300 shadow-sm">
             <div class="card-body p-4 md:p-5">
               <div class="flex flex-wrap items-center gap-2">
-                <div class="join">
-                  <button
-                    id="unifiedMode"
-                    class="btn btn-sm join-item"
-                    :class="{ 'btn-primary': isUnified }"
-                    @click="emit('changeMode', 'unified')"
-                  >
-                    統一模式
-                  </button>
-                  <button
-                    id="acsMode"
-                    class="btn btn-sm join-item"
-                    :class="{ 'btn-primary': isAcs }"
-                    @click="emit('changeMode', 'acs')"
-                  >
-                    ACS 模式
-                  </button>
-                  <button
-                    id="dssMode"
-                    class="btn btn-sm join-item"
-                    :class="{ 'btn-primary': isDss }"
-                    @click="emit('changeMode', 'dss')"
-                  >
-                    3DSS 模式
-                  </button>
-                </div>
+                <label for="modeSelect" class="text-xs text-base-content/60">模式</label>
+                <select
+                  id="modeSelect"
+                  class="select select-bordered select-sm w-28"
+                  :value="props.activeMode"
+                  @change="
+                    (event) =>
+                      emit(
+                        'changeMode',
+                        (event.target as HTMLSelectElement).value as 'unified' | 'acs' | 'dss'
+                      )
+                  "
+                >
+                  <option value="unified">統一模式</option>
+                  <option value="acs">ACS 模式</option>
+                  <option value="dss">3DSS 模式</option>
+                </select>
                 <button class="btn btn-sm" @click="emit('loadDefaults')">載入預設值</button>
                 <button class="btn btn-sm" @click="emit('generateRandom')">生成隨機數據</button>
                 <button class="btn btn-sm btn-primary" @click="emit('insertData')">
@@ -173,7 +173,7 @@ onBeforeUnmount(() => {
                     type="number"
                     id="batchCount"
                     :value="props.batchCount ?? 10"
-                    class="input input-bordered input-sm w-24"
+                    class="input input-bordered input-sm w-15"
                     placeholder="10"
                     @input="
                       (event) =>
@@ -188,11 +188,13 @@ onBeforeUnmount(() => {
                     type="number"
                     id="batchDays"
                     :value="props.batchDays ?? 1"
-                    class="input input-bordered input-sm w-20"
+                    class="input input-bordered input-sm w-15 "
                     placeholder="1"
                     :disabled="props.disableBatchDays"
                     :title="
-                      props.disableBatchDays ? '手動時間區間時不使用天數' : '生成多少天的數據'
+                      props.disableBatchDays
+                        ? '手動時間區間或自動POST時不使用天數'
+                        : '生成多少天的數據'
                     "
                     @input="
                       (event) =>
@@ -205,9 +207,54 @@ onBeforeUnmount(() => {
                   <button class="btn btn-sm btn-success" @click="emit('batchInsert')">
                     批量生成並POST
                   </button>
+                  <label class="text-xs text-base-content/60">自動POST</label>
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-sm"
+                    :checked="props.scheduleEnabled"
+                    @change="
+                      (event) =>
+                        emit(
+                          'update:scheduleEnabled',
+                          (event.target as HTMLInputElement).checked
+                        )
+                    "
+                  />
+                  <label for="scheduleIntervalSeconds" class="text-xs text-base-content/60"
+                    >間隔(秒)</label
+                  >
+                  <input
+                    type="number"
+                    id="scheduleIntervalSeconds"
+                    :value="props.scheduleIntervalSeconds ?? 60"
+                    class="input input-bordered input-sm w-15"
+                    min="1"
+                    placeholder="60"
+                    :disabled="!props.scheduleEnabled"
+                    @input="
+                      (event) =>
+                        emit(
+                          'update:scheduleIntervalSeconds',
+                          Math.max(1, Number((event.target as HTMLInputElement).value || 1))
+                        )
+                    "
+                  />
+                  <button
+                    class="btn btn-sm"
+                    :class="props.scheduleRunning ? 'btn-error' : 'btn-accent'"
+                    :disabled="!props.scheduleEnabled"
+                    @click="props.scheduleRunning ? emit('stopSchedule') : emit('startSchedule')"
+                  >
+                    {{ props.scheduleRunning ? '停止自動' : '開始自動' }}
+                  </button>
+                  <span v-if="props.scheduleRunning" class="text-xs text-base-content/60">
+                    下一次：{{ props.nextRunInSeconds ?? 0 }} 秒
+                  </span>
+                  <div class="mx-2 h-4 w-px bg-base-300"></div>
                 </div>
               </div>
             </div>
+          </div>
           </div>
           <slot />
         </div>
