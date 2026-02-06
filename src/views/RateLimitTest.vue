@@ -27,7 +27,7 @@ const config = reactive({
   version: '2.3.1',
   issuerOids: ['06b4b203-da05-73f9-256f-454929df6076'], // Issuer OID 列表
   projectId: '001',
-  cardPrefix: '4143520000000',
+  cardPrefix: '4143520001000',
   cardCount: 100,
   requestCount: 1,
   merchantName: 'HiTRUST EMV Demo Merchant',
@@ -152,7 +152,7 @@ function loadDefaults() {
   config.version = '2.2.0'
   config.issuerOids = ['06b4b203-da05-73f9-256f-454929df6076']
   config.projectId = '001'
-  config.cardPrefix = '4143520000000'
+  config.cardPrefix = '4143520001000'
   config.cardCount = 15
   config.requestCount = 7
   config.merchantName = 'HiTRUST EMV Demo Merchant'
@@ -778,7 +778,7 @@ const getLogClass = (type: LogEntry['type']) => {
               <Input
                 v-model="config.cardPrefix"
                 label="Card Prefix (卡號前綴)"
-                placeholder="4143520000000"
+                placeholder="4143520001000"
                 :disabled="isTesting"
               />
               <div class="form-control">
