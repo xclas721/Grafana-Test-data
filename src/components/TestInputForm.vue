@@ -422,7 +422,13 @@ const COUNTRY_NUMERIC_MAP: Record<string, { alpha2: string; alpha3: string; name
   '036': { alpha2: 'AU', alpha3: 'AUS', name: 'Australia' },
   '124': { alpha2: 'CA', alpha3: 'CAN', name: 'Canada' },
   '978': { alpha2: 'EU', alpha3: 'EUR', name: 'European Union' },
-  '826': { alpha2: 'GB', alpha3: 'GBR', name: 'United Kingdom' }
+  '826': { alpha2: 'GB', alpha3: 'GBR', name: 'United Kingdom' },
+  // 與 MERCHANT_COUNTRY_CODE_ASIA_VALUES 及 country-codes 參考表一致，避免隨機選到時代碼與名稱不符
+  '764': { alpha2: 'TH', alpha3: 'THA', name: 'Thailand' },
+  '704': { alpha2: 'VN', alpha3: 'VNM', name: 'Viet Nam' },
+  '458': { alpha2: 'MY', alpha3: 'MYS', name: 'Malaysia' },
+  '360': { alpha2: 'ID', alpha3: 'IDN', name: 'Indonesia' },
+  '608': { alpha2: 'PH', alpha3: 'PHL', name: 'Philippines' }
 }
 
 const CURRENCY_NUMERIC_MAP: Record<

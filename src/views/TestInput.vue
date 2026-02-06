@@ -237,8 +237,8 @@ async function batchInsert() {
   ) {
     form.updateCustomTimeRangeFromNow?.()
   }
-  panel.show?.('正在批量處理...', total)
-  panel.addLog?.(
+  panel?.show?.('正在批量處理...', total)
+  panel?.addLog?.(
     'info',
     `開始批量處理，共 ${total} 筆，天數 ${days}${days === 0 ? '（當前時間）' : ''}`
   )
@@ -260,25 +260,6 @@ async function batchInsert() {
   let success = 0
   let errorCount = 0 // 用於進度統計的可變計數器
   const startAt = Date.now()
-  // 併發控制
-  const CONCURRENCY = 5
-  async function processPool<T>(
-    items: T[],
-    worker: (item: T, idx: number) => Promise<void>,
-    concurrency: number
-  ) {
-    let i = 0
-    const runners: Promise<void>[] = []
-    async function runOne() {
-      const idx = i++
-      if (idx >= items.length) return
-      const it = items[idx] as T
-      await worker(it, idx)
-      return runOne()
-    }
-    for (let k = 0; k < Math.min(concurrency, items.length); k++) runners.push(runOne())
-    await Promise.all(runners)
-  }
   const dataBase = form.getFormData?.()
   if (!dataBase) {
     form.setStatus?.('表單資料為空', 'error')
@@ -291,6 +272,84 @@ async function batchInsert() {
   }
   const baseUrl = dataBase.baseUrl
   const auth = 'Basic ' + btoa(`${dataBase.username}:${dataBase.password}`)
+  const BULK_RECORD_LIMIT = 500
+  type BulkRecordMeta = { itemCount: number; dateStr: string }
+  const bulkLines: string[] = []
+  let bulkRecords: BulkRecordMeta[] = []
+  function appendBulk(lines: string[], meta: BulkRecordMeta) {
+    bulkLines.push(...lines)
+    bulkRecords.push(meta)
+  }
+  function analyzeBulkItems(
+    items: Array<{ index?: { error?: { reason?: string } } }>,
+    records: BulkRecordMeta[]
+  ) {
+    let cursor = 0
+    let successRecords = 0
+    let errorRecords = 0
+    const errorReasons: string[] = []
+    for (const record of records) {
+      let recordError = false
+      let reason = ''
+      for (let i = 0; i < record.itemCount; i++) {
+        const item = items[cursor]
+        cursor += 1
+        if (!item) {
+          recordError = true
+          if (!reason) reason = '批次回應不足'
+          continue
+        }
+        const err = item.index?.error
+        if (err) {
+          recordError = true
+          if (!reason) reason = err.reason || '索引失敗'
+        }
+      }
+      if (recordError) {
+        errorRecords += 1
+        errorReasons.push(`日期 ${record.dateStr}：${reason || '索引失敗'}`)
+      } else {
+        successRecords += 1
+      }
+    }
+    return { successRecords, errorRecords, errorReasons }
+  }
+  async function flushBulk(force = false) {
+    if (bulkRecords.length === 0) return
+    if (!force && bulkRecords.length < BULK_RECORD_LIMIT) return
+    const records = bulkRecords
+    const payload = bulkLines.join('\n') + '\n'
+    bulkRecords = []
+    bulkLines.length = 0
+    try {
+      const res = await fetch(`${baseUrl}/_bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-ndjson', Authorization: auth },
+        body: payload
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`)
+      }
+      if (json.errors) {
+        const items = (json.items || []) as Array<{ index?: { error?: { reason?: string } } }>
+        const analyzed = analyzeBulkItems(items, records)
+        success += analyzed.successRecords
+        errorCount += analyzed.errorRecords
+        errorDetails.push(...analyzed.errorReasons)
+      } else {
+        success += records.length
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      errorCount += records.length
+      records.forEach((record) => {
+        errorDetails.push(`日期 ${record.dateStr}：索引失敗${msg ? ` (${msg})` : ''}`)
+      })
+    } finally {
+      panel?.setProgress?.(success + errorCount, total, success, errorCount, startAt)
+    }
+  }
   // 逐日處理
   const startDate = dataBase.currentDate || ''
   if (!isCustomRange && !startDate) {
@@ -315,101 +374,54 @@ async function batchInsert() {
         ).padStart(2, '0')}`
       : `${dataBase.startDateTime} ~ ${dataBase.endDateTime}`
     const count = dailyCountsFinal[d] ?? 0
-    panel.addLog?.('info', `第 ${d + 1} 天 (${dateStr}) 開始，數量 ${count}`)
-    panel.setText?.('progressStatus', `第 ${d + 1} 天 (${dateStr}) 處理中...`)
-    const tasks: number[] = []
-    for (let iTask = 0; iTask < count; iTask++) tasks.push(iTask)
-    await processPool(
-      tasks,
-      async () => {
-        try {
-          // 每筆先依原規則隨機，再取表單資料
-          form.generateRandom?.()
-          const data = form.getFormData?.()
-          if (!data) throw new Error('表單資料為空')
-          // 覆寫當日日期
-          if (date) data.currentDate = dateStr
-          if (mode.value === 'unified') {
-            const sharedTs = form.generateSharedTimestamp?.(data)
-            const acs = form.buildDocument?.(data, 'unified', 'acs-transaction', sharedTs)
-            const dss = form.buildDocument?.(data, 'unified', '3dss-transaction', sharedTs)
-            if (!acs || !dss) throw new Error('構建文件失敗')
-            const acsIndex = `acs-transaction-${acs.utcDateStr}`
-            const dssIndex = `3dss-transaction-${dss.utcDateStr}`
-            const bulk =
-              [
-                JSON.stringify({ index: { _index: acsIndex } }),
-                JSON.stringify(acs.document),
-                JSON.stringify({ index: { _index: dssIndex } }),
-                JSON.stringify(dss.document)
-              ].join('\n') + '\n'
-            const res = await fetch(`${baseUrl}/_bulk`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/x-ndjson', Authorization: auth },
-              body: bulk
-            })
-            const json = await res.json()
-            if (!res.ok || json.errors) {
-              let reason = `HTTP ${res.status}`
-              if (json.errors) {
-                const items = (json.items || []) as Array<{
-                  index?: { error?: { reason?: string } }
-                }>
-                const reasons = items
-                  .filter((it) => it?.index?.error)
-                  .map((it) => it.index?.error?.reason || '')
-                  .filter(Boolean)
-                  .join('; ')
-                if (reasons) reason = reasons
-              }
-              throw new Error(reason)
-            }
-          } else {
-            const indexBase = mode.value === 'acs' ? 'acs-transaction' : '3dss-transaction'
-            const sharedTs = form.generateSharedTimestamp?.(data)
-            const built = form.buildDocument?.(data, mode.value, indexBase, sharedTs)
-            if (!built) throw new Error('構建文件失敗')
-            const fullIndex = `${indexBase}-${built.utcDateStr}`
-            const bulk =
-              [
-                JSON.stringify({ index: { _index: fullIndex } }),
-                JSON.stringify(built.document)
-              ].join('\n') + '\n'
-            const res = await fetch(`${baseUrl}/_bulk`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/x-ndjson', Authorization: auth },
-              body: bulk
-            })
-            const json2 = await res.json()
-            if (!res.ok || json2.errors) {
-              let reason = `HTTP ${res.status}`
-              if (json2.errors) {
-                const items = (json2.items || []) as Array<{
-                  index?: { error?: { reason?: string } }
-                }>
-                const reasons = items
-                  .filter((it) => it?.index?.error)
-                  .map((it) => it.index?.error?.reason || '')
-                  .filter(Boolean)
-                  .join('; ')
-                if (reasons) reason = reasons
-              }
-              throw new Error(reason)
-            }
-            // 已於前段 json2 分支處理錯誤與原因
-          }
-          success++
-        } catch {
-          errorCount++
-          errorDetails.push(`日期 ${dateStr}：索引失敗`)
+    panel?.addLog?.('info', `第 ${d + 1} 天 (${dateStr}) 開始，數量 ${count}`)
+    panel?.setText?.('progressStatus', `第 ${d + 1} 天 (${dateStr}) 處理中...`)
+    for (let iTask = 0; iTask < count; iTask++) {
+      try {
+        // 每筆先依原規則隨機，再取表單資料
+        form.generateRandom?.()
+        const data = form.getFormData?.()
+        if (!data) throw new Error('表單資料為空')
+        // 覆寫當日日期
+        if (date) data.currentDate = dateStr
+        if (mode.value === 'unified') {
+          const sharedTs = form.generateSharedTimestamp?.(data)
+          const acs = form.buildDocument?.(data, 'unified', 'acs-transaction', sharedTs)
+          const dss = form.buildDocument?.(data, 'unified', '3dss-transaction', sharedTs)
+          if (!acs || !dss) throw new Error('構建文件失敗')
+          const acsIndex = `acs-transaction-${acs.utcDateStr}`
+          const dssIndex = `3dss-transaction-${dss.utcDateStr}`
+          appendBulk(
+            [
+              JSON.stringify({ index: { _index: acsIndex } }),
+              JSON.stringify(acs.document),
+              JSON.stringify({ index: { _index: dssIndex } }),
+              JSON.stringify(dss.document)
+            ],
+            { itemCount: 2, dateStr }
+          )
+        } else {
+          const indexBase = mode.value === 'acs' ? 'acs-transaction' : '3dss-transaction'
+          const sharedTs = form.generateSharedTimestamp?.(data)
+          const built = form.buildDocument?.(data, mode.value, indexBase, sharedTs)
+          if (!built) throw new Error('構建文件失敗')
+          const fullIndex = `${indexBase}-${built.utcDateStr}`
+          appendBulk(
+            [JSON.stringify({ index: { _index: fullIndex } }), JSON.stringify(built.document)],
+            { itemCount: 1, dateStr }
+          )
         }
-        panel.setProgress?.(success + errorCount, total, success, errorCount, startAt)
-      },
-      CONCURRENCY
-    )
+        await flushBulk()
+      } catch {
+        errorCount++
+        errorDetails.push(`日期 ${dateStr}：索引失敗`)
+        panel?.setProgress?.(success + errorCount, total, success, errorCount, startAt)
+      }
+    }
+    await flushBulk(true)
   }
-  panel.setText?.('progressStatus', '處理完成')
-  panel.setErrors?.(errorDetails)
+  panel?.setText?.('progressStatus', '處理完成')
+  panel?.setErrors?.(errorDetails)
   if (errorCount === 0) form.setStatus?.(`批量完成，成功 ${success}/${total}`, 'success')
   else if (success === 0) form.setStatus?.(`批量失敗，全部失敗 ${errorCount}/${total}`, 'error')
   else form.setStatus?.(`部分成功：成功 ${success}，失敗 ${errorCount}`, 'warning')
