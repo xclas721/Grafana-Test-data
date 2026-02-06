@@ -33,6 +33,7 @@ const merchantCountryOptions: SelectOption[] = [
   { value: '156', label: '156 - 中國 (CN)' },
   { value: '158', label: '158 - 台灣 (TW)' },
   { value: '840', label: '840 - 美國 (US)' },
+  { value: '076', label: '076 - 巴西 (BR)' },
   { value: '392', label: '392 - 日本 (JP)' },
   { value: '344', label: '344 - 香港 (HK)' },
   { value: '410', label: '410 - 韓國 (KR)' },
