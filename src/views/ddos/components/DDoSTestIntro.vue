@@ -70,7 +70,8 @@ const descFocus = computed(() =>
         </div>
         <div v-if="hasConfig">
           <span class="font-medium text-base-content/90">設定：</span>
-          <span class="text-base-content/80 font-mono">{{ descConfig }}</span>
+          <span class="text-error font-mono">{{ descConfig }}</span>
+          <span class="text-base-content/60 text-xs block mt-1">請於後端 properties 檔案內修改</span>
         </div>
         <div v-if="hasCheckOrder">
           <span class="font-medium text-base-content/90">檢查順序：</span>

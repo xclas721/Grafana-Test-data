@@ -81,7 +81,7 @@ export const TEST_DESCRIPTIONS = {
     purpose: '驗證 AReq 端點以 acctNumber（卡號）為主的 DDoS 限流機制。',
     principle:
       '以 acctNumber 為 key，採用 Token Bucket 演算法，每個卡號獨立 bucket、容量 5 tokens、每分鐘補充 5。同一卡號連續請求時，前 5 次通過，第 6 次起應被阻擋。',
-    config: '設定：bucket.acc.number.capacity = 5',
+    config: 'bucket.acc.number.capacity = 5',
     checkOrder: '檢查順序：DDoS 檢查時先檢查卡號，再檢查商戶。',
     expected: '預期：每張卡前 5 次 PASS，第 6 次起 BLOCKED。'
   },
@@ -90,7 +90,7 @@ export const TEST_DESCRIPTIONS = {
     purpose: '驗證 AReq 端點以 acquirerMerchantID（商戶 ID）為主的 DDoS 限流機制。',
     principle:
       '以 acquirerMerchantID 為 key，採用 Token Bucket 演算法，每個商戶獨立 bucket、容量 360 tokens、每分鐘補充 360。同一商戶連續請求時，前 360 次通過，第 361 次起應被阻擋。',
-    config: '設定：bucket.merchant.capacity = 360',
+    config: 'bucket.merchant.capacity = 360',
     checkOrder: '檢查順序：僅在卡號未觸發限流時，才會檢查商戶限流。',
     expected: '預期：前 360 次 PASS，第 361 次起 BLOCKED。'
   },
@@ -107,6 +107,7 @@ export const TEST_DESCRIPTIONS = {
     purpose: '驗證 CReq 第二階段（Checkpoint2）「動態限流新攻擊」的機制。',
     principle:
       'setBucketAndConsume(acsTransID) 依 DB 筆數決定 behavior：前 3 筆 CReq 只累計 DB、不限流、不建 bucket；第 4 筆起建立 bucket（5 tokens/分鐘），開始 Token Bucket consume；同一分鐘內超過 5 次時，後續請求被限流。',
+    config: 'bucket.capacity = 5',
     focus: '重點：觀察「由 PASS 轉為 BLOCKED」的過渡行為。',
     expected: '預期：前幾次 PASS，之後隨請求數增加漸轉為 BLOCKED。'
   },
@@ -115,7 +116,7 @@ export const TEST_DESCRIPTIONS = {
     purpose: '驗證 3DS Method 端點 /3dsmethod/collect 的 DDoS 限流機制。',
     principle:
       '以 threeDSServerTransID 為 key，採用 Token Bucket 演算法，每個 ID 獨立 bucket、容量 5 tokens（依 duration 補充）。同一 ID 連續請求時，前 5 次通過，第 6 次起應被阻擋。',
-    config: '設定：acs.threeds.method.limit.strategy.capacity = 5',
+    config: 'acs.threeds.method.limit.strategy.capacity = 5',
     expected: '預期：前 5 次 PASS，第 6 次起 BLOCKED。'
   }
 } as const

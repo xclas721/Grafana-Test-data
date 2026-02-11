@@ -1,0 +1,84 @@
+{
+  "last_update_timestamp": "2025-11-11T01:12:45.000Z",
+  "first_seen_timestamp": "2025-11-11T01:12:45.000Z",
+  "messageCategory": "01",
+  "deviceChannel": "02",
+  "merchantName": "HiTRUST EMV Demo Merchant",
+  "merchantCountryCode": "156",
+  "mcc": "5661",
+  "acquirerMerchantID": "1116977",
+  "acquirerBIN": "1231234",
+  "purchaseAmount": "309.71",
+  "purchaseCurrency": "156",
+  "purchaseExponent": "2",
+  "usdAmount": 0.13841979956813022,
+  "ares_transStatus": "C",
+  "transStatus": "Y",
+  "rreq_transStatus": "Y",
+  "transStatusReason": "NULL_VALUE",
+  "cardScheme": "M",
+  "acctNumberHashed": "bCMimxtgpd0aGpDhqu74LwgZBOg4mZmVkmsEFl22l1M=",
+  "acctNumberMask": "515352******1076",
+  "cardbin6": "515352",
+  "cardbin8": "51535241",
+  "performance_metrics": [
+    {
+      "path": "/acs-auth/auth/V/2.2.0/06b4b203-da05-73f9-256f-454929df6076/001/areq",
+      "execTime": 4050
+    },
+    {
+      "path": "CardSchemeService.caculateCavv",
+      "execTime": 21
+    },
+    {
+      "path": "VerificationCodeService.sendVerificationCode",
+      "execTime": 62
+    },
+    {
+      "path": "/challenge/brw/V/2.3.1/06b4b203-da05-73f9-256f-454929df6076/1/3cce2c0b-a418-4be2-aa47-0586c2a5366b/creq",
+      "execTime": 478
+    },
+    {
+      "path": "/acs-auth/auth/V/2.2.0/06b4b203-da05-73f9-256f-454929df6076/001/areq",
+      "execTime": 1064
+    }
+  ],
+  "browserIP": "178.214.40.125",
+  "errorComponent": "NULL_VALUE",
+  "errorDescription": "NULL_VALUE",
+  "errorCode": "NULL_VALUE",
+  "errorDetail": "NULL_VALUE",
+  "errorMessageType": "NULL_VALUE",
+  "purchaseCurrency-country_info": {
+    "ISO4217-currency_minor_unit": "2",
+    "ISO4217-currency_name": "Yuan Renminbi",
+    "ISO4217-currency_alphabetic_code": "CNY",
+    "ISO4217-currency_numeric_code": "156"
+  },
+  "threedsRequestorChlgInd": "01",
+  "merchantCountryCode_country_info": {
+    "ISO3166-1-Alpha-2": "CN",
+    "ISO3166-1-numeric": "156",
+    "ISO3166-1-Alpha-3": "CHN",
+    "official_name_en": "China"
+  },
+  "purchaseCurrencyStr": "156",
+  "exchangeKey": "CNY-2025-11-11",
+  "exchange_rate": {
+    "date": "2025-10-15T00:00:00.000Z",
+    "@timestamp": "2025-10-15T00:00:02.000Z",
+    "rate": "7.2244",
+    "target": "CNY",
+    "base": "USD"
+  },
+  "visaScoreMessageExtension": null,
+  "mastercardMessageExtension": {
+    "score": 415,
+    "reasonCode2": "",
+    "reasonCode1": "A",
+    "decision": "Not Low Risk",
+    "status": "success"
+  },
+  "acsTransID": "3cce2c0b-a418-4be2-aa47-0586c2a5366b",
+  "issuerOid": "06b4b203-da05-73f9-256f-454929df6076"
+}

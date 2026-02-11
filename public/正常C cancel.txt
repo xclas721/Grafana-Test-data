@@ -1,0 +1,91 @@
+{
+  "visaDafMessageExtension": null,
+  "issuerOid": "75c48f36-c1c8-e6bd-92a6-0fb0efc74406",
+  "errorComponent": "NULL_VALUE",
+  "messageCategory": "01",
+  "usdAmount": 73.58368736320318,
+  "errorDescription": "NULL_VALUE",
+  "merchantCountryCode": "158",
+  "cardScheme": "V",
+  "errorCode": "NULL_VALUE",
+  "mastercardMessageExtension": null,
+  "mcc": "5661",
+  "purchaseCurrency": "901",
+  "merchantName": "HiTRUST EMV Demo Merchant",
+  "last_update_timestamp": "2025-11-07T02:27:31.985Z",
+  "cardbin6": "414352",
+  "transStatusReason": "NULL_VALUE",
+  "acquirerMerchantID": "8909191",
+  "exchangeKey": "TWD-2025-11-07",
+  "errorDetail": "NULL_VALUE",
+  "purchaseCurrencyStr": "901",
+  "purchaseCurrency-country_info": {
+    "ISO4217-currency_minor_unit": "2",
+    "ISO4217-currency_name": "New Taiwan Dollar",
+    "ISO4217-currency_alphabetic_code": "TWD",
+    "ISO4217-currency_numeric_code": "901"
+  },
+  "transStatus": "Y",
+  "first_seen_timestamp": "2025-11-07T02:27:25.015Z",
+  "acsTransID": "5fbc90c6-215e-4b30-a4c0-75afd12f1fee",
+  "merchantCountryCodeStr": "158",
+  "performance_metrics": [
+    {
+      "path": "http://localhost:30200/threedsserver-auth/challenge/2.2.0/001/rreq",
+      "execTime": 274
+    },
+    {
+      "path": "CardSchemeService.caculateCavv",
+      "execTime": 7
+    },
+    {
+      "path": "VerificationCodeService.sendVerificationCode",
+      "execTime": 91
+    },
+    {
+      "path": "/challenge/brw/V/2.3.1/75c48f36-c1c8-e6bd-92a6-0fb0efc74406/1/5fbc90c6-215e-4b30-a4c0-75afd12f1fee/creq",
+      "execTime": 309
+    },
+    {
+      "path": "/acs-auth/auth/V/2.2.0/75c48f36-c1c8-e6bd-92a6-0fb0efc74406/001/areq",
+      "execTime": 712
+    },
+    {
+      "path": "RiskEvaluationService.evaluate",
+      "execTime": 8
+    }
+  ],
+  "deviceAdvertisingId": "4d4427f20375a66287430edd54bd82d2",
+  "exchange_rate": {
+    "date": "2025-05-08T00:00:00.000Z",
+    "@timestamp": "2025-05-08T00:00:02.000Z",
+    "rate": "30.1999",
+    "target": "TWD",
+    "base": "USD"
+  },
+  "visaScoreMessageExtension": null,
+  "cardbin8": "41435200",
+  "errorMessageType": "NULL_VALUE",
+  "devicePlatform": "MacIntel",
+  "merchantCountryCode_country_info": {
+    "ISO3166-1-Alpha-2": "TW",
+    "ISO3166-1-numeric": "158",
+    "ISO3166-1-Alpha-3": "TWN",
+    "official_name_en": "Taiwan"
+  },
+  "acquirerBIN": "1231234",
+  "deviceChannel": "02",
+  "deviceIpAddress": "0:0:0:0:0:0:0:1",
+  "acctNumberHashed": "ScCDkc2T2NY10FyL4ZYThEsTsMd/7OVBEFaRwiKMA1E=",
+  "browserIP": "0:0:0:0:0:0:0:1",
+  "purchaseAmount": "222222",
+  "currencyCodeForRate": "TWD",
+  "purchaseExponent": "2",
+  "authenticationMethod": "02",
+  "rreq_transStatus": "Y",
+  "authenticationType": "02",
+  "threeDSCompInd": "Y",
+  "ares_transStatus": "C",
+  "acctNumberMask": "414352******0123",
+  "deviceLocale": "zh-TW"
+}
