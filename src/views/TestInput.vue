@@ -190,7 +190,7 @@ function onCurrencySelect(payload: {
     currencyNumericCode: payload.numeric,
     currencyName: payload.name
   }
-  // 國家推導（簡化：台灣/美國/中國/日本）
+  // 國家推導（簡化：台灣/美國/中國/日本/巴西等）
   const map: Record<
     string,
     { alpha2: string; alpha3: string; numeric: string; name: string; mcc?: string }
@@ -210,7 +210,9 @@ function onCurrencySelect(payload: {
     越南: { alpha2: 'VN', alpha3: 'VNM', numeric: '704', name: 'Vietnam' },
     馬來西亞: { alpha2: 'MY', alpha3: 'MYS', numeric: '458', name: 'Malaysia' },
     印尼: { alpha2: 'ID', alpha3: 'IDN', numeric: '360', name: 'Indonesia' },
-    菲律賓: { alpha2: 'PH', alpha3: 'PHL', numeric: '608', name: 'Philippines' }
+    菲律賓: { alpha2: 'PH', alpha3: 'PHL', numeric: '608', name: 'Philippines' },
+    柬埔寨: { alpha2: 'KH', alpha3: 'KHM', numeric: '116', name: 'Cambodia' },
+    巴西: { alpha2: 'BR', alpha3: 'BRA', numeric: '076', name: 'Brazil' }
   }
   const info = map[payload.country]
   if (info) {

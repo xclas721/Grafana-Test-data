@@ -358,6 +358,7 @@ const DEFAULT_CHALLENGE_CANCEL_RATE = 0.08
 const MERCHANT_COUNTRY_CODE_STR_VALUES = [
   '156',
   '840',
+  '076',
   '392',
   '344',
   '410',
@@ -380,7 +381,8 @@ const MERCHANT_COUNTRY_CODE_ASIA_VALUES = [
   '704', // Vietnam
   '458', // Malaysia
   '360', // Indonesia
-  '608' // Philippines
+  '608', // Philippines
+  '076' // Brazil (treated as Asia for testing/random)
 ]
 
 const MERCHANT_MCC_OPTIONS = [
@@ -414,6 +416,7 @@ const COUNTRY_NUMERIC_MAP: Record<string, { alpha2: string; alpha3: string; name
   '156': { alpha2: 'CN', alpha3: 'CHN', name: 'China' },
   '158': { alpha2: 'TW', alpha3: 'TWN', name: 'Taiwan' },
   '840': { alpha2: 'US', alpha3: 'USA', name: 'United States' },
+  '076': { alpha2: 'BR', alpha3: 'BRA', name: 'Brazil' },
   '392': { alpha2: 'JP', alpha3: 'JPN', name: 'Japan' },
   '344': { alpha2: 'HK', alpha3: 'HKG', name: 'Hong Kong' },
   '410': { alpha2: 'KR', alpha3: 'KOR', name: 'South Korea' },
