@@ -6,8 +6,16 @@ const route = useRoute()
 
 // 判斷 DDoS 限流測試區塊是否應該展開
 const isDDoSActive = () => {
-  return route.path === '/rate-limit-test'
+  return route.path.startsWith('/rate-limit-test')
 }
+
+const ddosMenuItems = [
+  { path: '/rate-limit-test/areq-card', label: 'AReq 卡號限流' },
+  { path: '/rate-limit-test/areq-merchant', label: 'AReq 商戶限流' },
+  { path: '/rate-limit-test/creq-checkpoint1', label: 'CReq 檢查點1' },
+  { path: '/rate-limit-test/creq-checkpoint2', label: 'CReq 檢查點2' },
+  { path: '/rate-limit-test/3dsmethod', label: '3DS Method 限流' }
+]
 
 // 判斷 Grafana Test Data 區塊是否應該展開
 const isGrafanaActive = () => {
@@ -400,13 +408,13 @@ onBeforeUnmount(() => {
                   </svg>
                 </summary>
                 <ul class="mt-1 space-y-1 pl-8 transition-all duration-200">
-                  <li>
+                  <li v-for="item in ddosMenuItems" :key="item.path">
                     <RouterLink
-                      to="/rate-limit-test"
-                      :class="{ active: route.path === '/rate-limit-test' }"
+                      :to="item.path"
+                      :class="{ active: route.path === item.path }"
                       class="flex items-center gap-2 rounded-lg transition-all text-sm"
                     >
-                      <span>卡BIN攻擊</span>
+                      <span>{{ item.label }}</span>
                     </RouterLink>
                   </li>
                 </ul>
