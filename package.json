@@ -17,29 +17,29 @@
     "prettier:check": "(prettier --check \"src/**/*.{js,vue,css,scss,json,ts,tsx}\" || (echo Prettier formatting issues detected! && exit 1))"
   },
   "dependencies": {
-    "pinia": "^3.0.3",
-    "vue": "^3.5.22",
-    "vue-router": "^4.6.3"
+    "pinia": "^3.0.4",
+    "vue": "^3.5.28",
+    "vue-router": "^5.0.2"
   },
   "devDependencies": {
-    "@tsconfig/node22": "^22.0.2",
-    "@types/node": "^22.18.11",
+    "@tsconfig/node22": "^22.0.5",
+    "@types/node": "^25.2.3",
     "@tailwindcss/vite": "^4.1.18",
-    "@vitejs/plugin-vue": "^6.0.1",
+    "@vitejs/plugin-vue": "^6.0.4",
     "@vue/eslint-config-typescript": "^14.6.0",
     "@vue/tsconfig": "^0.8.1",
-    "autoprefixer": "^10.4.23",
-    "daisyui": "^5.5.14",
-    "eslint": "^9.37.0",
-    "eslint-plugin-vue": "~10.5.0",
+    "autoprefixer": "^10.4.24",
+    "daisyui": "^5.5.18",
+    "eslint": "^10.0.0",
+    "eslint-plugin-vue": "~10.7.0",
     "jiti": "^2.6.1",
     "npm-run-all2": "^8.0.4",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
-    "typescript": "~5.9.0",
-    "vite": "^7.1.11",
-    "vite-plugin-vue-devtools": "^8.0.3",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-vue-devtools": "^8.0.6",
     "prettier": "^3.8.1",
-    "vue-tsc": "^3.1.1"
+    "vue-tsc": "^3.2.4"
   }
 }
