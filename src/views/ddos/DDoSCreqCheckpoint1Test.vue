@@ -6,7 +6,12 @@ import DDoSSection from './components/DDoSSection.vue'
 import DDoSTestIntro from './components/DDoSTestIntro.vue'
 import Button from '@/shared/components/Button.vue'
 import Select from '@/shared/components/Select.vue'
-import { buildAReqBody, buildCReqFormBody, generateUUID, rewriteUrlForProxy } from '@/shared/utils/ddos-utils'
+import {
+  buildAReqBody,
+  buildCReqFormBody,
+  generateUUID,
+  rewriteUrlForProxy
+} from '@/shared/utils/ddos-utils'
 import { useApiConfigStore } from '@/stores/apiConfig'
 import { LABELS, SECTION_TITLES, BUTTONS, CARD_TITLES, STAT_LABELS, PLACEHOLDER } from './constants'
 
@@ -59,7 +64,12 @@ function addLog(type: LogEntry['type'], message: string) {
 }
 
 function getLogClass(type: LogEntry['type']) {
-  return { success: 'text-success', error: 'text-error', warning: 'text-warning', info: 'text-info' }[type]
+  return {
+    success: 'text-success',
+    error: 'text-error',
+    warning: 'text-warning',
+    info: 'text-info'
+  }[type]
 }
 
 function loadDefaults() {
@@ -155,7 +165,10 @@ async function runTest() {
     } catch (e: unknown) {
       const ms = Date.now() - start
       stats.otherErrorCount++
-      addLog('error', `[${i}/${config.requestCount}] ERROR: ${e instanceof Error ? e.message : 'Unknown'} (${ms}ms)`)
+      addLog(
+        'error',
+        `[${i}/${config.requestCount}] ERROR: ${e instanceof Error ? e.message : 'Unknown'} (${ms}ms)`
+      )
     }
   }
 
@@ -194,30 +207,87 @@ function stopTest() {
   <Card :title="CARD_TITLES.config" subtitle="CReq 檢查點1 - 進入限流後持續限流">
     <div class="space-y-4">
       <DDoSSection :title="SECTION_TITLES.connection">
-        <Select v-model="config.cardScheme" :label="LABELS.cardScheme" :options="cardSchemeOptions" :disabled="isTesting" />
-        <Input v-model="config.version" :label="LABELS.version" placeholder="2.2.0" :disabled="isTesting" />
-        <Input v-model="config.issuerOid" :label="LABELS.issuerOid" placeholder="UUID" :disabled="isTesting" />
-        <Input v-model="config.projectId" :label="LABELS.projectId" placeholder="001" :disabled="isTesting" />
+        <Select
+          v-model="config.cardScheme"
+          :label="LABELS.cardScheme"
+          :options="cardSchemeOptions"
+          :disabled="isTesting"
+        />
+        <Input
+          v-model="config.version"
+          :label="LABELS.version"
+          placeholder="2.2.0"
+          :disabled="isTesting"
+        />
+        <Input
+          v-model="config.issuerOid"
+          :label="LABELS.issuerOid"
+          placeholder="UUID"
+          :disabled="isTesting"
+        />
+        <Input
+          v-model="config.projectId"
+          :label="LABELS.projectId"
+          placeholder="001"
+          :disabled="isTesting"
+        />
       </DDoSSection>
 
       <DDoSSection :title="SECTION_TITLES.merchantForAreq">
-        <Input v-model="config.merchantId" :label="LABELS.merchantId" placeholder="8909191" :disabled="isTesting" />
-        <Input v-model="config.merchantName" :label="LABELS.merchantName" placeholder="HiTRUST EMV Demo Merchant" :disabled="isTesting" />
+        <Input
+          v-model="config.merchantId"
+          :label="LABELS.merchantId"
+          placeholder="8909191"
+          :disabled="isTesting"
+        />
+        <Input
+          v-model="config.merchantName"
+          :label="LABELS.merchantName"
+          placeholder="HiTRUST EMV Demo Merchant"
+          :disabled="isTesting"
+        />
         <Input v-model="config.mcc" :label="LABELS.mcc" placeholder="5661" :disabled="isTesting" />
-        <Input v-model="config.merchantCountryCode" :label="LABELS.merchantCountryCode" placeholder="156" :disabled="isTesting" />
+        <Input
+          v-model="config.merchantCountryCode"
+          :label="LABELS.merchantCountryCode"
+          placeholder="156"
+          :disabled="isTesting"
+        />
       </DDoSSection>
 
       <DDoSSection :title="SECTION_TITLES.request">
-        <Input v-model="config.acctNumber" :label="LABELS.acctNumber" placeholder="4143520000000123" :disabled="isTesting" />
+        <Input
+          v-model="config.acctNumber"
+          :label="LABELS.acctNumber"
+          placeholder="4143520000000123"
+          :disabled="isTesting"
+        />
         <div class="form-control">
-          <label class="label"><span class="label-text">{{ LABELS.requestCount }}</span></label>
-          <input v-model.number="config.requestCount" type="number" min="1" max="100" class="input input-bordered input-sm w-full" :disabled="isTesting" />
+          <label class="label"
+            ><span class="label-text">{{ LABELS.requestCount }}</span></label
+          >
+          <input
+            v-model.number="config.requestCount"
+            type="number"
+            min="1"
+            max="100"
+            class="input input-bordered input-sm w-full"
+            :disabled="isTesting"
+          />
         </div>
       </DDoSSection>
     </div>
     <div class="flex gap-2 mt-6">
-      <Button variant="outline" @click="loadDefaults" :disabled="isTesting">{{ BUTTONS.loadDefaults }}</Button>
-      <Button v-if="!isTesting" variant="success" @click="runTest" :disabled="isTesting" :loading="isTesting">
+      <Button variant="outline" @click="loadDefaults" :disabled="isTesting">{{
+        BUTTONS.loadDefaults
+      }}</Button>
+      <Button
+        v-if="!isTesting"
+        variant="success"
+        @click="runTest"
+        :disabled="isTesting"
+        :loading="isTesting"
+      >
         {{ BUTTONS.startTest }}
       </Button>
       <Button v-else variant="danger" @click="stopTest">{{ BUTTONS.stopTest }}</Button>
@@ -246,11 +316,17 @@ function stopTest() {
       id="log-container"
       class="bg-base-300 rounded-lg p-4 max-h-[500px] overflow-y-auto font-mono text-xs space-y-1"
     >
-      <div v-for="log in logs" :key="log.id" :class="['whitespace-pre-wrap', getLogClass(log.type)]">
+      <div
+        v-for="log in logs"
+        :key="log.id"
+        :class="['whitespace-pre-wrap', getLogClass(log.type)]"
+      >
         <span class="text-base-content/60">[{{ log.time }}]</span>
         {{ log.message }}
       </div>
-      <div v-if="!logs.length" class="text-base-content/40 text-center py-8">{{ PLACEHOLDER.noTestYet }}</div>
+      <div v-if="!logs.length" class="text-base-content/40 text-center py-8">
+        {{ PLACEHOLDER.noTestYet }}
+      </div>
     </div>
   </Card>
 </template>

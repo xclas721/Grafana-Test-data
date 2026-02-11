@@ -47,7 +47,12 @@ function addLog(type: LogEntry['type'], message: string) {
 }
 
 function getLogClass(type: LogEntry['type']) {
-  return { success: 'text-success', error: 'text-error', warning: 'text-warning', info: 'text-info' }[type]
+  return {
+    success: 'text-success',
+    error: 'text-error',
+    warning: 'text-warning',
+    info: 'text-info'
+  }[type]
 }
 
 function loadDefaults() {
@@ -74,10 +79,7 @@ async function runTest() {
   const path = '/acs-auth-web/3dsmethod/collect'
   const url = apiConfig.resolveAcsAuthWebPath(path)
 
-  const formData = build3DSMethodFormData(
-    threeDSServerTransID,
-    config.threeDSMethodNotificationURL
-  )
+  const formData = build3DSMethodFormData(threeDSServerTransID, config.threeDSMethodNotificationURL)
 
   addLog('info', '=== 3DS Method Rate Limit Test ===')
   addLog('info', `URL: ${url}`)
@@ -121,7 +123,10 @@ async function runTest() {
     } catch (e: unknown) {
       const ms = Date.now() - start
       stats.otherErrorCount++
-      addLog('error', `[${i}/${config.requestCount}] ERROR: ${e instanceof Error ? e.message : 'Unknown'} (${ms}ms)`)
+      addLog(
+        'error',
+        `[${i}/${config.requestCount}] ERROR: ${e instanceof Error ? e.message : 'Unknown'} (${ms}ms)`
+      )
     }
   }
 
@@ -169,8 +174,17 @@ function stopTest() {
     <div class="space-y-4">
       <DDoSSection :title="SECTION_TITLES.request">
         <div class="form-control">
-          <label class="label"><span class="label-text">{{ LABELS.requestCount }}</span></label>
-          <input v-model.number="config.requestCount" type="number" min="1" max="100" class="input input-bordered input-sm w-full" :disabled="isTesting" />
+          <label class="label"
+            ><span class="label-text">{{ LABELS.requestCount }}</span></label
+          >
+          <input
+            v-model.number="config.requestCount"
+            type="number"
+            min="1"
+            max="100"
+            class="input input-bordered input-sm w-full"
+            :disabled="isTesting"
+          />
         </div>
         <ParamInput
           v-model="config.threeDSServerTransID"
@@ -190,8 +204,16 @@ function stopTest() {
       </DDoSSection>
     </div>
     <div class="flex gap-2 mt-6">
-      <Button variant="outline" @click="loadDefaults" :disabled="isTesting">{{ BUTTONS.loadDefaults }}</Button>
-      <Button v-if="!isTesting" variant="success" @click="runTest" :disabled="isTesting" :loading="isTesting">
+      <Button variant="outline" @click="loadDefaults" :disabled="isTesting">{{
+        BUTTONS.loadDefaults
+      }}</Button>
+      <Button
+        v-if="!isTesting"
+        variant="success"
+        @click="runTest"
+        :disabled="isTesting"
+        :loading="isTesting"
+      >
         {{ BUTTONS.startTest }}
       </Button>
       <Button v-else variant="danger" @click="stopTest">{{ BUTTONS.stopTest }}</Button>
@@ -222,11 +244,17 @@ function stopTest() {
       id="log-container"
       class="bg-base-300 rounded-lg p-4 max-h-[500px] overflow-y-auto font-mono text-xs space-y-1"
     >
-      <div v-for="log in logs" :key="log.id" :class="['whitespace-pre-wrap', getLogClass(log.type)]">
+      <div
+        v-for="log in logs"
+        :key="log.id"
+        :class="['whitespace-pre-wrap', getLogClass(log.type)]"
+      >
         <span class="text-base-content/60">[{{ log.time }}]</span>
         {{ log.message }}
       </div>
-      <div v-if="!logs.length" class="text-base-content/40 text-center py-8">{{ PLACEHOLDER.noTestYet }}</div>
+      <div v-if="!logs.length" class="text-base-content/40 text-center py-8">
+        {{ PLACEHOLDER.noTestYet }}
+      </div>
     </div>
   </Card>
 </template>

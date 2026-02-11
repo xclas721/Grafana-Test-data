@@ -34,10 +34,7 @@ const showInput = computed(() => !props.useRandom || !props.randomizable)
   <div class="form-control">
     <label class="label">
       <span class="label-text">{{ label }}</span>
-      <label
-        v-if="randomizable"
-        class="label cursor-pointer gap-2 flex-row-reverse"
-      >
+      <label v-if="randomizable" class="label cursor-pointer gap-2 flex-row-reverse">
         <span class="label-text-alt">隨機</span>
         <input
           type="checkbox"

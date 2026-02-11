@@ -65,7 +65,12 @@ function addLog(type: LogEntry['type'], message: string) {
 }
 
 function getLogClass(type: LogEntry['type']) {
-  return { success: 'text-success', error: 'text-error', warning: 'text-warning', info: 'text-info' }[type]
+  return {
+    success: 'text-success',
+    error: 'text-error',
+    warning: 'text-warning',
+    info: 'text-info'
+  }[type]
 }
 
 function loadDefaults() {
@@ -103,8 +108,9 @@ async function runTest() {
   const path = `/acs-auth/auth/${config.cardScheme}/${config.version}/${issuerOid}/${config.projectId}/areq`
   const url = apiConfig.resolveAcsAuthPath(path)
 
-  const cards = Array.from({ length: config.cardPoolSize }, (_, i) =>
-    config.cardPrefix + (i).toString().padStart(4, '0')
+  const cards = Array.from(
+    { length: config.cardPoolSize },
+    (_, i) => config.cardPrefix + i.toString().padStart(4, '0')
   )
 
   addLog('info', `=== AReq Merchant Rate Limit Test ===`)
@@ -147,16 +153,25 @@ async function runTest() {
         addLog('error', `[${i}/${config.requestCount}] BLOCKED (${ms}ms)`)
       } else {
         stats.otherErrorCount++
-        addLog('error', `[${i}/${config.requestCount}] ERROR: ${data?.errorCode || res.status} (${ms}ms)`)
+        addLog(
+          'error',
+          `[${i}/${config.requestCount}] ERROR: ${data?.errorCode || res.status} (${ms}ms)`
+        )
       }
     } catch (e: unknown) {
       const ms = Date.now() - start
       stats.otherErrorCount++
-      addLog('error', `[${i}/${config.requestCount}] ERROR: ${e instanceof Error ? e.message : 'Unknown'} (${ms}ms)`)
+      addLog(
+        'error',
+        `[${i}/${config.requestCount}] ERROR: ${e instanceof Error ? e.message : 'Unknown'} (${ms}ms)`
+      )
     }
 
     if (i % 50 === 0 && i < config.requestCount) {
-      addLog('info', `[Progress] ${i}/${config.requestCount} | PASS=${stats.successCount} BLOCKED=${stats.rateLimitCount} ERR=${stats.otherErrorCount}`)
+      addLog(
+        'info',
+        `[Progress] ${i}/${config.requestCount} | PASS=${stats.successCount} BLOCKED=${stats.rateLimitCount} ERR=${stats.otherErrorCount}`
+      )
     }
   }
 
@@ -197,8 +212,18 @@ const expectedBlocked = computed(() => Math.max(0, config.requestCount - 360))
   <Card :title="CARD_TITLES.config" subtitle="AReq 商戶限流 - 前 360 次通過，第 361 次起限流">
     <div class="space-y-4">
       <DDoSSection :title="SECTION_TITLES.connection">
-        <Select v-model="config.cardScheme" :label="LABELS.cardScheme" :options="cardSchemeOptions" :disabled="isTesting" />
-        <Input v-model="config.version" :label="LABELS.version" placeholder="2.2.0" :disabled="isTesting" />
+        <Select
+          v-model="config.cardScheme"
+          :label="LABELS.cardScheme"
+          :options="cardSchemeOptions"
+          :disabled="isTesting"
+        />
+        <Input
+          v-model="config.version"
+          :label="LABELS.version"
+          placeholder="2.2.0"
+          :disabled="isTesting"
+        />
         <ParamInput
           v-model="config.issuerOid"
           :label="LABELS.issuerOid"
@@ -208,38 +233,109 @@ const expectedBlocked = computed(() => Math.max(0, config.requestCount - 360))
           @update:use-random="config.issuerOidRandom = $event"
           :disabled="isTesting"
         />
-        <Input v-model="config.projectId" :label="LABELS.projectId" placeholder="001" :disabled="isTesting" />
+        <Input
+          v-model="config.projectId"
+          :label="LABELS.projectId"
+          placeholder="001"
+          :disabled="isTesting"
+        />
       </DDoSSection>
 
       <DDoSSection :title="SECTION_TITLES.merchant">
-        <Input v-model="config.merchantId" :label="LABELS.merchantId" placeholder="8909191" :disabled="isTesting" />
-        <Input v-model="config.merchantName" :label="LABELS.merchantName" placeholder="HiTRUST EMV Demo Merchant" :disabled="isTesting" />
+        <Input
+          v-model="config.merchantId"
+          :label="LABELS.merchantId"
+          placeholder="8909191"
+          :disabled="isTesting"
+        />
+        <Input
+          v-model="config.merchantName"
+          :label="LABELS.merchantName"
+          placeholder="HiTRUST EMV Demo Merchant"
+          :disabled="isTesting"
+        />
         <Input v-model="config.mcc" :label="LABELS.mcc" placeholder="5661" :disabled="isTesting" />
-        <Input v-model="config.merchantCountryCode" :label="LABELS.merchantCountryCode" placeholder="156" :disabled="isTesting" />
-        <Input v-model="config.acquirerBIN" :label="LABELS.acquirerBin" placeholder="1231234" :disabled="isTesting" />
+        <Input
+          v-model="config.merchantCountryCode"
+          :label="LABELS.merchantCountryCode"
+          placeholder="156"
+          :disabled="isTesting"
+        />
+        <Input
+          v-model="config.acquirerBIN"
+          :label="LABELS.acquirerBin"
+          placeholder="1231234"
+          :disabled="isTesting"
+        />
       </DDoSSection>
 
       <DDoSSection :title="SECTION_TITLES.transaction">
-        <Input v-model="config.purchaseAmount" :label="LABELS.purchaseAmount" placeholder="100" :disabled="isTesting" />
-        <Input v-model="config.purchaseCurrency" :label="LABELS.purchaseCurrency" placeholder="156" :disabled="isTesting" />
-        <Input v-model="config.purchaseExponent" :label="LABELS.purchaseExponent" placeholder="2" :disabled="isTesting" />
+        <Input
+          v-model="config.purchaseAmount"
+          :label="LABELS.purchaseAmount"
+          placeholder="100"
+          :disabled="isTesting"
+        />
+        <Input
+          v-model="config.purchaseCurrency"
+          :label="LABELS.purchaseCurrency"
+          placeholder="156"
+          :disabled="isTesting"
+        />
+        <Input
+          v-model="config.purchaseExponent"
+          :label="LABELS.purchaseExponent"
+          placeholder="2"
+          :disabled="isTesting"
+        />
       </DDoSSection>
 
       <DDoSSection :title="SECTION_TITLES.cardAndRequest">
-        <Input v-model="config.cardPrefix" :label="LABELS.cardPrefix" placeholder="414352000000" :disabled="isTesting" />
+        <Input
+          v-model="config.cardPrefix"
+          :label="LABELS.cardPrefix"
+          placeholder="414352000000"
+          :disabled="isTesting"
+        />
         <div class="form-control">
-          <label class="label"><span class="label-text">{{ LABELS.cardPoolSize }}</span></label>
-          <input v-model.number="config.cardPoolSize" type="number" min="1" max="500" class="input input-bordered input-sm w-full" :disabled="isTesting" />
+          <label class="label"
+            ><span class="label-text">{{ LABELS.cardPoolSize }}</span></label
+          >
+          <input
+            v-model.number="config.cardPoolSize"
+            type="number"
+            min="1"
+            max="500"
+            class="input input-bordered input-sm w-full"
+            :disabled="isTesting"
+          />
         </div>
         <div class="form-control">
-          <label class="label"><span class="label-text">{{ LABELS.requestCount }}</span></label>
-          <input v-model.number="config.requestCount" type="number" min="1" max="500" class="input input-bordered input-sm w-full" :disabled="isTesting" />
+          <label class="label"
+            ><span class="label-text">{{ LABELS.requestCount }}</span></label
+          >
+          <input
+            v-model.number="config.requestCount"
+            type="number"
+            min="1"
+            max="500"
+            class="input input-bordered input-sm w-full"
+            :disabled="isTesting"
+          />
         </div>
       </DDoSSection>
     </div>
     <div class="flex gap-2 mt-6">
-      <Button variant="outline" @click="loadDefaults" :disabled="isTesting">{{ BUTTONS.loadDefaults }}</Button>
-      <Button v-if="!isTesting" variant="success" @click="runTest" :disabled="isTesting" :loading="isTesting">
+      <Button variant="outline" @click="loadDefaults" :disabled="isTesting">{{
+        BUTTONS.loadDefaults
+      }}</Button>
+      <Button
+        v-if="!isTesting"
+        variant="success"
+        @click="runTest"
+        :disabled="isTesting"
+        :loading="isTesting"
+      >
         {{ BUTTONS.startTest }}
       </Button>
       <Button v-else variant="danger" @click="stopTest">{{ BUTTONS.stopTest }}</Button>
@@ -270,11 +366,17 @@ const expectedBlocked = computed(() => Math.max(0, config.requestCount - 360))
       id="log-container"
       class="bg-base-300 rounded-lg p-4 max-h-[500px] overflow-y-auto font-mono text-xs space-y-1"
     >
-      <div v-for="log in logs" :key="log.id" :class="['whitespace-pre-wrap', getLogClass(log.type)]">
+      <div
+        v-for="log in logs"
+        :key="log.id"
+        :class="['whitespace-pre-wrap', getLogClass(log.type)]"
+      >
         <span class="text-base-content/60">[{{ log.time }}]</span>
         {{ log.message }}
       </div>
-      <div v-if="!logs.length" class="text-base-content/40 text-center py-8">{{ PLACEHOLDER.noTestYet }}</div>
+      <div v-if="!logs.length" class="text-base-content/40 text-center py-8">
+        {{ PLACEHOLDER.noTestYet }}
+      </div>
     </div>
   </Card>
 </template>

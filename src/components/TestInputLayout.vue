@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount } from 'vue'
+import { inject, computed, onMounted, onBeforeUnmount } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 const route = useRoute()
+const inTestDataLayout = inject<boolean>('inTestDataLayout', false)
 
 // 判斷 DDoS 限流測試區塊是否應該展開
 const isDDoSActive = () => {
@@ -19,7 +20,7 @@ const ddosMenuItems = [
 
 // 判斷 Grafana Test Data 區塊是否應該展開
 const isGrafanaActive = () => {
-  return route.path === '/'
+  return route.path === '/test-data' || route.path === '/'
 }
 
 const props = defineProps<{
@@ -115,7 +116,128 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="drawer lg:drawer-open min-h-screen bg-base-200">
+  <!-- 嵌入模式：在 TestDataLayout 下僅渲染內容，由父層提供 sidebar/navbar -->
+  <div v-if="inTestDataLayout" class="space-y-6">
+    <div class="text-xs breadcrumbs text-base-content/60 mb-4">
+      <ul>
+        <li>工具</li>
+        <li>測試資料產生</li>
+      </ul>
+    </div>
+    <div class="sticky top-4 z-30">
+      <div class="card bg-base-100 border border-base-300 shadow-sm">
+        <div class="card-body p-4 md:p-5">
+          <div class="flex flex-wrap items-center gap-2">
+            <label for="modeSelect" class="text-xs text-base-content/60">模式</label>
+            <select
+              id="modeSelect"
+              class="select select-bordered select-sm w-28"
+              :value="props.activeMode"
+              @change="
+                (event) =>
+                  emit(
+                    'changeMode',
+                    (event.target as HTMLSelectElement).value as 'unified' | 'acs' | 'dss'
+                  )
+              "
+            >
+              <option value="unified">統一模式</option>
+              <option value="acs">ACS 模式</option>
+              <option value="dss">3DSS 模式</option>
+            </select>
+            <button class="btn btn-sm" @click="emit('loadDefaults')">載入預設值</button>
+            <button class="btn btn-sm" @click="emit('generateRandom')">生成隨機數據</button>
+            <button class="btn btn-sm btn-primary" @click="emit('insertData')">
+              {{ insertButtonText }}
+            </button>
+            <div class="flex flex-wrap items-center gap-2 ml-auto">
+              <label for="batchCount" class="text-xs text-base-content/60">數量</label>
+              <input
+                type="number"
+                id="batchCount"
+                :value="props.batchCount ?? 10"
+                class="input input-bordered input-sm w-15"
+                placeholder="10"
+                @input="
+                  (event) =>
+                    emit(
+                      'update:batchCount',
+                      Math.max(1, Number((event.target as HTMLInputElement).value || 10))
+                    )
+                "
+              />
+              <label for="batchDays" class="text-xs text-base-content/60">天數</label>
+              <input
+                type="number"
+                id="batchDays"
+                :value="props.batchDays ?? 1"
+                class="input input-bordered input-sm w-15"
+                placeholder="1"
+                :disabled="props.disableBatchDays"
+                :title="
+                  props.disableBatchDays ? '手動時間區間或自動POST時不使用天數' : '生成多少天的數據'
+                "
+                @input="
+                  (event) =>
+                    emit(
+                      'update:batchDays',
+                      Math.max(0, Number((event.target as HTMLInputElement).value || 0))
+                    )
+                "
+              />
+              <button class="btn btn-sm btn-success" @click="emit('batchInsert')">
+                批量生成並POST
+              </button>
+              <label class="text-xs text-base-content/60">自動POST</label>
+              <input
+                type="checkbox"
+                class="checkbox checkbox-sm"
+                :checked="props.scheduleEnabled"
+                @change="
+                  (event) =>
+                    emit('update:scheduleEnabled', (event.target as HTMLInputElement).checked)
+                "
+              />
+              <label for="scheduleIntervalSeconds" class="text-xs text-base-content/60"
+                >間隔(秒)</label
+              >
+              <input
+                type="number"
+                id="scheduleIntervalSeconds"
+                :value="props.scheduleIntervalSeconds ?? 60"
+                class="input input-bordered input-sm w-15"
+                min="1"
+                placeholder="60"
+                :disabled="!props.scheduleEnabled"
+                @input="
+                  (event) =>
+                    emit(
+                      'update:scheduleIntervalSeconds',
+                      Math.max(1, Number((event.target as HTMLInputElement).value || 1))
+                    )
+                "
+              />
+              <button
+                class="btn btn-sm"
+                :class="props.scheduleRunning ? 'btn-error' : 'btn-accent'"
+                :disabled="!props.scheduleEnabled"
+                @click="props.scheduleRunning ? emit('stopSchedule') : emit('startSchedule')"
+              >
+                {{ props.scheduleRunning ? '停止自動' : '開始自動' }}
+              </button>
+              <span v-if="props.scheduleRunning" class="text-xs text-base-content/60">
+                下一次：{{ props.nextRunInSeconds ?? 0 }} 秒
+              </span>
+              <div class="mx-2 h-4 w-px bg-base-300"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <slot />
+  </div>
+  <!-- 獨立模式：完整 drawer + sidebar -->
+  <div v-else class="drawer lg:drawer-open min-h-screen bg-base-200">
     <input id="app-drawer" type="checkbox" class="drawer-toggle" />
     <div class="drawer-content flex flex-col">
       <div class="navbar bg-base-100 border-b border-base-300 px-6">

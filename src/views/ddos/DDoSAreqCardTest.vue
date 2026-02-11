@@ -69,7 +69,12 @@ function addLog(type: LogEntry['type'], message: string, details?: string) {
 }
 
 function getLogClass(type: LogEntry['type']) {
-  return { success: 'text-success', error: 'text-error', warning: 'text-warning', info: 'text-info' }[type]
+  return {
+    success: 'text-success',
+    error: 'text-error',
+    warning: 'text-warning',
+    info: 'text-info'
+  }[type]
 }
 
 function loadDefaults() {
@@ -155,12 +160,18 @@ async function runTest() {
           addLog('error', `  [${currentIndex}/${totalRequests}] BLOCKED (${ms}ms)`)
         } else {
           stats.otherErrorCount++
-          addLog('error', `  [${currentIndex}/${totalRequests}] ERROR: ${data?.errorCode || res.status} (${ms}ms)`)
+          addLog(
+            'error',
+            `  [${currentIndex}/${totalRequests}] ERROR: ${data?.errorCode || res.status} (${ms}ms)`
+          )
         }
       } catch (e: unknown) {
         const ms = Date.now() - start
         stats.otherErrorCount++
-        addLog('error', `  [${currentIndex}/${totalRequests}] ERROR: ${e instanceof Error ? e.message : 'Unknown'} (${ms}ms)`)
+        addLog(
+          'error',
+          `  [${currentIndex}/${totalRequests}] ERROR: ${e instanceof Error ? e.message : 'Unknown'} (${ms}ms)`
+        )
       }
     }
     addLog('info', '')
@@ -203,8 +214,18 @@ const expectedBlocked = computed(() => config.cardCount * Math.max(0, config.req
   <Card :title="CARD_TITLES.config" subtitle="AReq 卡號限流 - 每張卡前 5 次通過，第 6 次起限流">
     <div class="space-y-4">
       <DDoSSection :title="SECTION_TITLES.connection">
-        <Select v-model="config.cardScheme" :label="LABELS.cardScheme" :options="cardSchemeOptions" :disabled="isTesting" />
-        <Input v-model="config.version" :label="LABELS.version" placeholder="2.2.0" :disabled="isTesting" />
+        <Select
+          v-model="config.cardScheme"
+          :label="LABELS.cardScheme"
+          :options="cardSchemeOptions"
+          :disabled="isTesting"
+        />
+        <Input
+          v-model="config.version"
+          :label="LABELS.version"
+          placeholder="2.2.0"
+          :disabled="isTesting"
+        />
         <ParamInput
           v-model="config.issuerOid"
           :label="LABELS.issuerOid"
@@ -214,38 +235,109 @@ const expectedBlocked = computed(() => config.cardCount * Math.max(0, config.req
           @update:use-random="config.issuerOidRandom = $event"
           :disabled="isTesting"
         />
-        <Input v-model="config.projectId" :label="LABELS.projectId" placeholder="001" :disabled="isTesting" />
+        <Input
+          v-model="config.projectId"
+          :label="LABELS.projectId"
+          placeholder="001"
+          :disabled="isTesting"
+        />
       </DDoSSection>
 
       <DDoSSection :title="SECTION_TITLES.merchant">
-        <Input v-model="config.merchantId" :label="LABELS.merchantId" placeholder="8909191" :disabled="isTesting" />
-        <Input v-model="config.merchantName" :label="LABELS.merchantName" placeholder="HiTRUST EMV Demo Merchant" :disabled="isTesting" />
+        <Input
+          v-model="config.merchantId"
+          :label="LABELS.merchantId"
+          placeholder="8909191"
+          :disabled="isTesting"
+        />
+        <Input
+          v-model="config.merchantName"
+          :label="LABELS.merchantName"
+          placeholder="HiTRUST EMV Demo Merchant"
+          :disabled="isTesting"
+        />
         <Input v-model="config.mcc" :label="LABELS.mcc" placeholder="5661" :disabled="isTesting" />
-        <Input v-model="config.merchantCountryCode" :label="LABELS.merchantCountryCode" placeholder="156" :disabled="isTesting" />
-        <Input v-model="config.acquirerBIN" :label="LABELS.acquirerBin" placeholder="1231234" :disabled="isTesting" />
+        <Input
+          v-model="config.merchantCountryCode"
+          :label="LABELS.merchantCountryCode"
+          placeholder="156"
+          :disabled="isTesting"
+        />
+        <Input
+          v-model="config.acquirerBIN"
+          :label="LABELS.acquirerBin"
+          placeholder="1231234"
+          :disabled="isTesting"
+        />
       </DDoSSection>
 
       <DDoSSection :title="SECTION_TITLES.transaction">
-        <Input v-model="config.purchaseAmount" :label="LABELS.purchaseAmount" placeholder="100" :disabled="isTesting" />
-        <Input v-model="config.purchaseCurrency" :label="LABELS.purchaseCurrency" placeholder="156" :disabled="isTesting" />
-        <Input v-model="config.purchaseExponent" :label="LABELS.purchaseExponent" placeholder="2" :disabled="isTesting" />
+        <Input
+          v-model="config.purchaseAmount"
+          :label="LABELS.purchaseAmount"
+          placeholder="100"
+          :disabled="isTesting"
+        />
+        <Input
+          v-model="config.purchaseCurrency"
+          :label="LABELS.purchaseCurrency"
+          placeholder="156"
+          :disabled="isTesting"
+        />
+        <Input
+          v-model="config.purchaseExponent"
+          :label="LABELS.purchaseExponent"
+          placeholder="2"
+          :disabled="isTesting"
+        />
       </DDoSSection>
 
       <DDoSSection :title="SECTION_TITLES.cardAndRequest">
-        <Input v-model="config.cardPrefix" :label="LABELS.cardPrefix" placeholder="414352000000" :disabled="isTesting" />
+        <Input
+          v-model="config.cardPrefix"
+          :label="LABELS.cardPrefix"
+          placeholder="414352000000"
+          :disabled="isTesting"
+        />
         <div class="form-control">
-          <label class="label"><span class="label-text">{{ LABELS.cardCount }}</span></label>
-          <input v-model.number="config.cardCount" type="number" min="1" max="100" class="input input-bordered input-sm w-full" :disabled="isTesting" />
+          <label class="label"
+            ><span class="label-text">{{ LABELS.cardCount }}</span></label
+          >
+          <input
+            v-model.number="config.cardCount"
+            type="number"
+            min="1"
+            max="100"
+            class="input input-bordered input-sm w-full"
+            :disabled="isTesting"
+          />
         </div>
         <div class="form-control">
-          <label class="label"><span class="label-text">{{ LABELS.requestsPerCard }}</span></label>
-          <input v-model.number="config.requestsPerCard" type="number" min="1" max="100" class="input input-bordered input-sm w-full" :disabled="isTesting" />
+          <label class="label"
+            ><span class="label-text">{{ LABELS.requestsPerCard }}</span></label
+          >
+          <input
+            v-model.number="config.requestsPerCard"
+            type="number"
+            min="1"
+            max="100"
+            class="input input-bordered input-sm w-full"
+            :disabled="isTesting"
+          />
         </div>
       </DDoSSection>
     </div>
     <div class="flex gap-2 mt-6">
-      <Button variant="outline" @click="loadDefaults" :disabled="isTesting">{{ BUTTONS.loadDefaults }}</Button>
-      <Button v-if="!isTesting" variant="success" @click="runTest" :disabled="isTesting" :loading="isTesting">
+      <Button variant="outline" @click="loadDefaults" :disabled="isTesting">{{
+        BUTTONS.loadDefaults
+      }}</Button>
+      <Button
+        v-if="!isTesting"
+        variant="success"
+        @click="runTest"
+        :disabled="isTesting"
+        :loading="isTesting"
+      >
         {{ BUTTONS.startTest }}
       </Button>
       <Button v-else variant="danger" @click="stopTest">{{ BUTTONS.stopTest }}</Button>

@@ -14,6 +14,16 @@ const desc = computed(() => TEST_DESCRIPTIONS[props.testType])
 const hasConfig = computed(() => 'config' in desc.value)
 const hasCheckOrder = computed(() => 'checkOrder' in desc.value)
 const hasFocus = computed(() => 'focus' in desc.value)
+
+const descConfig = computed(() =>
+  'config' in desc.value ? (desc.value as { config: string }).config : ''
+)
+const descCheckOrder = computed(() =>
+  'checkOrder' in desc.value ? (desc.value as { checkOrder: string }).checkOrder : ''
+)
+const descFocus = computed(() =>
+  'focus' in desc.value ? (desc.value as { focus: string }).focus : ''
+)
 </script>
 
 <template>
@@ -60,15 +70,15 @@ const hasFocus = computed(() => 'focus' in desc.value)
         </div>
         <div v-if="hasConfig">
           <span class="font-medium text-base-content/90">設定：</span>
-          <span class="text-base-content/80 font-mono">{{ desc.config }}</span>
+          <span class="text-base-content/80 font-mono">{{ descConfig }}</span>
         </div>
         <div v-if="hasCheckOrder">
           <span class="font-medium text-base-content/90">檢查順序：</span>
-          <span class="text-base-content/80">{{ desc.checkOrder }}</span>
+          <span class="text-base-content/80">{{ descCheckOrder }}</span>
         </div>
         <div v-if="hasFocus">
           <span class="font-medium text-base-content/90">重點：</span>
-          <span class="text-base-content/80">{{ desc.focus }}</span>
+          <span class="text-base-content/80">{{ descFocus }}</span>
         </div>
         <div class="pt-2">
           <span class="font-medium text-success">預期結果：</span>

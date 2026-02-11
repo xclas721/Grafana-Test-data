@@ -1,6 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+import HomePage from '@/views/HomePage.vue'
+import RootLayout from '@/views/RootLayout.vue'
 import TestInput from '@/views/TestInput.vue'
+import TestDataLayout from '@/views/TestDataLayout.vue'
 import DDoSRateLimitLayout from '@/views/ddos/DDoSRateLimitLayout.vue'
 import DDoSAreqCardTest from '@/views/ddos/DDoSAreqCardTest.vue'
 import DDoSAreqMerchantTest from '@/views/ddos/DDoSAreqMerchantTest.vue'
@@ -13,8 +16,25 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: TestInput
+      component: RootLayout,
+      children: [
+        {
+          path: '',
+          name: 'home',
+          component: HomePage
+        }
+      ]
+    },
+    {
+      path: '/test-data',
+      component: TestDataLayout,
+      children: [
+        {
+          path: '',
+          name: 'test-data',
+          component: TestInput
+        }
+      ]
     },
     {
       path: '/rate-limit-test',
