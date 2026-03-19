@@ -4,12 +4,14 @@ import Input from '@/shared/components/Input.vue'
 
 const props = defineProps<{
   issuerOid: string
+  requestorId: string
   acsTransId: string
   threeDSServerTransId: string
 }>()
 
 const emit = defineEmits<{
   'update:issuerOid': [value: string]
+  'update:requestorId': [value: string]
   'update:acsTransId': [value: string]
   'update:threeDSServerTransId': [value: string]
 }>()
@@ -27,6 +29,13 @@ const emit = defineEmits<{
           :modelValue="props.issuerOid"
           required
           @update:modelValue="(value) => emit('update:issuerOid', String(value))"
+        />
+        <Input
+          id="requestorId"
+          label="Requestor ID (requestorId)"
+          :modelValue="props.requestorId"
+          required
+          @update:modelValue="(value) => emit('update:requestorId', String(value))"
         />
         <div>
           <Input

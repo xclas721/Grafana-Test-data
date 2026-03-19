@@ -61,6 +61,7 @@ const formState = reactive({
   endDateTime: '',
   timezone: 'browser',
   issuerOid: '06b4b203-da05-73f9-256f-454929df6076',
+  requestorId: '12128301823081230123',
   acsTransId: '',
   threeDSServerTransId: '',
   aresTransStatus: 'N',
@@ -189,6 +190,7 @@ const stateBindings = {
   endDateTime: 'endDateTime',
   timezone: 'timezone',
   issuerOid: 'issuerOid',
+  requestorId: 'requestorId',
   acsTransId: 'acsTransId',
   threeDSServerTransId: 'threeDSServerTransId',
   aresTransStatus: 'aresTransStatus',
@@ -765,6 +767,7 @@ function loadDefaults() {
   setField('endDateTime', '')
   updateCustomTimeRangeFromNow()
   setField('issuerOid', '06b4b203-da05-73f9-256f-454929df6076')
+  setField('requestorId', '12128301823081230123')
   setField('acsTransId', cryptoRandomUUID())
   setField('threeDSServerTransId', cryptoRandomUUID().toLowerCase())
   setField('aresTransStatus', 'N')
@@ -1661,6 +1664,7 @@ function buildDocument(
     transStatusReason?: string
     stateMachineReason?: string
     cardScheme?: string
+    requestorId?: string
     acctNumberHashed?: string
     acctNumberMask?: string
     cardbin6?: string
@@ -1698,6 +1702,7 @@ function buildDocument(
     transStatusReason: form.transStatusReason,
     stateMachineReason: form.stateMachineReason,
     cardScheme: form.cardScheme,
+    requestorId: form.requestorId,
     acctNumberHashed: form.acctNumberHashed,
     acctNumberMask: form.acctNumberMask,
     cardbin6: form.cardbin6,
@@ -2077,6 +2082,7 @@ defineExpose({
 
     <TransactionIdSection
       v-model:issuerOid="formState.issuerOid"
+      v-model:requestorId="formState.requestorId"
       v-model:acsTransId="formState.acsTransId"
       v-model:threeDSServerTransId="formState.threeDSServerTransId"
     />
