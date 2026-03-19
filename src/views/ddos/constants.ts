@@ -113,7 +113,7 @@ export const TEST_DESCRIPTIONS = {
   },
   threeDSMethod: {
     title: '3DS Method 限流測試',
-    purpose: '驗證 3DS Method 端點 /3dsmethod/collect 的 DDoS 限流機制。',
+    purpose: '驗證 3DS Method 端點 /3dsmethod/{issuerOid}/collect 的 DDoS 限流機制。',
     principle:
       '以 threeDSServerTransID 為 key，採用 Token Bucket 演算法，每個 ID 獨立 bucket、容量 5 tokens（依 duration 補充）。同一 ID 連續請求時，前 5 次通過，第 6 次起應被阻擋。',
     config: 'acs.threeds.method.limit.strategy.capacity = 5',

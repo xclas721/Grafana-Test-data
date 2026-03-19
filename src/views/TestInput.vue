@@ -5,7 +5,7 @@ import TestInputForm from '@/components/TestInputForm.vue'
 import NotificationPanel from '@/components/NotificationPanel.vue'
 import CurrencyModal from '@/components/CurrencyModal.vue'
 
-const mode = ref<'unified' | 'acs' | 'dss'>('unified')
+const mode = ref<'acs' | 'dss'>('acs')
 const formRef = ref<InstanceType<typeof TestInputForm> | null>(null)
 const panelRef = ref<InstanceType<typeof NotificationPanel> | null>(null)
 const currencyModalVisible = ref(false)
@@ -19,7 +19,7 @@ const scheduleRunning = ref(false)
 const scheduleBusy = ref(false)
 let scheduleTimer: number | null = null
 
-function onChangeMode(m: 'unified' | 'acs' | 'dss') {
+function onChangeMode(m: 'acs' | 'dss') {
   mode.value = m
 }
 
@@ -118,57 +118,24 @@ async function insertOnce() {
     }
     const baseUrl = data.baseUrl
     const auth = 'Basic ' + btoa(`${data.username}:${data.password}`)
-    if (mode.value === 'unified') {
-      const sharedTs = form.generateSharedTimestamp?.(data)
-      const acs = form.buildDocument?.(data, 'unified', 'acs-transaction', sharedTs)
-      const dss = form.buildDocument?.(data, 'unified', '3dss-transaction', sharedTs)
-      if (!acs || !dss) return
-      const acsIndex = `acs-transaction-${acs.utcDateStr}`
-      const dssIndex = `3dss-transaction-${dss.utcDateStr}`
-      const bulk =
-        [
-          JSON.stringify({ index: { _index: acsIndex } }),
-          JSON.stringify(acs.document),
-          JSON.stringify({ index: { _index: dssIndex } }),
-          JSON.stringify(dss.document)
-        ].join('\n') + '\n'
-      const res = await fetch(`${baseUrl}/_bulk`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-ndjson', Authorization: auth },
-        body: bulk
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.errors) {
-        const items = (json.items || []) as Array<{ index?: { error?: { reason?: string } } }>
-        const reasons = items
-          .filter((it) => it?.index?.error)
-          .map((it) => it.index?.error?.reason || '')
-          .filter(Boolean)
-          .join('; ')
-        throw new Error(reasons || '部分或全部索引失敗')
-      }
-      form.setStatus?.('已插入到 ACS 與 3DSS 索引', 'success')
-    } else {
-      const indexBase = mode.value === 'acs' ? 'acs-transaction' : '3dss-transaction'
-      const sharedTs = form.generateSharedTimestamp?.(data)
-      const built = form.buildDocument?.(data, mode.value, indexBase, sharedTs)
-      if (!built) return
-      const fullIndex = `${indexBase}-${built.utcDateStr}`
-      const bulk =
-        [JSON.stringify({ index: { _index: fullIndex } }), JSON.stringify(built.document)].join(
-          '\n'
-        ) + '\n'
-      const res = await fetch(`${baseUrl}/_bulk`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-ndjson', Authorization: auth },
-        body: bulk
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.errors) throw new Error('索引失敗')
-      form.setStatus?.(`已插入到 ${fullIndex}`, 'success')
-    }
+    const indexBase = mode.value === 'acs' ? 'acs-transaction' : '3dss-transaction'
+    const sharedTs = form.generateSharedTimestamp?.(data)
+    const built = form.buildDocument?.(data, indexBase, sharedTs)
+    if (!built) return
+    const fullIndex = `${indexBase}-${built.utcDateStr}`
+    const bulk =
+      [JSON.stringify({ index: { _index: fullIndex } }), JSON.stringify(built.document)].join(
+        '\n'
+      ) + '\n'
+    const res = await fetch(`${baseUrl}/_bulk`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-ndjson', Authorization: auth },
+      body: bulk
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const json = await res.json()
+    if (json.errors) throw new Error('索引失敗')
+    form.setStatus?.(`已插入到 ${fullIndex}`, 'success')
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     formRef.value?.setStatus?.('插入失敗: ' + msg, 'error')
@@ -386,33 +353,15 @@ async function batchInsert() {
         if (!data) throw new Error('表單資料為空')
         // 覆寫當日日期
         if (date) data.currentDate = dateStr
-        if (mode.value === 'unified') {
-          const sharedTs = form.generateSharedTimestamp?.(data)
-          const acs = form.buildDocument?.(data, 'unified', 'acs-transaction', sharedTs)
-          const dss = form.buildDocument?.(data, 'unified', '3dss-transaction', sharedTs)
-          if (!acs || !dss) throw new Error('構建文件失敗')
-          const acsIndex = `acs-transaction-${acs.utcDateStr}`
-          const dssIndex = `3dss-transaction-${dss.utcDateStr}`
-          appendBulk(
-            [
-              JSON.stringify({ index: { _index: acsIndex } }),
-              JSON.stringify(acs.document),
-              JSON.stringify({ index: { _index: dssIndex } }),
-              JSON.stringify(dss.document)
-            ],
-            { itemCount: 2, dateStr }
-          )
-        } else {
-          const indexBase = mode.value === 'acs' ? 'acs-transaction' : '3dss-transaction'
-          const sharedTs = form.generateSharedTimestamp?.(data)
-          const built = form.buildDocument?.(data, mode.value, indexBase, sharedTs)
-          if (!built) throw new Error('構建文件失敗')
-          const fullIndex = `${indexBase}-${built.utcDateStr}`
-          appendBulk(
-            [JSON.stringify({ index: { _index: fullIndex } }), JSON.stringify(built.document)],
-            { itemCount: 1, dateStr }
-          )
-        }
+        const indexBase = mode.value === 'acs' ? 'acs-transaction' : '3dss-transaction'
+        const sharedTs = form.generateSharedTimestamp?.(data)
+        const built = form.buildDocument?.(data, indexBase, sharedTs)
+        if (!built) throw new Error('構建文件失敗')
+        const fullIndex = `${indexBase}-${built.utcDateStr}`
+        appendBulk(
+          [JSON.stringify({ index: { _index: fullIndex } }), JSON.stringify(built.document)],
+          { itemCount: 1, dateStr }
+        )
         await flushBulk()
       } catch {
         errorCount++

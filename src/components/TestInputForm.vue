@@ -11,22 +11,27 @@ import CardInfoSection from './sections/CardInfoSection.vue'
 import ThreeDSParamsSection from './sections/ThreeDSParamsSection.vue'
 import PerformanceSection from './sections/PerformanceSection.vue'
 import ErrorHandlingSection from './sections/ErrorHandlingSection.vue'
+import {
+  defaultStateMachineReason,
+  getStateMachineReasonValuesForRandom,
+  reservedStateMachineReasonsForFilter,
+  pickRandomStateMachineReasonDssWeighted,
+  stateMachineReasonForAresForcedPath
+} from '@/shared/constants/stateMachineReason'
 
-const props = defineProps<{ activeMode?: 'unified' | 'acs' | 'dss'; batchDays?: number }>()
+const props = defineProps<{ activeMode?: 'acs' | 'dss'; batchDays?: number }>()
 const emit = defineEmits<{
   (e: 'update:enableAutoTimeRange', value: boolean): void
 }>()
 
 const modeText = computed(() => {
-  if (props.activeMode === 'acs') return 'ACS'
   if (props.activeMode === 'dss') return '3DSS'
-  return '統一'
+  return 'ACS'
 })
 
 const modeClass = computed(() => {
-  if (props.activeMode === 'acs') return 'mode-indicator acs'
   if (props.activeMode === 'dss') return 'mode-indicator dss'
-  return 'mode-indicator unified'
+  return 'mode-indicator acs'
 })
 
 const timeRangeHtml = ref('請選擇日期')
@@ -61,6 +66,7 @@ const formState = reactive({
   endDateTime: '',
   timezone: 'browser',
   issuerOid: '06b4b203-da05-73f9-256f-454929df6076',
+  requestorId: '12128301823081230123',
   acsTransId: '',
   threeDSServerTransId: '',
   aresTransStatus: 'N',
@@ -80,8 +86,9 @@ const formState = reactive({
   aresWeightI: '1',
   aresWeightS: '0',
   aresWeightU: '2',
-  rreqWeightNull: '0',
-  rreqWeightY: '91',
+  /** RReq=NULL 時 3DSS 會強制 S3402（讀取超時）；預設 0 會導致批量假資料幾乎沒有 S3402 */
+  rreqWeightNull: '5',
+  rreqWeightY: '86',
   rreqWeightN: '9',
   challengeCancelRate: '8',
   merchantName: 'HiTRUST EMV Demo Merchant',
@@ -119,6 +126,7 @@ const formState = reactive({
   mastercardStatus: 'success',
   visaRiskBasedAuthenticationScore: '',
   messageCategory: '01',
+  messageVersion: '2.2.0',
   deviceChannel: '02',
   threeDSRequestorChallengeInd: '01',
   authenticationMethod: '02',
@@ -189,6 +197,7 @@ const stateBindings = {
   endDateTime: 'endDateTime',
   timezone: 'timezone',
   issuerOid: 'issuerOid',
+  requestorId: 'requestorId',
   acsTransId: 'acsTransId',
   threeDSServerTransId: 'threeDSServerTransId',
   aresTransStatus: 'aresTransStatus',
@@ -245,6 +254,7 @@ const stateBindings = {
   mastercardStatus: 'mastercardStatus',
   visaRiskBasedAuthenticationScore: 'visaRiskBasedAuthenticationScore',
   messageCategory: 'messageCategory',
+  messageVersion: 'messageVersion',
   deviceChannel: 'deviceChannel',
   threeDSRequestorChallengeInd: 'threeDSRequestorChallengeInd',
   authenticationMethod: 'authenticationMethod',
@@ -322,6 +332,18 @@ watch(
     threeDSParamKeys.forEach((key) => {
       formState[key as ThreeDSParamKey] = checked
     })
+  }
+)
+
+watch(
+  () => props.activeMode,
+  (mode) => {
+    const v = String(formState.stateMachineReason || '').trim()
+    if (mode === 'dss') {
+      if (/^[0-9]{4}$/.test(v)) setField('stateMachineReason', 'S3401')
+    } else if (mode === 'acs') {
+      if (/^S[0-9]+$/.test(v)) setField('stateMachineReason', '0000')
+    }
   }
 )
 
@@ -607,26 +629,34 @@ function syncStatusDependencies() {
     formState.disableTransStatusReason = true
     if (formState.transStatusReason !== 'NULL_VALUE') setField('transStatusReason', 'NULL_VALUE')
   }
-  if (ares === 'Y') {
+  // 3DSS：stm 原因對應 AReq→DS HTTP，不隨 ARes/RReq 強制改寫（避免 S3401/S3402 與假 ARes 綁死）
+  if (props.activeMode === 'dss') {
+    formState.disableStateMachineReason = false
+  } else if (ares === 'Y') {
     formState.disableStateMachineReason = true
     setField('stateMachineReasonMode', 'fixed')
-    setField('stateMachineReason', '0000')
+    setField('stateMachineReason', stateMachineReasonForAresForcedPath(props.activeMode, 'y'))
   } else if (ares === 'C' || ares === 'D') {
     if (formState.rreqTransStatus === 'Y') {
       formState.disableStateMachineReason = true
       setField('stateMachineReasonMode', 'fixed')
-      setField('stateMachineReason', '0001')
+      setField('stateMachineReason', stateMachineReasonForAresForcedPath(props.activeMode, 'rreqY'))
     } else if (formState.rreqTransStatus === 'NULL_VALUE') {
       formState.disableStateMachineReason = true
       setField('stateMachineReasonMode', 'fixed')
-      setField('stateMachineReason', '0002')
+      setField(
+        'stateMachineReason',
+        stateMachineReasonForAresForcedPath(props.activeMode, 'rreqNull')
+      )
     } else {
       formState.disableStateMachineReason = false
-      if (formState.stateMachineReason === 'NULL_VALUE') setField('stateMachineReason', '0000')
+      if (formState.stateMachineReason === 'NULL_VALUE')
+        setField('stateMachineReason', defaultStateMachineReason(props.activeMode))
     }
   } else {
     formState.disableStateMachineReason = false
-    if (formState.stateMachineReason === 'NULL_VALUE') setField('stateMachineReason', '0000')
+    if (formState.stateMachineReason === 'NULL_VALUE')
+      setField('stateMachineReason', defaultStateMachineReason(props.activeMode))
   }
 
   if (ares === 'C' && formState.rreqTransStatus === 'N') {
@@ -765,13 +795,14 @@ function loadDefaults() {
   setField('endDateTime', '')
   updateCustomTimeRangeFromNow()
   setField('issuerOid', '06b4b203-da05-73f9-256f-454929df6076')
+  setField('requestorId', '12128301823081230123')
   setField('acsTransId', cryptoRandomUUID())
   setField('threeDSServerTransId', cryptoRandomUUID().toLowerCase())
   setField('aresTransStatus', 'N')
   setField('transStatus', 'N')
   setField('rreqTransStatus', 'NULL_VALUE')
   setField('transStatusReason', 'NULL_VALUE')
-  setField('stateMachineReason', '0000')
+  setField('stateMachineReason', defaultStateMachineReason(props.activeMode))
   setField('transStatusReasonMode', 'random')
   setField('stateMachineReasonMode', 'random')
   setField('merchantName', 'HiTRUST EMV Demo Merchant')
@@ -802,6 +833,7 @@ function loadDefaults() {
   setField('visaRiskBasedAuthenticationScore', '')
   updateCardInfoFromAcctNumber()
   setField('messageCategory', '01')
+  setField('messageVersion', '2.2.0')
   setField('deviceChannel', '02')
   setField('threeDSRequestorChallengeInd', '01')
   setField('authenticationMethod', '02')
@@ -847,8 +879,8 @@ function loadDefaults() {
   setField('aresWeightI', '1')
   setField('aresWeightS', '0')
   setField('aresWeightU', '2')
-  setField('rreqWeightNull', '0')
-  setField('rreqWeightY', '91')
+  setField('rreqWeightNull', '5')
+  setField('rreqWeightY', '86')
   setField('rreqWeightN', '9')
   setField('challengeCancelRate', '8')
   formState.enablePurchaseAmountRandom = true
@@ -994,8 +1026,8 @@ function generateRandom() {
   // 當 ARes 為 R 時，transStatusReason 依模式固定或全隨機；否則為 NULL_VALUE
   if (st === 'R') {
     const reasons: string[] = []
-    for (let i = 1; i <= 30; i++) reasons.push(String(i).padStart(2, '0'))
-    reasons.push('81', '89', '90')
+    for (let i = 1; i <= 26; i++) reasons.push(String(i).padStart(2, '0'))
+    reasons.push('91', '92')
     const fixedReason = String(formState.transStatusReason || '').trim()
     if (formState.transStatusReasonMode === 'random') {
       if (reasons.length > 0) {
@@ -1013,132 +1045,49 @@ function generateRandom() {
   } else {
     set('transStatusReason', 'NULL_VALUE')
   }
-  // stateMachineReason 依模式固定或全隨機
+  // stateMachineReason：ACS 依 ARes/RReq 強制路徑；3DSS 依 AReq→DS 語意加權（與 ARes 旗標解耦）
   {
-    const stateMachineReasons: string[] = [
-      '0000',
-      '0001',
-      '0002',
-      '1001',
-      '1002',
-      '1003',
-      '1004',
-      '1005',
-      '2001',
-      '2002',
-      '2003',
-      '2004',
-      '2005',
-      '2006',
-      '2007',
-      '2101',
-      '2102',
-      '2103',
-      '2104',
-      '2105',
-      '2106',
-      '2107',
-      '2108',
-      '2109',
-      '2110',
-      '2201',
-      '2202',
-      '2203',
-      '2204',
-      '2205',
-      '2206',
-      '2207',
-      '2208',
-      '2209',
-      '2210',
-      '2211',
-      '3101',
-      '3102',
-      '3199',
-      '3201',
-      '3202',
-      '3299',
-      '3301',
-      '3302',
-      '3399',
-      '3401',
-      '3402',
-      '3403',
-      '3499',
-      '3501',
-      '3502',
-      '3599',
-      '3601',
-      '3602',
-      '3699',
-      '4001',
-      '4002',
-      '4101',
-      '4102',
-      '4103',
-      '4104',
-      '4105',
-      '4106',
-      '4107',
-      '4108',
-      '4109',
-      '4110',
-      '5001',
-      '5002',
-      '5003',
-      '5004',
-      '5101',
-      '5102',
-      '5103',
-      '5104',
-      '5105',
-      '5106',
-      '5107',
-      '5201',
-      '5202',
-      '5301',
-      '5302',
-      '5303',
-      '5401',
-      '5402',
-      '5501',
-      '5502',
-      '9999',
-      '9001',
-      '9002'
-    ]
+    const stateMachineReasons = getStateMachineReasonValuesForRandom(props.activeMode)
+    const reserved = reservedStateMachineReasonsForFilter(props.activeMode)
     const fixedReason = String(formState.stateMachineReason || '').trim()
     if (formState.stateMachineReasonMode === 'random') {
-      if (st === 'Y') {
-        set('stateMachineReason', '0000')
+      if (props.activeMode === 'dss') {
+        set('stateMachineReason', pickRandomStateMachineReasonDssWeighted())
+      } else if (st === 'Y') {
+        set('stateMachineReason', stateMachineReasonForAresForcedPath(props.activeMode, 'y'))
       } else if (st === 'C' || st === 'D') {
         if (formState.rreqTransStatus === 'Y') {
-          set('stateMachineReason', '0001')
+          set('stateMachineReason', stateMachineReasonForAresForcedPath(props.activeMode, 'rreqY'))
         } else if (formState.rreqTransStatus === 'NULL_VALUE') {
-          set('stateMachineReason', '0002')
-        } else {
-          const candidates = stateMachineReasons.filter(
-            (reason) => !['0000', '0001', '0002'].includes(reason)
+          set(
+            'stateMachineReason',
+            stateMachineReasonForAresForcedPath(props.activeMode, 'rreqNull')
           )
+        } else {
+          const candidates = stateMachineReasons.filter((reason) => !reserved.includes(reason))
           const pickFrom = candidates.length > 0 ? candidates : stateMachineReasons
           const idx = Math.floor(Math.random() * pickFrom.length)
           set('stateMachineReason', pickFrom[idx] as string)
         }
       } else {
-        const candidates = stateMachineReasons.filter(
-          (reason) => !['0000', '0001', '0002'].includes(reason)
-        )
+        const candidates = stateMachineReasons.filter((reason) => !reserved.includes(reason))
         const pickFrom = candidates.length > 0 ? candidates : stateMachineReasons
         const idx = Math.floor(Math.random() * pickFrom.length)
         set('stateMachineReason', pickFrom[idx] as string)
       }
     } else {
-      set('stateMachineReason', fixedReason && fixedReason !== 'NULL_VALUE' ? fixedReason : '0000')
+      set(
+        'stateMachineReason',
+        fixedReason && fixedReason !== 'NULL_VALUE'
+          ? fixedReason
+          : defaultStateMachineReason(props.activeMode)
+      )
     }
   }
   // cardScheme 隨機（獨立開關）
   if (formState.enableCardSchemeRandom) {
-    const schemePool = ['V', 'M', 'J', 'C', 'A']
+    // 與 CardInfoSection 卡組織選項一致（3DSS CardSchemeEnum：含 C=CUP、T=TPN）
+    const schemePool = ['V', 'M', 'J', 'A', 'C', 'D', 'P', 'S', 'E', 'T', 'U']
     const picked = schemePool[Math.floor(Math.random() * schemePool.length)] ?? formState.cardScheme
     if (picked) {
       set('cardScheme', picked)
@@ -1304,12 +1253,20 @@ function generateRandom() {
 
 function generateRandomAcctNumber() {
   const scheme = formState.cardScheme || 'V'
-  let prefix = '999999'
+  // 與 CardInfoSection 對照表一致；請在 ACS 卡 BIN 維護相同前綴區間（示範用 601352–604352 給 E/P/S/U）
+  let prefix: string
   if (scheme === 'V') prefix = '414352'
   else if (scheme === 'M') prefix = '515352'
   else if (scheme === 'J') prefix = '313352'
   else if (scheme === 'A') prefix = '656352'
   else if (scheme === 'C') prefix = '818352'
+  else if (scheme === 'T') prefix = '979352'
+  else if (scheme === 'D') prefix = '364352'
+  else if (scheme === 'E') prefix = '601352'
+  else if (scheme === 'P') prefix = '602352'
+  else if (scheme === 'S') prefix = '603352'
+  else if (scheme === 'U') prefix = '604352'
+  else prefix = '414352'
   // 產出 13 位亂數字串
   let suffix = ''
   for (let i = 0; i < 13; i++) suffix += Math.floor(Math.random() * 10)
@@ -1601,12 +1558,7 @@ function generateSharedTimestamp(form: FormMap) {
   return utc.toISOString()
 }
 
-function buildDocument(
-  form: FormMap,
-  mode: 'unified' | 'acs' | 'dss',
-  indexName: string,
-  sharedTimestamp?: string
-) {
+function buildDocument(form: FormMap, indexName: string, sharedTimestamp?: string) {
   const currentDate = form.currentDate
   const tz = form.timezone || 'browser'
   const now = new Date()
@@ -1645,6 +1597,7 @@ function buildDocument(
     last_update_timestamp: string
     first_seen_timestamp: string
     messageCategory?: string
+    messageVersion?: string
     deviceChannel?: string
     merchantName?: string
     merchantCountryCode?: string
@@ -1661,6 +1614,7 @@ function buildDocument(
     transStatusReason?: string
     stateMachineReason?: string
     cardScheme?: string
+    requestorId?: string
     acctNumberHashed?: string
     acctNumberMask?: string
     cardbin6?: string
@@ -1682,6 +1636,7 @@ function buildDocument(
     last_update_timestamp: currentDateTime,
     first_seen_timestamp: currentDateTime,
     messageCategory: form.messageCategory,
+    messageVersion: form.messageVersion,
     deviceChannel: form.deviceChannel,
     merchantName: form.merchantName,
     merchantCountryCode: form.merchantCountryCode,
@@ -1696,39 +1651,54 @@ function buildDocument(
     transStatus: form.transStatus,
     rreq_transStatus: form.rreqTransStatus,
     transStatusReason: form.transStatusReason,
-    stateMachineReason: form.stateMachineReason,
+    stateMachineReason:
+      indexName.includes('3dss-transaction') &&
+      (!form.stateMachineReason || String(form.stateMachineReason).trim() === 'NULL_VALUE')
+        ? undefined
+        : form.stateMachineReason,
     cardScheme: form.cardScheme,
+    requestorId: form.requestorId,
     acctNumberHashed: form.acctNumberHashed,
     acctNumberMask: form.acctNumberMask,
     cardbin6: form.cardbin6,
     cardbin8: form.cardbin8,
-    performance_metrics: [
-      { path: form.performancePath, execTime: Number(form.execTime || 0) },
-      {
-        path: 'CardSchemeService.caculateCavv',
-        execTime: Number(form.cavvExecTime || Math.floor(Math.random() * 21 + 10))
-      },
-      {
-        path: 'VerificationCodeService.sendVerificationCode',
-        execTime: Number(form.otpExecTime || Math.floor(Math.random() * 61 + 20))
-      },
-      {
-        path: `/challenge/brw/V/2.3.1/${form.issuerOid}/1/${form.acsTransId}/creq`,
-        execTime: Number(form.creqExecTime || Math.floor(Math.random() * 501 + 300))
-      },
-      {
-        path: `/acs-auth/auth/V/2.2.0/${form.issuerOid}/001/areq`,
-        execTime: Number(form.execTime || Math.floor(Math.random() * 701 + 800))
-      },
-      {
-        path: `/acs-auth/auth/V/2.2.0/${form.issuerOid}/001/rreq`,
-        execTime: Number(form.rreqExecTime || Math.floor(Math.random() * 401 + 200))
-      },
-      {
-        path: 'RiskEvaluationService.evaluate',
-        execTime: Number(form.rbaExecTime || Math.floor(Math.random() * 151 + 50))
+    performance_metrics: (() => {
+      // 與 3DSS MetricsCollectorAspect 一致：卡組織對 DS 的 AReq 耗時記在 path = "{cardScheme}_DS_URL"（Grafana「卡組織 AReq 回應時間趨勢」查 * _DS_URL）
+      const sharedAreqMs = Number(form.execTime || Math.floor(Math.random() * 701 + 800))
+      const cardSchemeKey = String(form.cardScheme || 'V').trim() || 'V'
+      const metrics: Array<{ path?: string; execTime?: number }> = []
+      if (indexName.includes('3dss-transaction')) {
+        metrics.push({ path: `${cardSchemeKey}_DS_URL`, execTime: sharedAreqMs })
       }
-    ],
+      metrics.push(
+        { path: form.performancePath, execTime: Number(form.execTime || 0) },
+        {
+          path: 'CardSchemeService.caculateCavv',
+          execTime: Number(form.cavvExecTime || Math.floor(Math.random() * 21 + 10))
+        },
+        {
+          path: 'VerificationCodeService.sendVerificationCode',
+          execTime: Number(form.otpExecTime || Math.floor(Math.random() * 61 + 20))
+        },
+        {
+          path: `/challenge/brw/${form.cardScheme}/${form.messageVersion}/${form.issuerOid}/1/${form.acsTransId}/creq`,
+          execTime: Number(form.creqExecTime || Math.floor(Math.random() * 501 + 300))
+        },
+        {
+          path: `/acs-auth/auth/${form.cardScheme}/${form.messageVersion}/${form.issuerOid}/001/areq`,
+          execTime: sharedAreqMs
+        },
+        {
+          path: `/acs-auth/auth/${form.cardScheme}/${form.messageVersion}/${form.issuerOid}/001/rreq`,
+          execTime: Number(form.rreqExecTime || Math.floor(Math.random() * 401 + 200))
+        },
+        {
+          path: 'RiskEvaluationService.evaluate',
+          execTime: Number(form.rbaExecTime || Math.floor(Math.random() * 151 + 50))
+        }
+      )
+      return metrics
+    })(),
     browserIP: form.browserIP,
     errorComponent: form.errorComponent,
     errorDescription: form.errorDescription,
@@ -2077,11 +2047,13 @@ defineExpose({
 
     <TransactionIdSection
       v-model:issuerOid="formState.issuerOid"
+      v-model:requestorId="formState.requestorId"
       v-model:acsTransId="formState.acsTransId"
       v-model:threeDSServerTransId="formState.threeDSServerTransId"
     />
 
     <TransactionStatusSection
+      :activeMode="props.activeMode"
       v-model:aresTransStatus="formState.aresTransStatus"
       v-model:transStatus="formState.transStatus"
       v-model:rreqTransStatus="formState.rreqTransStatus"
@@ -2183,6 +2155,7 @@ defineExpose({
 
     <ThreeDSParamsSection
       v-model:messageCategory="formState.messageCategory"
+      v-model:messageVersion="formState.messageVersion"
       v-model:deviceChannel="formState.deviceChannel"
       v-model:threeDSRequestorChallengeInd="formState.threeDSRequestorChallengeInd"
       v-model:authenticationMethod="formState.authenticationMethod"

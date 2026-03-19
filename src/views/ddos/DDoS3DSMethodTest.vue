@@ -15,7 +15,9 @@ const config = reactive({
   requestCount: 10,
   threeDSServerTransID: '',
   threeDSServerTransIDRandom: true,
-  threeDSMethodNotificationURL: 'http://localhost:8040/3dsmethod/notify'
+  threeDSMethodNotificationURL: 'http://localhost:8040/3dsmethod/notify',
+  /** 必填。請求 path 為 /3dsmethod/{issuerOid}/collect */
+  issuerOid: '06b4b203-da05-73f9-256f-454929df6076'
 })
 
 const isTesting = ref(false)
@@ -59,6 +61,7 @@ function loadDefaults() {
   config.requestCount = 10
   config.threeDSServerTransIDRandom = true
   config.threeDSMethodNotificationURL = 'http://localhost:8040/3dsmethod/notify'
+  config.issuerOid = '06b4b203-da05-73f9-256f-454929df6076'
 }
 
 function getThreeDSServerTransID() {
@@ -67,6 +70,12 @@ function getThreeDSServerTransID() {
 
 async function runTest() {
   if (isTesting.value) return
+  const issuerOid = config.issuerOid?.trim()
+  if (!issuerOid) {
+    logs.value = []
+    addLog('error', '請填寫 Issuer OID')
+    return
+  }
   stats.successCount = 0
   stats.rateLimitCount = 0
   stats.otherErrorCount = 0
@@ -76,7 +85,7 @@ async function runTest() {
   isTesting.value = true
 
   const threeDSServerTransID = getThreeDSServerTransID()
-  const path = '/acs-auth-web/3dsmethod/collect'
+  const path = `/acs-auth-web/3dsmethod/${encodeURIComponent(issuerOid)}/collect`
   const url = apiConfig.resolveAcsAuthWebPath(path)
 
   const formData = build3DSMethodFormData(threeDSServerTransID, config.threeDSMethodNotificationURL)
@@ -85,6 +94,7 @@ async function runTest() {
   addLog('info', `URL: ${url}`)
   addLog('info', `Same threeDSServerTransID, RequestCount=${config.requestCount}`)
   addLog('info', `threeDSServerTransID: ${threeDSServerTransID}`)
+  addLog('info', `issuerOid: ${issuerOid}`)
   addLog('info', 'Expected: first 5 pass, 6th+ blocked')
   addLog('info', '')
 
@@ -193,6 +203,12 @@ function stopTest() {
           :randomizable="true"
           :use-random="config.threeDSServerTransIDRandom"
           @update:use-random="config.threeDSServerTransIDRandom = $event"
+          :disabled="isTesting"
+        />
+        <Input
+          v-model="config.issuerOid"
+          :label="LABELS.issuerOid"
+          placeholder="必填，與其他 DDoS 測試相同發卡行 OID"
           :disabled="isTesting"
         />
         <Input
