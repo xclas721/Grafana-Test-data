@@ -24,7 +24,7 @@ const isGrafanaActive = () => {
 }
 
 const props = defineProps<{
-  activeMode: 'unified' | 'acs' | 'dss'
+  activeMode: 'acs' | 'dss'
   batchCount?: number
   batchDays?: number
   disableBatchDays?: boolean
@@ -35,7 +35,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'changeMode', mode: 'unified' | 'acs' | 'dss'): void
+  (e: 'changeMode', mode: 'acs' | 'dss'): void
   (e: 'loadDefaults'): void
   (e: 'generateRandom'): void
   (e: 'insertData'): void
@@ -48,13 +48,8 @@ const emit = defineEmits<{
   (e: 'stopSchedule'): void
 }>()
 
-const isUnified = computed(() => props.activeMode === 'unified')
-const isAcs = computed(() => props.activeMode === 'acs')
-const isDss = computed(() => props.activeMode === 'dss')
-
 const insertButtonText = computed(() => {
-  if (isUnified.value) return '插入到 ACS & 3DSS'
-  if (isAcs.value) return '插入到 ACS'
+  if (props.activeMode === 'acs') return '插入到 ACS'
   return '插入到 3DSS'
 })
 
@@ -135,13 +130,9 @@ onBeforeUnmount(() => {
               :value="props.activeMode"
               @change="
                 (event) =>
-                  emit(
-                    'changeMode',
-                    (event.target as HTMLSelectElement).value as 'unified' | 'acs' | 'dss'
-                  )
+                  emit('changeMode', (event.target as HTMLSelectElement).value as 'acs' | 'dss')
               "
             >
-              <option value="unified">統一模式</option>
               <option value="acs">ACS 模式</option>
               <option value="dss">3DSS 模式</option>
             </select>
@@ -284,11 +275,10 @@ onBeforeUnmount(() => {
                       (event) =>
                         emit(
                           'changeMode',
-                          (event.target as HTMLSelectElement).value as 'unified' | 'acs' | 'dss'
+                          (event.target as HTMLSelectElement).value as 'acs' | 'dss'
                         )
                     "
                   >
-                    <option value="unified">統一模式</option>
                     <option value="acs">ACS 模式</option>
                     <option value="dss">3DSS 模式</option>
                   </select>

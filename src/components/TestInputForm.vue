@@ -11,22 +11,26 @@ import CardInfoSection from './sections/CardInfoSection.vue'
 import ThreeDSParamsSection from './sections/ThreeDSParamsSection.vue'
 import PerformanceSection from './sections/PerformanceSection.vue'
 import ErrorHandlingSection from './sections/ErrorHandlingSection.vue'
+import {
+  defaultStateMachineReason,
+  getStateMachineReasonValuesForRandom,
+  reservedStateMachineReasonsForFilter,
+  stateMachineReasonForAresForcedPath
+} from '@/shared/constants/stateMachineReason'
 
-const props = defineProps<{ activeMode?: 'unified' | 'acs' | 'dss'; batchDays?: number }>()
+const props = defineProps<{ activeMode?: 'acs' | 'dss'; batchDays?: number }>()
 const emit = defineEmits<{
   (e: 'update:enableAutoTimeRange', value: boolean): void
 }>()
 
 const modeText = computed(() => {
-  if (props.activeMode === 'acs') return 'ACS'
   if (props.activeMode === 'dss') return '3DSS'
-  return '統一'
+  return 'ACS'
 })
 
 const modeClass = computed(() => {
-  if (props.activeMode === 'acs') return 'mode-indicator acs'
   if (props.activeMode === 'dss') return 'mode-indicator dss'
-  return 'mode-indicator unified'
+  return 'mode-indicator acs'
 })
 
 const timeRangeHtml = ref('請選擇日期')
@@ -327,6 +331,18 @@ watch(
   }
 )
 
+watch(
+  () => props.activeMode,
+  (mode) => {
+    const v = String(formState.stateMachineReason || '').trim()
+    if (mode === 'dss') {
+      if (/^[0-9]{4}$/.test(v)) setField('stateMachineReason', 'S3401')
+    } else if (mode === 'acs') {
+      if (/^S[0-9]+$/.test(v)) setField('stateMachineReason', '0000')
+    }
+  }
+)
+
 const ARES_WEIGHT_KEYS = [
   'aresWeightY',
   'aresWeightN',
@@ -612,23 +628,28 @@ function syncStatusDependencies() {
   if (ares === 'Y') {
     formState.disableStateMachineReason = true
     setField('stateMachineReasonMode', 'fixed')
-    setField('stateMachineReason', '0000')
+    setField('stateMachineReason', stateMachineReasonForAresForcedPath(props.activeMode, 'y'))
   } else if (ares === 'C' || ares === 'D') {
     if (formState.rreqTransStatus === 'Y') {
       formState.disableStateMachineReason = true
       setField('stateMachineReasonMode', 'fixed')
-      setField('stateMachineReason', '0001')
+      setField('stateMachineReason', stateMachineReasonForAresForcedPath(props.activeMode, 'rreqY'))
     } else if (formState.rreqTransStatus === 'NULL_VALUE') {
       formState.disableStateMachineReason = true
       setField('stateMachineReasonMode', 'fixed')
-      setField('stateMachineReason', '0002')
+      setField(
+        'stateMachineReason',
+        stateMachineReasonForAresForcedPath(props.activeMode, 'rreqNull')
+      )
     } else {
       formState.disableStateMachineReason = false
-      if (formState.stateMachineReason === 'NULL_VALUE') setField('stateMachineReason', '0000')
+      if (formState.stateMachineReason === 'NULL_VALUE')
+        setField('stateMachineReason', defaultStateMachineReason(props.activeMode))
     }
   } else {
     formState.disableStateMachineReason = false
-    if (formState.stateMachineReason === 'NULL_VALUE') setField('stateMachineReason', '0000')
+    if (formState.stateMachineReason === 'NULL_VALUE')
+      setField('stateMachineReason', defaultStateMachineReason(props.activeMode))
   }
 
   if (ares === 'C' && formState.rreqTransStatus === 'N') {
@@ -774,7 +795,7 @@ function loadDefaults() {
   setField('transStatus', 'N')
   setField('rreqTransStatus', 'NULL_VALUE')
   setField('transStatusReason', 'NULL_VALUE')
-  setField('stateMachineReason', '0000')
+  setField('stateMachineReason', defaultStateMachineReason(props.activeMode))
   setField('transStatusReasonMode', 'random')
   setField('stateMachineReasonMode', 'random')
   setField('merchantName', 'HiTRUST EMV Demo Merchant')
@@ -1016,127 +1037,41 @@ function generateRandom() {
   } else {
     set('transStatusReason', 'NULL_VALUE')
   }
-  // stateMachineReason 依模式固定或全隨機
+  // stateMachineReason 依模式固定或全隨機（ACS 四位數 / 3DSS S 前綴）
   {
-    const stateMachineReasons: string[] = [
-      '0000',
-      '0001',
-      '0002',
-      '1001',
-      '1002',
-      '1003',
-      '1004',
-      '1005',
-      '2001',
-      '2002',
-      '2003',
-      '2004',
-      '2005',
-      '2006',
-      '2007',
-      '2101',
-      '2102',
-      '2103',
-      '2104',
-      '2105',
-      '2106',
-      '2107',
-      '2108',
-      '2109',
-      '2110',
-      '2201',
-      '2202',
-      '2203',
-      '2204',
-      '2205',
-      '2206',
-      '2207',
-      '2208',
-      '2209',
-      '2210',
-      '2211',
-      '3101',
-      '3102',
-      '3199',
-      '3201',
-      '3202',
-      '3299',
-      '3301',
-      '3302',
-      '3399',
-      '3401',
-      '3402',
-      '3403',
-      '3499',
-      '3501',
-      '3502',
-      '3599',
-      '3601',
-      '3602',
-      '3699',
-      '4001',
-      '4002',
-      '4101',
-      '4102',
-      '4103',
-      '4104',
-      '4105',
-      '4106',
-      '4107',
-      '4108',
-      '4109',
-      '4110',
-      '5001',
-      '5002',
-      '5003',
-      '5004',
-      '5101',
-      '5102',
-      '5103',
-      '5104',
-      '5105',
-      '5106',
-      '5107',
-      '5201',
-      '5202',
-      '5301',
-      '5302',
-      '5303',
-      '5401',
-      '5402',
-      '5501',
-      '5502',
-      '9999',
-      '9001',
-      '9002'
-    ]
+    const stateMachineReasons = getStateMachineReasonValuesForRandom(props.activeMode)
+    const reserved = reservedStateMachineReasonsForFilter(props.activeMode)
     const fixedReason = String(formState.stateMachineReason || '').trim()
     if (formState.stateMachineReasonMode === 'random') {
       if (st === 'Y') {
-        set('stateMachineReason', '0000')
+        set('stateMachineReason', stateMachineReasonForAresForcedPath(props.activeMode, 'y'))
       } else if (st === 'C' || st === 'D') {
         if (formState.rreqTransStatus === 'Y') {
-          set('stateMachineReason', '0001')
+          set('stateMachineReason', stateMachineReasonForAresForcedPath(props.activeMode, 'rreqY'))
         } else if (formState.rreqTransStatus === 'NULL_VALUE') {
-          set('stateMachineReason', '0002')
-        } else {
-          const candidates = stateMachineReasons.filter(
-            (reason) => !['0000', '0001', '0002'].includes(reason)
+          set(
+            'stateMachineReason',
+            stateMachineReasonForAresForcedPath(props.activeMode, 'rreqNull')
           )
+        } else {
+          const candidates = stateMachineReasons.filter((reason) => !reserved.includes(reason))
           const pickFrom = candidates.length > 0 ? candidates : stateMachineReasons
           const idx = Math.floor(Math.random() * pickFrom.length)
           set('stateMachineReason', pickFrom[idx] as string)
         }
       } else {
-        const candidates = stateMachineReasons.filter(
-          (reason) => !['0000', '0001', '0002'].includes(reason)
-        )
+        const candidates = stateMachineReasons.filter((reason) => !reserved.includes(reason))
         const pickFrom = candidates.length > 0 ? candidates : stateMachineReasons
         const idx = Math.floor(Math.random() * pickFrom.length)
         set('stateMachineReason', pickFrom[idx] as string)
       }
     } else {
-      set('stateMachineReason', fixedReason && fixedReason !== 'NULL_VALUE' ? fixedReason : '0000')
+      set(
+        'stateMachineReason',
+        fixedReason && fixedReason !== 'NULL_VALUE'
+          ? fixedReason
+          : defaultStateMachineReason(props.activeMode)
+      )
     }
   }
   // cardScheme 隨機（獨立開關）
@@ -1604,12 +1539,7 @@ function generateSharedTimestamp(form: FormMap) {
   return utc.toISOString()
 }
 
-function buildDocument(
-  form: FormMap,
-  mode: 'unified' | 'acs' | 'dss',
-  indexName: string,
-  sharedTimestamp?: string
-) {
+function buildDocument(form: FormMap, indexName: string, sharedTimestamp?: string) {
   const currentDate = form.currentDate
   const tz = form.timezone || 'browser'
   const now = new Date()
@@ -2088,6 +2018,7 @@ defineExpose({
     />
 
     <TransactionStatusSection
+      :activeMode="props.activeMode"
       v-model:aresTransStatus="formState.aresTransStatus"
       v-model:transStatus="formState.transStatus"
       v-model:rreqTransStatus="formState.rreqTransStatus"

@@ -1,9 +1,17 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import Card from '@/shared/components/Card.vue'
 import Input from '@/shared/components/Input.vue'
 import Select, { type SelectOption } from '@/shared/components/Select.vue'
+import {
+  defaultStateMachineReason,
+  getStateMachineReasonOptions,
+  type ProductMode
+} from '@/shared/constants/stateMachineReason'
 
 const props = defineProps<{
+  /** 產品模式：3DSS 時狀態機原因僅顯示 S 前綴代碼 */
+  activeMode?: ProductMode
   aresTransStatus: string
   transStatus: string
   rreqTransStatus: string
@@ -189,10 +197,12 @@ const onReasonValueChange = (key: 'transStatusReason' | 'stateMachineReason', va
     emit('update:transStatusReason', value || 'NULL_VALUE')
     emit('update:transStatusReasonMode', 'fixed')
   } else {
-    emit('update:stateMachineReason', value || '0000')
+    emit('update:stateMachineReason', value || defaultStateMachineReason(props.activeMode))
     emit('update:stateMachineReasonMode', 'fixed')
   }
 }
+
+const stateMachineReasonOptions = computed(() => getStateMachineReasonOptions(props.activeMode))
 
 const aresOptions: SelectOption[] = [
   { value: 'Y', label: 'Y' },
@@ -262,99 +272,6 @@ const transStatusReasonOptions: SelectOption[] = [
   { value: '81', label: '81 - Mastercard SCA Exemption' },
   { value: '89', label: '89 - Visa SCP Exemption' },
   { value: '90', label: '90 - Visa Issuer SCA Required' }
-]
-
-const stateMachineReasonOptions: SelectOption[] = [
-  { value: '0000', label: '0000 - 驗證成功' },
-  { value: '0001', label: '0001 - 挑戰驗證成功' },
-  { value: '0002', label: '0002 - 報文已受理' },
-  { value: '1001', label: '1001 - 設備裝置不支援' },
-  { value: '1002', label: '1002 - 不支援該卡別' },
-  { value: '1003', label: '1003 - 交易逾時' },
-  { value: '1004', label: '1004 - 交易逾時(首CReq未收到)' },
-  { value: '1005', label: '1005 - 交易逾時(非首CReq未收到)' },
-  { value: '2001', label: '2001 - 請求訊息錯誤(AReq)' },
-  { value: '2002', label: '2002 - 請求訊息錯誤 CReq' },
-  { value: '2003', label: '2003 - 不在BIN範圍內' },
-  { value: '2004', label: '2004 - 請求端點錯誤 issuerOid' },
-  { value: '2005', label: '2005 - 幣別代碼錯誤' },
-  { value: '2006', label: '2006 - 幣別小數位錯誤' },
-  { value: '2007', label: '2007 - 國別代碼錯誤' },
-  { value: '2101', label: '2101 - 卡號錯誤' },
-  { value: '2102', label: '2102 - 卡號有效期錯誤' },
-  { value: '2103', label: '2103 - 卡號已鎖卡' },
-  { value: '2104', label: '2104 - 卡號未開通 3DS' },
-  { value: '2105', label: '2105 - 卡號異常' },
-  { value: '2106', label: '2106 - 卡號有效期已過期' },
-  { value: '2107', label: '2107 - 證件號碼錯誤' },
-  { value: '2108', label: '2108 - 持卡人鎖卡' },
-  { value: '2109', label: '2109 - 持卡人未開通 3DS' },
-  { value: '2110', label: '2110 - 持卡人異常' },
-  { value: '2201', label: '2201 - 指定的 3RI 場景不支援 PA 交易' },
-  { value: '2202', label: '2202 - 指定的 3RI 場景不支援 NPA 交易' },
-  { value: '2203', label: '2203 - 3RI 後續交易-查無原始交易' },
-  { value: '2204', label: '2204 - 3RI 後續交易-原始交易驗證未成功' },
-  { value: '2205', label: '2205 - 3RI 後續交易-已超過期限' },
-  { value: '2206', label: '2206 - 3RI 後續交易-交易幣別不同' },
-  { value: '2207', label: '2207 - 3RI 後續交易-交易金額超過原始金額' },
-  { value: '2208', label: '2208 - 3RI 後續交易-卡號不同' },
-  { value: '2209', label: '2209 - 3RI 後續交易-超過分期次數限制' },
-  { value: '2210', label: '2210 - 3RI 後續交易-循環效期錯誤' },
-  { value: '2211', label: '2211 - 3RI Agent Payment-後續金額總額超過首筆金額' },
-  { value: '3101', label: '3101 - 卡核心系統連線失敗' },
-  { value: '3102', label: '3102 - 卡核心系統讀取超時' },
-  { value: '3199', label: '3199 - 卡核心系統響應異常' },
-  { value: '3201', label: '3201 - 加密機接口連線失敗' },
-  { value: '3202', label: '3202 - 加密機接口讀取超時' },
-  { value: '3299', label: '3299 - 加密機接口響應異常' },
-  { value: '3301', label: '3301 - OTP 系統連線失敗' },
-  { value: '3302', label: '3302 - OTP 系統讀取超時' },
-  { value: '3399', label: '3399 - OTP 系統響應異常' },
-  { value: '3401', label: '3401 - RReq 連線失敗' },
-  { value: '3402', label: '3402 - RReq 讀取超時' },
-  { value: '3403', label: '3403 - RRes 校驗失敗' },
-  { value: '3499', label: '3499 - RRes 返回錯誤' },
-  { value: '3501', label: '3501 - OOB 接口連線超時' },
-  { value: '3502', label: '3502 - OOB 接口讀取超時' },
-  { value: '3599', label: '3599 - OOB 接口響應異常' },
-  { value: '3601', label: '3601 - 離線驗證系統連線超時' },
-  { value: '3602', label: '3602 - 離線驗證系統讀取超時' },
-  { value: '3699', label: '3699 - 離線驗證系統響應異常' },
-  { value: '4001', label: '4001 - 高風險' },
-  { value: '4002', label: '4002 - 3RI 場景無法執行挑戰驗證' },
-  { value: '4101', label: '4101 - 黑名單-IP' },
-  { value: '4102', label: '4102 - 黑名單-Email' },
-  { value: '4103', label: '4103 - 黑名單-商店代號' },
-  { value: '4104', label: '4104 - 黑名單-設備識別碼' },
-  { value: '4105', label: '4105 - 黑名單-卡號' },
-  { value: '4106', label: '4106 - 黑名單-證件號碼' },
-  { value: '4107', label: '4107 - 黑名單-電話號碼' },
-  { value: '4108', label: '4108 - 黑名單-來源國別' },
-  { value: '4109', label: '4109 - 黑名單-商店網址' },
-  { value: '4110', label: '4110 - 黑名單-商店國別' },
-  { value: '5001', label: '5001 - 等待持卡人選擇驗證方式' },
-  { value: '5002', label: '5002 - 持卡人取消' },
-  { value: '5003', label: '5003 - 超過驗證次數限制' },
-  { value: '5004', label: '5004 - 尚未收到 CReq' },
-  { value: '5101', label: '5101 - 已發送 OTP' },
-  { value: '5102', label: '5102 - 已重送 OTP' },
-  { value: '5103', label: '5103 - 請求重送超過次數限制' },
-  { value: '5104', label: '5104 - 請求重送時間間隔過短' },
-  { value: '5105', label: '5105 - 驗證碼錯誤' },
-  { value: '5106', label: '5106 - 驗證碼已過期' },
-  { value: '5107', label: '5107 - 驗證碼已使用' },
-  { value: '5201', label: '5201 - OOB 初始化' },
-  { value: '5202', label: '5202 - OOB 驗證失敗' },
-  { value: '5301', label: '5301 - KBA 答覆錯誤' },
-  { value: '5302', label: '5302 - 無法取得 KBA 題目' },
-  { value: '5303', label: '5303 - 已完成 OTP，進入第二階段 KBA 提問' },
-  { value: '5401', label: '5401 - FIDO 註冊' },
-  { value: '5402', label: '5402 - FIDO 驗證失敗，返回驗證方式選擇' },
-  { value: '5501', label: '5501 - 尚未收到離線驗證結果' },
-  { value: '5502', label: '5502 - 離線驗證失敗' },
-  { value: '9999', label: '9999 - 系統錯誤' },
-  { value: '9001', label: '9001 - 收到 Error' },
-  { value: '9002', label: '9002 - 偵測到 DDOS 攻擊' }
 ]
 
 const challengeCancelOptions: SelectOption[] = [
