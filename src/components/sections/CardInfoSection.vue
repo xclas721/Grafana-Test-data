@@ -54,12 +54,13 @@ const cardSchemeOptions: SelectOption[] = [
   { value: 'M', label: 'M - Mastercard' },
   { value: 'J', label: 'J - JCB' },
   { value: 'A', label: 'A - American Express' },
-  { value: 'C', label: 'C - UnionPay' },
+  { value: 'C', label: 'C - CUP' },
   { value: 'D', label: 'D - Diners' },
   { value: 'P', label: 'P - PayNet' },
   { value: 'S', label: 'S - Saudi MADA' },
   { value: 'E', label: 'E - EftPos' },
-  { value: 'U', label: 'U - EMVLab' }
+  { value: 'T', label: 'T - Thai Payment Network' },
+  { value: 'U', label: 'U - UL-STP' }
 ]
 
 const mastercardDecisionOptions: SelectOption[] = [
@@ -143,8 +144,12 @@ const mastercardDecisionOptions: SelectOption[] = [
               </thead>
               <tbody>
                 <tr>
-                  <td>UnionPay</td>
+                  <td>CUP</td>
                   <td>8183520000000000 ~ 8183529999999999</td>
+                </tr>
+                <tr>
+                  <td>Thai Payment Network (TPN)</td>
+                  <td>9793520000000000 ~ 9793529999999999</td>
                 </tr>
                 <tr>
                   <td>American Express</td>

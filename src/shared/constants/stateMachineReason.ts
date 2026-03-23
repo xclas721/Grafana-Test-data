@@ -162,8 +162,32 @@ export function stateMachineReasonForAresForcedPath(
   return 'S3402'
 }
 
-/** 隨機池排除：避免與「強制路徑」重複抽樣 */
+/**
+ * 隨機池排除（僅用於「非強制」分支抽樣）
+ * - ACS：排除 0000/0001/0002（與 ARes 強制路徑對齊）
+ * - 3DSS：只排除 S9999（與 ARes=Y 強制路徑對齊）。
+ *   若連 S3401/S3402 一併排除，則 S3402（讀取超時）不會從隨機出現；且 rreqWeightNull=0 時強制路徑也不會給 S3402，
+ *   儀表板會出現大量連線類、0 筆讀取超時的假資料。
+ */
 export function reservedStateMachineReasonsForFilter(mode: ProductMode | undefined): string[] {
-  if (mode === 'dss') return ['S9999', 'S3401', 'S3402']
+  if (mode === 'dss') return ['S9999']
   return ['0000', '0001', '0002']
+}
+
+/**
+ * 3DSS：`stateMachineReason` 來自對 DS 的 AReq（見 threeds-server `AReqMessageHandler`：RestClient 例外先 S3401，根因 SocketTimeout 或重試用盡再 S3402）。
+ * 與 ACS 的 ARes/RReq 旗標無一一對應；隨機時應獨立抽樣。
+ *
+ * `NULL_VALUE` 代表多數成功路徑未寫入 stm（寫入 ES 時應省略欄位，見 buildDocument）。
+ * 以下權重為近似教學用，可依現網 ES 比例調整。
+ */
+export function pickRandomStateMachineReasonDssWeighted(): string {
+  const r = Math.random() * 100
+  if (r < 80) return 'NULL_VALUE'
+  if (r < 87) return 'S3401'
+  if (r < 91) return 'S3402'
+  if (r < 93) return 'S1002'
+  if (r < 95) return 'S3403'
+  if (r < 97) return 'S3499'
+  return 'S9999'
 }

@@ -15,6 +15,7 @@ import {
   defaultStateMachineReason,
   getStateMachineReasonValuesForRandom,
   reservedStateMachineReasonsForFilter,
+  pickRandomStateMachineReasonDssWeighted,
   stateMachineReasonForAresForcedPath
 } from '@/shared/constants/stateMachineReason'
 
@@ -85,8 +86,9 @@ const formState = reactive({
   aresWeightI: '1',
   aresWeightS: '0',
   aresWeightU: '2',
-  rreqWeightNull: '0',
-  rreqWeightY: '91',
+  /** RReq=NULL 時 3DSS 會強制 S3402（讀取超時）；預設 0 會導致批量假資料幾乎沒有 S3402 */
+  rreqWeightNull: '5',
+  rreqWeightY: '86',
   rreqWeightN: '9',
   challengeCancelRate: '8',
   merchantName: 'HiTRUST EMV Demo Merchant',
@@ -625,7 +627,10 @@ function syncStatusDependencies() {
     formState.disableTransStatusReason = true
     if (formState.transStatusReason !== 'NULL_VALUE') setField('transStatusReason', 'NULL_VALUE')
   }
-  if (ares === 'Y') {
+  // 3DSS：stm 原因對應 AReq→DS HTTP，不隨 ARes/RReq 強制改寫（避免 S3401/S3402 與假 ARes 綁死）
+  if (props.activeMode === 'dss') {
+    formState.disableStateMachineReason = false
+  } else if (ares === 'Y') {
     formState.disableStateMachineReason = true
     setField('stateMachineReasonMode', 'fixed')
     setField('stateMachineReason', stateMachineReasonForAresForcedPath(props.activeMode, 'y'))
@@ -871,8 +876,8 @@ function loadDefaults() {
   setField('aresWeightI', '1')
   setField('aresWeightS', '0')
   setField('aresWeightU', '2')
-  setField('rreqWeightNull', '0')
-  setField('rreqWeightY', '91')
+  setField('rreqWeightNull', '5')
+  setField('rreqWeightY', '86')
   setField('rreqWeightN', '9')
   setField('challengeCancelRate', '8')
   formState.enablePurchaseAmountRandom = true
@@ -1037,13 +1042,15 @@ function generateRandom() {
   } else {
     set('transStatusReason', 'NULL_VALUE')
   }
-  // stateMachineReason 依模式固定或全隨機（ACS 四位數 / 3DSS S 前綴）
+  // stateMachineReason：ACS 依 ARes/RReq 強制路徑；3DSS 依 AReq→DS 語意加權（與 ARes 旗標解耦）
   {
     const stateMachineReasons = getStateMachineReasonValuesForRandom(props.activeMode)
     const reserved = reservedStateMachineReasonsForFilter(props.activeMode)
     const fixedReason = String(formState.stateMachineReason || '').trim()
     if (formState.stateMachineReasonMode === 'random') {
-      if (st === 'Y') {
+      if (props.activeMode === 'dss') {
+        set('stateMachineReason', pickRandomStateMachineReasonDssWeighted())
+      } else if (st === 'Y') {
         set('stateMachineReason', stateMachineReasonForAresForcedPath(props.activeMode, 'y'))
       } else if (st === 'C' || st === 'D') {
         if (formState.rreqTransStatus === 'Y') {
@@ -1076,7 +1083,8 @@ function generateRandom() {
   }
   // cardScheme 隨機（獨立開關）
   if (formState.enableCardSchemeRandom) {
-    const schemePool = ['V', 'M', 'J', 'C', 'A']
+    // 與 CardInfoSection 卡組織選項一致（3DSS CardSchemeEnum：含 C=CUP、T=TPN）
+    const schemePool = ['V', 'M', 'J', 'A', 'C', 'D', 'P', 'S', 'E', 'T', 'U']
     const picked = schemePool[Math.floor(Math.random() * schemePool.length)] ?? formState.cardScheme
     if (picked) {
       set('cardScheme', picked)
@@ -1248,6 +1256,7 @@ function generateRandomAcctNumber() {
   else if (scheme === 'J') prefix = '313352'
   else if (scheme === 'A') prefix = '656352'
   else if (scheme === 'C') prefix = '818352'
+  else if (scheme === 'T') prefix = '979352'
   // 產出 13 位亂數字串
   let suffix = ''
   for (let i = 0; i < 13; i++) suffix += Math.floor(Math.random() * 10)
@@ -1630,40 +1639,54 @@ function buildDocument(form: FormMap, indexName: string, sharedTimestamp?: strin
     transStatus: form.transStatus,
     rreq_transStatus: form.rreqTransStatus,
     transStatusReason: form.transStatusReason,
-    stateMachineReason: form.stateMachineReason,
+    stateMachineReason:
+      indexName.includes('3dss-transaction') &&
+      (!form.stateMachineReason || String(form.stateMachineReason).trim() === 'NULL_VALUE')
+        ? undefined
+        : form.stateMachineReason,
     cardScheme: form.cardScheme,
     requestorId: form.requestorId,
     acctNumberHashed: form.acctNumberHashed,
     acctNumberMask: form.acctNumberMask,
     cardbin6: form.cardbin6,
     cardbin8: form.cardbin8,
-    performance_metrics: [
-      { path: form.performancePath, execTime: Number(form.execTime || 0) },
-      {
-        path: 'CardSchemeService.caculateCavv',
-        execTime: Number(form.cavvExecTime || Math.floor(Math.random() * 21 + 10))
-      },
-      {
-        path: 'VerificationCodeService.sendVerificationCode',
-        execTime: Number(form.otpExecTime || Math.floor(Math.random() * 61 + 20))
-      },
-      {
-        path: `/challenge/brw/V/2.3.1/${form.issuerOid}/1/${form.acsTransId}/creq`,
-        execTime: Number(form.creqExecTime || Math.floor(Math.random() * 501 + 300))
-      },
-      {
-        path: `/acs-auth/auth/V/2.2.0/${form.issuerOid}/001/areq`,
-        execTime: Number(form.execTime || Math.floor(Math.random() * 701 + 800))
-      },
-      {
-        path: `/acs-auth/auth/V/2.2.0/${form.issuerOid}/001/rreq`,
-        execTime: Number(form.rreqExecTime || Math.floor(Math.random() * 401 + 200))
-      },
-      {
-        path: 'RiskEvaluationService.evaluate',
-        execTime: Number(form.rbaExecTime || Math.floor(Math.random() * 151 + 50))
+    performance_metrics: (() => {
+      // 與 3DSS MetricsCollectorAspect 一致：卡組織對 DS 的 AReq 耗時記在 path = "{cardScheme}_DS_URL"（Grafana「卡組織 AReq 回應時間趨勢」查 * _DS_URL）
+      const sharedAreqMs = Number(form.execTime || Math.floor(Math.random() * 701 + 800))
+      const cardSchemeKey = String(form.cardScheme || 'V').trim() || 'V'
+      const metrics: Array<{ path?: string; execTime?: number }> = []
+      if (indexName.includes('3dss-transaction')) {
+        metrics.push({ path: `${cardSchemeKey}_DS_URL`, execTime: sharedAreqMs })
       }
-    ],
+      metrics.push(
+        { path: form.performancePath, execTime: Number(form.execTime || 0) },
+        {
+          path: 'CardSchemeService.caculateCavv',
+          execTime: Number(form.cavvExecTime || Math.floor(Math.random() * 21 + 10))
+        },
+        {
+          path: 'VerificationCodeService.sendVerificationCode',
+          execTime: Number(form.otpExecTime || Math.floor(Math.random() * 61 + 20))
+        },
+        {
+          path: `/challenge/brw/V/2.3.1/${form.issuerOid}/1/${form.acsTransId}/creq`,
+          execTime: Number(form.creqExecTime || Math.floor(Math.random() * 501 + 300))
+        },
+        {
+          path: `/acs-auth/auth/V/2.2.0/${form.issuerOid}/001/areq`,
+          execTime: sharedAreqMs
+        },
+        {
+          path: `/acs-auth/auth/V/2.2.0/${form.issuerOid}/001/rreq`,
+          execTime: Number(form.rreqExecTime || Math.floor(Math.random() * 401 + 200))
+        },
+        {
+          path: 'RiskEvaluationService.evaluate',
+          execTime: Number(form.rbaExecTime || Math.floor(Math.random() * 151 + 50))
+        }
+      )
+      return metrics
+    })(),
     browserIP: form.browserIP,
     errorComponent: form.errorComponent,
     errorDescription: form.errorDescription,
