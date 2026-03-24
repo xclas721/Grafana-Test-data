@@ -5,6 +5,7 @@ import Select, { type SelectOption } from '@/shared/components/Select.vue'
 
 const props = defineProps<{
   messageCategory: string
+  messageVersion: string
   deviceChannel: string
   threeDSRequestorChallengeInd: string
   authenticationMethod: string
@@ -34,6 +35,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:messageCategory': [value: string]
+  'update:messageVersion': [value: string]
   'update:deviceChannel': [value: string]
   'update:threeDSRequestorChallengeInd': [value: string]
   'update:authenticationMethod': [value: string]
@@ -67,6 +69,12 @@ const messageCategoryOptions: SelectOption[] = [
   { value: '80', label: '80 - Mastercard Identity Check Insights' },
   { value: '85', label: '85 - Mastercard PVPA' },
   { value: '86', label: '86 - Mastercard PVNPA' }
+]
+
+const messageVersionOptions: SelectOption[] = [
+  { value: '2.1.0', label: '2.1.0' },
+  { value: '2.2.0', label: '2.2.0' },
+  { value: '2.3.1', label: '2.3.1' }
 ]
 
 const deviceChannelOptions: SelectOption[] = [
@@ -179,6 +187,17 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
             </label>
           </div>
           <p class="text-xs text-error mt-2">可隨機生成，預設關閉</p>
+        </div>
+        <div>
+          <Select
+            id="messageVersion"
+            label="訊息版本 (messageVersion)"
+            :modelValue="props.messageVersion"
+            :options="messageVersionOptions"
+            required
+            @update:modelValue="(value) => emit('update:messageVersion', String(value))"
+          />
+          <p class="text-xs text-base-content/60 mt-2">對應 ACS dashboard 的 Message Version 篩選欄位</p>
         </div>
         <div>
           <Select

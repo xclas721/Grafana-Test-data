@@ -257,21 +257,8 @@ const transStatusReasonOptions: SelectOption[] = [
       '25 - Decoupled Authentication was provided insufficient time to authenticate Cardholder. ACS will not make attempt'
   },
   { value: '26', label: '26 - Authentication attempted but not performed by the Cardholder' },
-  { value: '27', label: '27 - Preferred Authentication Method not supported' },
-  { value: '28', label: '28 - Validation of content security policy failed' },
-  {
-    value: '29',
-    label:
-      '29 - Authentication attempted but not completed by the Cardholder. Fall back to Decoupled Authentication'
-  },
-  {
-    value: '30',
-    label:
-      '30 - Authentication completed successfully but additional authentication of the Cardholder required. Reinitiate as Decoupled Authentication'
-  },
-  { value: '81', label: '81 - Mastercard SCA Exemption' },
-  { value: '89', label: '89 - Visa SCP Exemption' },
-  { value: '90', label: '90 - Visa Issuer SCA Required' }
+  { value: '91', label: '91 - Agree to Visa VPP registration' },
+  { value: '92', label: '92 - Do not agree to Visa VPP registration' }
 ]
 
 const challengeCancelOptions: SelectOption[] = [

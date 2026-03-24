@@ -55,7 +55,7 @@ const cardSchemeOptions: SelectOption[] = [
   { value: 'J', label: 'J - JCB' },
   { value: 'A', label: 'A - American Express' },
   { value: 'C', label: 'C - CUP' },
-  { value: 'D', label: 'D - Diners' },
+  { value: 'D', label: 'D - Diners Club / Discover' },
   { value: 'P', label: 'P - PayNet' },
   { value: 'S', label: 'S - Saudi MADA' },
   { value: 'E', label: 'E - EftPos' },
@@ -160,6 +160,10 @@ const mastercardDecisionOptions: SelectOption[] = [
                   <td>3133520000000000 ~ 3133529999999999</td>
                 </tr>
                 <tr>
+                  <td>Diners Club / Discover (D)</td>
+                  <td>3643520000000000 ~ 3643529999999999</td>
+                </tr>
+                <tr>
                   <td>MasterCard</td>
                   <td>5153520000000000 ~ 5153529999999999</td>
                 </tr>
@@ -168,8 +172,20 @@ const mastercardDecisionOptions: SelectOption[] = [
                   <td>4143520000000000 ~ 4143529999999999</td>
                 </tr>
                 <tr>
-                  <td>其他卡組織</td>
-                  <td>9999990000000000 ~ 9999999999999999</td>
+                  <td>EFTPOS (E)</td>
+                  <td>6013520000000000 ~ 6013529999999999</td>
+                </tr>
+                <tr>
+                  <td>PayNet (P)</td>
+                  <td>6023520000000000 ~ 6023529999999999</td>
+                </tr>
+                <tr>
+                  <td>Saudi MADA (S)</td>
+                  <td>6033520000000000 ~ 6033529999999999</td>
+                </tr>
+                <tr>
+                  <td>UL-STP (U)</td>
+                  <td>6043520000000000 ~ 6043529999999999</td>
                 </tr>
               </tbody>
             </table>

@@ -126,6 +126,7 @@ const formState = reactive({
   mastercardStatus: 'success',
   visaRiskBasedAuthenticationScore: '',
   messageCategory: '01',
+  messageVersion: '2.2.0',
   deviceChannel: '02',
   threeDSRequestorChallengeInd: '01',
   authenticationMethod: '02',
@@ -253,6 +254,7 @@ const stateBindings = {
   mastercardStatus: 'mastercardStatus',
   visaRiskBasedAuthenticationScore: 'visaRiskBasedAuthenticationScore',
   messageCategory: 'messageCategory',
+  messageVersion: 'messageVersion',
   deviceChannel: 'deviceChannel',
   threeDSRequestorChallengeInd: 'threeDSRequestorChallengeInd',
   authenticationMethod: 'authenticationMethod',
@@ -831,6 +833,7 @@ function loadDefaults() {
   setField('visaRiskBasedAuthenticationScore', '')
   updateCardInfoFromAcctNumber()
   setField('messageCategory', '01')
+  setField('messageVersion', '2.2.0')
   setField('deviceChannel', '02')
   setField('threeDSRequestorChallengeInd', '01')
   setField('authenticationMethod', '02')
@@ -1023,8 +1026,8 @@ function generateRandom() {
   // 當 ARes 為 R 時，transStatusReason 依模式固定或全隨機；否則為 NULL_VALUE
   if (st === 'R') {
     const reasons: string[] = []
-    for (let i = 1; i <= 30; i++) reasons.push(String(i).padStart(2, '0'))
-    reasons.push('81', '89', '90')
+    for (let i = 1; i <= 26; i++) reasons.push(String(i).padStart(2, '0'))
+    reasons.push('91', '92')
     const fixedReason = String(formState.transStatusReason || '').trim()
     if (formState.transStatusReasonMode === 'random') {
       if (reasons.length > 0) {
@@ -1250,13 +1253,20 @@ function generateRandom() {
 
 function generateRandomAcctNumber() {
   const scheme = formState.cardScheme || 'V'
-  let prefix = '999999'
+  // 與 CardInfoSection 對照表一致；請在 ACS 卡 BIN 維護相同前綴區間（示範用 601352–604352 給 E/P/S/U）
+  let prefix: string
   if (scheme === 'V') prefix = '414352'
   else if (scheme === 'M') prefix = '515352'
   else if (scheme === 'J') prefix = '313352'
   else if (scheme === 'A') prefix = '656352'
   else if (scheme === 'C') prefix = '818352'
   else if (scheme === 'T') prefix = '979352'
+  else if (scheme === 'D') prefix = '364352'
+  else if (scheme === 'E') prefix = '601352'
+  else if (scheme === 'P') prefix = '602352'
+  else if (scheme === 'S') prefix = '603352'
+  else if (scheme === 'U') prefix = '604352'
+  else prefix = '414352'
   // 產出 13 位亂數字串
   let suffix = ''
   for (let i = 0; i < 13; i++) suffix += Math.floor(Math.random() * 10)
@@ -1587,6 +1597,7 @@ function buildDocument(form: FormMap, indexName: string, sharedTimestamp?: strin
     last_update_timestamp: string
     first_seen_timestamp: string
     messageCategory?: string
+    messageVersion?: string
     deviceChannel?: string
     merchantName?: string
     merchantCountryCode?: string
@@ -1625,6 +1636,7 @@ function buildDocument(form: FormMap, indexName: string, sharedTimestamp?: strin
     last_update_timestamp: currentDateTime,
     first_seen_timestamp: currentDateTime,
     messageCategory: form.messageCategory,
+    messageVersion: form.messageVersion,
     deviceChannel: form.deviceChannel,
     merchantName: form.merchantName,
     merchantCountryCode: form.merchantCountryCode,
@@ -1669,15 +1681,15 @@ function buildDocument(form: FormMap, indexName: string, sharedTimestamp?: strin
           execTime: Number(form.otpExecTime || Math.floor(Math.random() * 61 + 20))
         },
         {
-          path: `/challenge/brw/V/2.3.1/${form.issuerOid}/1/${form.acsTransId}/creq`,
+          path: `/challenge/brw/${form.cardScheme}/${form.messageVersion}/${form.issuerOid}/1/${form.acsTransId}/creq`,
           execTime: Number(form.creqExecTime || Math.floor(Math.random() * 501 + 300))
         },
         {
-          path: `/acs-auth/auth/V/2.2.0/${form.issuerOid}/001/areq`,
+          path: `/acs-auth/auth/${form.cardScheme}/${form.messageVersion}/${form.issuerOid}/001/areq`,
           execTime: sharedAreqMs
         },
         {
-          path: `/acs-auth/auth/V/2.2.0/${form.issuerOid}/001/rreq`,
+          path: `/acs-auth/auth/${form.cardScheme}/${form.messageVersion}/${form.issuerOid}/001/rreq`,
           execTime: Number(form.rreqExecTime || Math.floor(Math.random() * 401 + 200))
         },
         {
@@ -2143,6 +2155,7 @@ defineExpose({
 
     <ThreeDSParamsSection
       v-model:messageCategory="formState.messageCategory"
+      v-model:messageVersion="formState.messageVersion"
       v-model:deviceChannel="formState.deviceChannel"
       v-model:threeDSRequestorChallengeInd="formState.threeDSRequestorChallengeInd"
       v-model:authenticationMethod="formState.authenticationMethod"
