@@ -703,8 +703,8 @@ const reasonModeOptions: SelectOption[] = [
             選「全隨機」才會隨機；選「固定代碼」可輸入或下拉選取，並同步到上方欄位。
           </p>
           <p v-if="props.activeMode === 'dss'" class="text-xs text-base-content/60 mt-2">
-            3DSS：全隨機時 stateMachineReason 依對 DS 之 AReq 錯誤類型加權（S3401/S3402
-            等），與 ARes/RReq 旗標無強制對應；多數成功樣本不寫入該欄位。
+            3DSS：全隨機時 stateMachineReason 依對 DS 之 AReq 錯誤類型加權（S3401/S3402 等），與
+            ARes/RReq 旗標無強制對應；多數成功樣本不寫入該欄位。
           </p>
         </div>
       </div>

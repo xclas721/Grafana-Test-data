@@ -197,7 +197,9 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
             required
             @update:modelValue="(value) => emit('update:messageVersion', String(value))"
           />
-          <p class="text-xs text-base-content/60 mt-2">對應 ACS dashboard 的 Message Version 篩選欄位</p>
+          <p class="text-xs text-base-content/60 mt-2">
+            對應 ACS dashboard 的 Message Version 篩選欄位
+          </p>
         </div>
         <div>
           <Select
