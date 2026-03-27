@@ -628,9 +628,22 @@ const reasonModeOptions: SelectOption[] = [
           RReq 權重合計：{{ props.rreqWeightTotal }}%，未分配：{{ props.rreqWeightUnallocated }}%。
         </p>
         <div class="mt-4 border-t border-base-300 pt-4">
-          <div class="text-sm font-semibold text-base-content/80 mb-3">
-            stateMachineReason / transStatusReason 隨機分配（當 ARes 狀態為 R 時）
+          <div class="text-sm font-semibold text-base-content/80 mb-2">
+            stateMachineReason / transStatusReason（對齊 3DSS 後端語意）
           </div>
+          <p class="text-xs text-base-content/60 mb-3 leading-relaxed">
+            <strong>transStatusReason</strong>：最終狀態為 <strong>R</strong>（含挑戰後 RReq=R）時，假資料會抽
+            ACS 原因碼。寫入前會依索引對齊兩端後端：
+            <strong>3DSS</strong>（<code class="bg-base-300/60 px-1 rounded">3dss-transaction</code>）在
+            S 端 AReq／ARes／RReq 錯誤時對齊 <code class="bg-base-300/60 px-1 rounded">U</code>／
+            <code class="bg-base-300/60 px-1 rounded">07</code>（threeds-server-v3）；
+            <strong>ACS</strong>（<code class="bg-base-300/60 px-1 rounded">acs-transaction</code>）在
+            errorComponent=A 時對齊 <code class="bg-base-300/60 px-1 rounded">ThreedsTransServiceCore.updateErrorStatus</code>
+            預設（多為 <code class="bg-base-300/60 px-1 rounded">N</code>／<code class="bg-base-300/60 px-1 rounded">09</code>／
+            challengeCancel <code class="bg-base-300/60 px-1 rounded">06</code>，Mastercard／CReq／UL 等有覆寫）。
+            ACS 索引上若為 <strong>S</strong> 錯誤則仍依 3DSS 語意對齊。
+            <strong>stateMachineReason</strong>：3DSS 成功路徑多半省略；ACS 以四位數 enum 為主（隨機模式見表單）。
+          </p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="rounded-md border border-base-300 bg-base-100 p-3">
               <div class="text-sm font-semibold text-base-content/80 mb-2">transStatusReason</div>

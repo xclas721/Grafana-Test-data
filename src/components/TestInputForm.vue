@@ -19,7 +19,11 @@ import {
   stateMachineReasonForAresForcedPath
 } from '@/shared/constants/stateMachineReason'
 
-const props = defineProps<{ activeMode?: 'acs' | 'dss'; batchDays?: number }>()
+const props = defineProps<{
+  activeMode?: 'acs' | 'dss'
+  batchDays?: number
+  enableAutoTimeRange?: boolean
+}>()
 const emit = defineEmits<{
   (e: 'update:enableAutoTimeRange', value: boolean): void
 }>()
@@ -61,7 +65,7 @@ const formState = reactive({
   password: '123456',
   currentDate: '',
   enableCustomTimeRange: true,
-  enableAutoTimeRange: true,
+  enableAutoTimeRange: props.enableAutoTimeRange ?? true,
   startDateTime: '',
   endDateTime: '',
   timezone: 'browser',
@@ -150,6 +154,9 @@ const formState = reactive({
   errorCode: 'NULL_VALUE',
   errorDetail: 'NULL_VALUE',
   errorMessageType: 'NULL_VALUE',
+  /** 僅「批量生成並 POST」：每筆依比例隨機套用 EMV 錯誤或維持無錯誤 */
+  enableBatchErrorMix: true,
+  batchErrorMixPercent: '15',
   enablePurchaseAmountRandom: true,
   enablePurchaseCurrencyRandom: true,
   enableAcquirerMerchantIdRandom: true,
@@ -277,7 +284,8 @@ const stateBindings = {
   errorDescription: 'errorDescription',
   errorCode: 'errorCode',
   errorDetail: 'errorDetail',
-  errorMessageType: 'errorMessageType'
+  errorMessageType: 'errorMessageType',
+  batchErrorMixPercent: 'batchErrorMixPercent'
 } as const
 
 function setField(id: string, val: string) {
@@ -860,6 +868,8 @@ function loadDefaults() {
   setField('errorCode', 'NULL_VALUE')
   setField('errorDetail', 'NULL_VALUE')
   setField('errorMessageType', 'NULL_VALUE')
+  formState.enableBatchErrorMix = true
+  setField('batchErrorMixPercent', '15')
   setField('challengeCancel', 'NULL_VALUE')
   setField('countryAlpha2', 'CN')
   setField('countryNumeric', '156')
@@ -1023,28 +1033,6 @@ function generateRandom() {
     set('rreqTransStatus', 'NULL_VALUE')
     set('transStatus', String(st))
   }
-  // 當 ARes 為 R 時，transStatusReason 依模式固定或全隨機；否則為 NULL_VALUE
-  if (st === 'R') {
-    const reasons: string[] = []
-    for (let i = 1; i <= 26; i++) reasons.push(String(i).padStart(2, '0'))
-    reasons.push('91', '92')
-    const fixedReason = String(formState.transStatusReason || '').trim()
-    if (formState.transStatusReasonMode === 'random') {
-      if (reasons.length > 0) {
-        const idx = Math.floor(Math.random() * reasons.length)
-        set('transStatusReason', reasons[idx] as string)
-      } else {
-        set('transStatusReason', '01')
-      }
-    } else {
-      set(
-        'transStatusReason',
-        fixedReason && fixedReason !== 'NULL_VALUE' ? fixedReason : 'NULL_VALUE'
-      )
-    }
-  } else {
-    set('transStatusReason', 'NULL_VALUE')
-  }
   // stateMachineReason：ACS 依 ARes/RReq 強制路徑；3DSS 依 AReq→DS 語意加權（與 ARes 旗標解耦）
   {
     const stateMachineReasons = getStateMachineReasonValuesForRandom(props.activeMode)
@@ -1084,6 +1072,8 @@ function generateRandom() {
       )
     }
   }
+  let effectiveCardScheme = String(formState.cardScheme || '').trim() || 'V'
+
   // cardScheme 隨機（獨立開關）
   if (formState.enableCardSchemeRandom) {
     // 與 CardInfoSection 卡組織選項一致（3DSS CardSchemeEnum：含 C=CUP、T=TPN）
@@ -1092,6 +1082,7 @@ function generateRandom() {
     if (picked) {
       set('cardScheme', picked)
       syncCardSchemeToggles(picked)
+      effectiveCardScheme = picked
     }
   }
   // 帳號原始值（依卡別前綴）- 僅在勾選時隨機
@@ -1128,6 +1119,7 @@ function generateRandom() {
     const score = Math.floor(Math.random() * 100) // 0-99
     set('visaRiskBasedAuthenticationScore', String(score))
     set('cardScheme', 'V')
+    effectiveCardScheme = 'V'
   }
   // Mastercard 擴展 Score/Decision 隨機（僅在啟用且勾選隨機時）
   if (formState.enableMastercardExtension && formState.enableMastercardExtensionRandom) {
@@ -1137,6 +1129,37 @@ function generateRandom() {
       'Not Low Risk'
     set('mastercardDecision', pick)
     set('cardScheme', 'M')
+    effectiveCardScheme = 'M'
+  }
+
+  // 當 ARes 為 R 時，transStatusReason 依模式固定或全隨機；否則為 NULL_VALUE
+  if (st === 'R') {
+    const reasons: string[] = []
+    for (let i = 1; i <= 26; i++) reasons.push(String(i).padStart(2, '0'))
+    // 80+ 僅 A/V/M 會出現，且各卡組織碼表不同
+    if (effectiveCardScheme === 'A') {
+      reasons.push('80', '81', '82')
+    } else if (effectiveCardScheme === 'V') {
+      for (let i = 80; i <= 92; i++) reasons.push(String(i))
+    } else if (effectiveCardScheme === 'M') {
+      reasons.push('80', '81', '82', '83', '84', '87', '88', '98')
+    }
+    const fixedReason = String(formState.transStatusReason || '').trim()
+    if (formState.transStatusReasonMode === 'random') {
+      if (reasons.length > 0) {
+        const idx = Math.floor(Math.random() * reasons.length)
+        set('transStatusReason', reasons[idx] as string)
+      } else {
+        set('transStatusReason', '01')
+      }
+    } else {
+      set(
+        'transStatusReason',
+        fixedReason && fixedReason !== 'NULL_VALUE' ? fixedReason : 'NULL_VALUE'
+      )
+    }
+  } else {
+    set('transStatusReason', 'NULL_VALUE')
   }
   // messageCategory 隨機（僅在勾選時）
   if (formState.enableMessageCategory) {
@@ -1347,6 +1370,17 @@ onMounted(() => {
     { immediate: true }
   )
 })
+
+watch(
+  () => props.enableAutoTimeRange,
+  (value) => {
+    if (value === undefined) return
+    if (formState.enableAutoTimeRange !== value) {
+      formState.enableAutoTimeRange = value
+    }
+  },
+  { immediate: true }
+)
 
 watch(
   () => formState.enableAutoTimeRange,
@@ -2200,6 +2234,9 @@ defineExpose({
     />
 
     <ErrorHandlingSection
+      :activeMode="props.activeMode"
+      v-model:enableBatchErrorMix="formState.enableBatchErrorMix"
+      v-model:batchErrorMixPercent="formState.batchErrorMixPercent"
       v-model:errorComponent="formState.errorComponent"
       v-model:errorDescription="formState.errorDescription"
       v-model:errorCode="formState.errorCode"

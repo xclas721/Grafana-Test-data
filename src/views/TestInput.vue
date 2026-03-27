@@ -4,6 +4,16 @@ import TestInputLayout from '@/components/TestInputLayout.vue'
 import TestInputForm from '@/components/TestInputForm.vue'
 import NotificationPanel from '@/components/NotificationPanel.vue'
 import CurrencyModal from '@/components/CurrencyModal.vue'
+import {
+  PRESET_NO_ERROR,
+  applyErrorPresetToFormData,
+  pickRandomBatchErrorPreset
+} from '@/shared/constants/emvThreeDSErrorPresets'
+import {
+  DEFAULT_BATCH_ERROR_MIX_PERCENT,
+  getBatchErrorMixPercent,
+  isBatchErrorMixEnabled
+} from '@/shared/utils/batchErrorMix'
 
 const mode = ref<'acs' | 'dss'>('acs')
 const formRef = ref<InstanceType<typeof TestInputForm> | null>(null)
@@ -239,6 +249,29 @@ async function batchInsert() {
     form.setStatus?.('請先設定自訂時間區間的起訖時間', 'error')
     return
   }
+  if (isBatchErrorMixEnabled(dataBase)) {
+    const pct = getBatchErrorMixPercent(dataBase)
+    const emptyUsesDefault =
+      String(dataBase.batchErrorMixPercent ?? '').trim() === ''
+        ? `（空白欄位已用預設 ${DEFAULT_BATCH_ERROR_MIX_PERCENT}%）`
+        : ''
+    panel?.addLog?.(
+      'info',
+      `批次錯誤混入已啟用：每筆 ${pct}% 機率寫入非 NULL 的 errorCode（${mode.value === 'dss' ? '3DSS：S／D／A 混合' : 'ACS：以 A 為主'}抽樣）${emptyUsesDefault}`
+    )
+    if (!isCustomRange && days > 1) {
+      panel?.addLog?.(
+        'warning',
+        `後端錯誤統計依 first_seen_timestamp；本批資料會攤在過去 ${days} 個日曆日、每日時間隨機。若儀表只選「最近 15 分鐘／1 小時」，錯誤筆數會遠小於約 ${total}×${pct}%。請拉長時間範圍涵蓋這些日期，或改勾「自訂時間」並開啟「自動更新區間」。`
+      )
+    }
+    if (isCustomRange && dataBase.enableAutoTimeRange === 'on') {
+      panel?.addLog?.(
+        'info',
+        '已使用自訂時間且自動更新：first_seen_timestamp 會落在起訖區間內，較易與即時儀表對齊。'
+      )
+    }
+  }
   const baseUrl = dataBase.baseUrl
   const auth = 'Basic ' + btoa(`${dataBase.username}:${dataBase.password}`)
   const BULK_RECORD_LIMIT = 500
@@ -325,7 +358,8 @@ async function batchInsert() {
     form.setStatus?.('請先選擇日期', 'error')
     return
   }
-  const loopDays = isCustomRange ? 1 : days
+  // days=0（當前時間）且未走自訂區間時，仍應至少跑 1 個迴圈，否則會插入 0 筆（排程常見 batchDays=0）
+  const loopDays = isCustomRange ? 1 : Math.max(1, days)
   const dailyCountsFinal = isCustomRange ? [total] : dailyCounts
   const baseDate = !isCustomRange
     ? new Date(
@@ -351,6 +385,14 @@ async function batchInsert() {
         form.generateRandom?.()
         const data = form.getFormData?.()
         if (!data) throw new Error('表單資料為空')
+        if (isBatchErrorMixEnabled(data)) {
+          const pct = getBatchErrorMixPercent(data)
+          if (Math.random() * 100 < pct) {
+            applyErrorPresetToFormData(data, pickRandomBatchErrorPreset(mode.value))
+          } else {
+            applyErrorPresetToFormData(data, PRESET_NO_ERROR)
+          }
+        }
         // 覆寫當日日期
         if (date) data.currentDate = dateStr
         const indexBase = mode.value === 'acs' ? 'acs-transaction' : '3dss-transaction'
@@ -373,7 +415,12 @@ async function batchInsert() {
   }
   panel?.setText?.('progressStatus', '處理完成')
   panel?.setErrors?.(errorDetails)
-  if (errorCount === 0) form.setStatus?.(`批量完成，成功 ${success}/${total}`, 'success')
+  const grafanaHint =
+    isBatchErrorMixEnabled(dataBase) && !isCustomRange && days > 1
+      ? '（錯誤儀表請拉長時間以涵蓋 first_seen_timestamp）'
+      : ''
+  if (errorCount === 0)
+    form.setStatus?.(`批量完成，成功 ${success}/${total}${grafanaHint}`, 'success')
   else if (success === 0) form.setStatus?.(`批量失敗，全部失敗 ${errorCount}/${total}`, 'error')
   else form.setStatus?.(`部分成功：成功 ${success}，失敗 ${errorCount}`, 'warning')
 }

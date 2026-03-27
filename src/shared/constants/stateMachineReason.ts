@@ -126,7 +126,7 @@ export function getStateMachineReasonOptions(mode: ProductMode | undefined): Sel
 
 /** 固定模式下輸入為空時的預設 */
 export function defaultStateMachineReason(mode: ProductMode | undefined): string {
-  if (mode === 'dss') return 'S3401'
+  if (mode === 'dss') return 'NULL_VALUE'
   return '0000'
 }
 
@@ -139,7 +139,7 @@ export function getStateMachineReasonValuesForRandom(mode: ProductMode | undefin
 /** 切換到 3DSS 時：若仍是 ACS 四位數代碼，改為可辨識的 3DSS 預設 */
 export function normalizeStateMachineReasonForDss(current: string): string {
   const t = String(current || '').trim()
-  if (/^[0-9]{4}$/.test(t)) return 'S3401'
+  if (/^[0-9]{4}$/.test(t)) return 'NULL_VALUE'
   return t
 }
 
@@ -157,9 +157,8 @@ export function stateMachineReasonForAresForcedPath(
     if (path === 'rreqY') return '0001'
     return '0002'
   }
-  if (path === 'y') return 'S9999'
-  if (path === 'rreqY') return 'S3401'
-  return 'S3402'
+  // 3DSS：成功路徑 `ThreeDSContextDataHolder` 通常不 setStmReason，寫入交易/ES 為空（此處用 NULL_VALUE → buildDocument 省略）
+  return 'NULL_VALUE'
 }
 
 /**
@@ -183,11 +182,12 @@ export function reservedStateMachineReasonsForFilter(mode: ProductMode | undefin
  */
 export function pickRandomStateMachineReasonDssWeighted(): string {
   const r = Math.random() * 100
-  if (r < 80) return 'NULL_VALUE'
-  if (r < 87) return 'S3401'
-  if (r < 91) return 'S3402'
-  if (r < 93) return 'S1002'
-  if (r < 95) return 'S3403'
-  if (r < 97) return 'S3499'
+  // 近似現網：絕大多數成功交易不帶 stateMachineReason
+  if (r < 90) return 'NULL_VALUE'
+  if (r < 94) return 'S3401'
+  if (r < 96) return 'S3402'
+  if (r < 97) return 'S1002'
+  if (r < 98) return 'S3403'
+  if (r < 99) return 'S3499'
   return 'S9999'
 }
