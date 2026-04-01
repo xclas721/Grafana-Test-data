@@ -19,7 +19,11 @@ import {
   stateMachineReasonForAresForcedPath
 } from '@/shared/constants/stateMachineReason'
 
-const props = defineProps<{ activeMode?: 'acs' | 'dss'; batchDays?: number }>()
+const props = defineProps<{
+  activeMode?: 'acs' | 'dss'
+  batchDays?: number
+  enableAutoTimeRange?: boolean
+}>()
 const emit = defineEmits<{
   (e: 'update:enableAutoTimeRange', value: boolean): void
 }>()
@@ -61,7 +65,7 @@ const formState = reactive({
   password: '123456',
   currentDate: '',
   enableCustomTimeRange: true,
-  enableAutoTimeRange: true,
+  enableAutoTimeRange: props.enableAutoTimeRange ?? true,
   startDateTime: '',
   endDateTime: '',
   timezone: 'browser',
@@ -1360,6 +1364,17 @@ onMounted(() => {
     { immediate: true }
   )
 })
+
+watch(
+  () => props.enableAutoTimeRange,
+  (value) => {
+    if (value === undefined) return
+    if (formState.enableAutoTimeRange !== value) {
+      formState.enableAutoTimeRange = value
+    }
+  },
+  { immediate: true }
+)
 
 watch(
   () => formState.enableAutoTimeRange,
