@@ -1455,6 +1455,91 @@ watch(
 
 type FormMap = Record<string, string>
 
+/**
+ * 批量插入時每筆只需此子集（buildDocument／generateSharedTimestamp／批次錯誤混入）。
+ * 若 buildDocument 新增對 form 的讀取欄位，請一併加入此列表。
+ */
+const BATCH_INSERT_FORM_KEYS = [
+  'acsTransId',
+  'authenticationMethod',
+  'authenticationType',
+  'aresTransStatus',
+  'batchErrorMixPercent',
+  'browserIP',
+  'cardScheme',
+  'cardbin6',
+  'cardbin8',
+  'cavvExecTime',
+  'challengeCancel',
+  'countryAlpha2',
+  'countryAlpha3',
+  'countryName',
+  'countryNumeric',
+  'creqExecTime',
+  'currencyAlphabeticCode',
+  'currencyCodeForRate',
+  'currencyMinorUnit',
+  'currencyName',
+  'currencyNumericCode',
+  'currentDate',
+  'deviceAdvertisingId',
+  'deviceChannel',
+  'deviceIpAddress',
+  'deviceLocale',
+  'devicePlatform',
+  'enableBatchErrorMix',
+  'enableBrowserGeoIPRandom',
+  'enableCustomTimeRange',
+  'enableDeviceGeoIPRandom',
+  'enableMastercardExtension',
+  'endDateTime',
+  'errorCode',
+  'errorComponent',
+  'errorDescription',
+  'errorDetail',
+  'errorMessageType',
+  'exchangeBase',
+  'exchangeRate',
+  'exchangeTarget',
+  'execTime',
+  'issuerOid',
+  'mastercardDecision',
+  'mastercardMessageExtension',
+  'mastercardReasonCode1',
+  'mastercardReasonCode2',
+  'mastercardScore',
+  'mastercardStatus',
+  'mcc',
+  'merchantCountryCode',
+  'merchantCountryCodeStr',
+  'merchantName',
+  'messageCategory',
+  'messageVersion',
+  'otpExecTime',
+  'performancePath',
+  'purchaseAmount',
+  'purchaseCurrency',
+  'purchaseExponent',
+  'requestorId',
+  'rbaExecTime',
+  'rreqExecTime',
+  'rreqTransStatus',
+  'startDateTime',
+  'stateMachineReason',
+  'threeDSRequestorChallengeInd',
+  'threeDSCompInd',
+  'threeDSServerTransId',
+  'timezone',
+  'transStatus',
+  'transStatusReason',
+  'usdAmount',
+  'visaRiskBasedAuthenticationScore',
+  'acctNumberHashed',
+  'acctNumberMask',
+  'acquirerBin',
+  'acquirerMerchantId'
+] as const
+
 function getFormData(): FormMap {
   const data: FormMap = {}
   Object.entries(formState).forEach(([key, value]) => {
@@ -1465,6 +1550,21 @@ function getFormData(): FormMap {
       data[key] = String(value ?? '')
     }
   })
+  return data
+}
+
+function getFormDataForBatchInsert(): FormMap {
+  const data: FormMap = {}
+  for (const key of BATCH_INSERT_FORM_KEYS) {
+    const raw = (formState as unknown as Record<string, unknown>)[key]
+    if (raw === undefined || raw === null) {
+      data[key] = ''
+    } else if (typeof raw === 'boolean') {
+      data[key] = raw ? 'on' : 'off'
+    } else {
+      data[key] = String(raw)
+    }
+  }
   return data
 }
 
@@ -2050,6 +2150,7 @@ defineExpose({
   loadDefaults,
   generateRandom,
   getFormData,
+  getFormDataForBatchInsert,
   buildDocument,
   generateSharedTimestamp,
   setStatus,

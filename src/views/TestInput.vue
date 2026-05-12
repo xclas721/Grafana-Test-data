@@ -14,6 +14,7 @@ import {
   getBatchErrorMixPercent,
   isBatchErrorMixEnabled
 } from '@/shared/utils/batchErrorMix'
+import { fetchElasticsearchBulk } from '@/shared/utils/elasticsearchBulk'
 
 const mode = ref<'acs' | 'dss'>('acs')
 const formRef = ref<InstanceType<typeof TestInputForm> | null>(null)
@@ -137,11 +138,7 @@ async function insertOnce() {
       [JSON.stringify({ index: { _index: fullIndex } }), JSON.stringify(built.document)].join(
         '\n'
       ) + '\n'
-    const res = await fetch(`${baseUrl}/_bulk`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-ndjson', Authorization: auth },
-      body: bulk
-    })
+    const res = await fetchElasticsearchBulk(baseUrl, auth, bulk)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const json = await res.json()
     if (json.errors) throw new Error('索引失敗')
@@ -274,7 +271,19 @@ async function batchInsert() {
   }
   const baseUrl = dataBase.baseUrl
   const auth = 'Basic ' + btoa(`${dataBase.username}:${dataBase.password}`)
-  const BULK_RECORD_LIMIT = 500
+  // 單次 _bulk 筆數：500→較多 round-trip；過大易觸發代理 body 上限或占用大量記憶體。
+  // 本機 ES9 以中等欄位 synthetic 量測約以 800～1200 筆效率佳；實際文件較大時若 413 請改 800～1500。
+  const BULK_RECORD_LIMIT = 2000
+  // 同時進行中的 _bulk 數（overlap 傳輸與下一批文件建構）。ES 負載高或 429 時改 3～4。
+  const BULK_CONCURRENCY = 6
+  const inFlight = new Set<Promise<void>>()
+  async function waitForBulkSlot() {
+    while (inFlight.size >= BULK_CONCURRENCY) {
+      await Promise.race([...inFlight])
+      await Promise.resolve()
+    }
+  }
+  panel?.addLog?.('info', `每批 ${BULK_RECORD_LIMIT} 筆，同時最多 ${BULK_CONCURRENCY} 個 _bulk 請求`)
   type BulkRecordMeta = { itemCount: number; dateStr: string }
   const bulkLines: string[] = []
   let bulkRecords: BulkRecordMeta[] = []
@@ -319,38 +328,39 @@ async function batchInsert() {
   async function flushBulk(force = false) {
     if (bulkRecords.length === 0) return
     if (!force && bulkRecords.length < BULK_RECORD_LIMIT) return
+    await waitForBulkSlot()
     const records = bulkRecords
     const payload = bulkLines.join('\n') + '\n'
     bulkRecords = []
     bulkLines.length = 0
-    try {
-      const res = await fetch(`${baseUrl}/_bulk`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-ndjson', Authorization: auth },
-        body: payload
-      })
-      const json = await res.json()
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`)
+    const task = (async () => {
+      try {
+        const res = await fetchElasticsearchBulk(baseUrl, auth, payload)
+        const json = await res.json()
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`)
+        }
+        if (json.errors) {
+          const items = (json.items || []) as Array<{ index?: { error?: { reason?: string } } }>
+          const analyzed = analyzeBulkItems(items, records)
+          success += analyzed.successRecords
+          errorCount += analyzed.errorRecords
+          errorDetails.push(...analyzed.errorReasons)
+        } else {
+          success += records.length
+        }
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e)
+        errorCount += records.length
+        records.forEach((record) => {
+          errorDetails.push(`日期 ${record.dateStr}：索引失敗${msg ? ` (${msg})` : ''}`)
+        })
+      } finally {
+        panel?.setProgress?.(success + errorCount, total, success, errorCount, startAt)
       }
-      if (json.errors) {
-        const items = (json.items || []) as Array<{ index?: { error?: { reason?: string } } }>
-        const analyzed = analyzeBulkItems(items, records)
-        success += analyzed.successRecords
-        errorCount += analyzed.errorRecords
-        errorDetails.push(...analyzed.errorReasons)
-      } else {
-        success += records.length
-      }
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e)
-      errorCount += records.length
-      records.forEach((record) => {
-        errorDetails.push(`日期 ${record.dateStr}：索引失敗${msg ? ` (${msg})` : ''}`)
-      })
-    } finally {
-      panel?.setProgress?.(success + errorCount, total, success, errorCount, startAt)
-    }
+    })()
+    inFlight.add(task)
+    void task.finally(() => inFlight.delete(task))
   }
   // 逐日處理
   const startDate = dataBase.currentDate || ''
@@ -383,8 +393,8 @@ async function batchInsert() {
       try {
         // 每筆先依原規則隨機，再取表單資料
         form.generateRandom?.()
-        const data = form.getFormData?.()
-        if (!data) throw new Error('表單資料為空')
+        const data = form.getFormDataForBatchInsert?.() ?? form.getFormData?.()
+        if (!data || Object.keys(data).length === 0) throw new Error('表單資料為空')
         if (isBatchErrorMixEnabled(data)) {
           const pct = getBatchErrorMixPercent(data)
           if (Math.random() * 100 < pct) {
@@ -404,15 +414,17 @@ async function batchInsert() {
           [JSON.stringify({ index: { _index: fullIndex } }), JSON.stringify(built.document)],
           { itemCount: 1, dateStr }
         )
-        await flushBulk()
+        if (bulkRecords.length >= BULK_RECORD_LIMIT) await flushBulk()
+        if (iTask > 0 && iTask % 50 === 0) await Promise.resolve()
       } catch {
         errorCount++
         errorDetails.push(`日期 ${dateStr}：索引失敗`)
         panel?.setProgress?.(success + errorCount, total, success, errorCount, startAt)
       }
     }
-    await flushBulk(true)
   }
+  await flushBulk(true)
+  await Promise.all([...inFlight])
   panel?.setText?.('progressStatus', '處理完成')
   panel?.setErrors?.(errorDetails)
   const grafanaHint =
