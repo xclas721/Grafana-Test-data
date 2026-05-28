@@ -12,12 +12,19 @@ import ThreeDSParamsSection from './sections/ThreeDSParamsSection.vue'
 import PerformanceSection from './sections/PerformanceSection.vue'
 import ErrorHandlingSection from './sections/ErrorHandlingSection.vue'
 import {
-  defaultStateMachineReason,
-  getStateMachineReasonValuesForRandom,
-  reservedStateMachineReasonsForFilter,
-  pickRandomStateMachineReasonDssWeighted,
-  stateMachineReasonForAresForcedPath
+  defaultStateMachineReason
 } from '@/shared/constants/stateMachineReason'
+import {
+  computeAresWeightTotal,
+  computeExpectedRates,
+  computeRreqWeightTotal,
+  parsePercent,
+  rollRandomStatuses,
+  resolveStatusDependencies
+} from '@/composables/useTransactionStatusRules'
+import { randomizeBusinessFields } from '@/composables/useBusinessFieldRandomizer'
+import { randomizeThreeDSDeviceFields } from '@/composables/useTestDataRandomizer'
+import { randomizeTimingAndGeoFields } from '@/composables/useTimingAndGeoRandomizer'
 
 const props = defineProps<{
   activeMode?: 'acs' | 'dss'
@@ -367,22 +374,6 @@ const ARES_WEIGHT_KEYS = [
   'aresWeightU'
 ] as const
 
-const DEFAULT_ARES_STATUS_WEIGHTS = [
-  { value: 'Y', weight: 40 },
-  { value: 'N', weight: 5 },
-  { value: 'R', weight: 5 },
-  { value: 'C', weight: 25 },
-  { value: 'D', weight: 5 },
-  { value: 'A', weight: 5 },
-  { value: 'I', weight: 5 },
-  { value: 'S', weight: 5 },
-  { value: 'U', weight: 5 }
-]
-const DEFAULT_RREQ_WEIGHTS = [
-  { value: 'NULL_VALUE', weight: 0 },
-  { value: 'Y', weight: 80 },
-  { value: 'N', weight: 20 }
-] as const
 const DEFAULT_CHALLENGE_CANCEL_RATE = 0.08
 
 const MERCHANT_COUNTRY_CODE_STR_VALUES = [
@@ -487,95 +478,18 @@ const CURRENCY_NUMERIC_MAP: Record<
   '608': { alphabetic: 'PHP', name: 'Philippine Peso', minorUnit: '2' }
 }
 
-const MASTERCARD_DECISIONS = ['Not Low Risk', 'Low Risk']
-
-function pickWeightedValue(items: Array<{ value: string; weight: number }>): string {
-  const total = items.reduce((sum, item) => sum + item.weight, 0)
-  const r = Math.random() * total
-  let acc = 0
-  for (const item of items) {
-    acc += item.weight
-    if (r <= acc) return item.value
-  }
-  return items[items.length - 1]?.value ?? ''
-}
-
-function parsePercent(value: string, fallback: number): number {
-  const parsed = Number(value)
-  if (!Number.isFinite(parsed)) return fallback
-  if (parsed < 0) return 0
-  if (parsed > 100) return 100
-  return Math.round(parsed)
-}
-
-function buildAresWeights(): Array<{ value: string; weight: number }> {
-  const defaults = {
-    Y: 40,
-    N: 5,
-    R: 5,
-    C: 25,
-    D: 5,
-    A: 5,
-    I: 5,
-    S: 5,
-    U: 5
-  } as const
-  const items = [
-    { value: 'Y', weight: parsePercent(formState.aresWeightY, defaults.Y) },
-    { value: 'N', weight: parsePercent(formState.aresWeightN, defaults.N) },
-    { value: 'R', weight: parsePercent(formState.aresWeightR, defaults.R) },
-    { value: 'C', weight: parsePercent(formState.aresWeightC, defaults.C) },
-    { value: 'D', weight: parsePercent(formState.aresWeightD, defaults.D) },
-    { value: 'A', weight: parsePercent(formState.aresWeightA, defaults.A) },
-    { value: 'I', weight: parsePercent(formState.aresWeightI, defaults.I) },
-    { value: 'S', weight: parsePercent(formState.aresWeightS, defaults.S) },
-    { value: 'U', weight: parsePercent(formState.aresWeightU, defaults.U) }
-  ]
-  const total = items.reduce((sum, item) => sum + item.weight, 0)
-  if (total <= 0) return DEFAULT_ARES_STATUS_WEIGHTS
-  return items
-}
-
-const aresWeightTotal = computed(() =>
-  ARES_WEIGHT_KEYS.reduce((sum, key) => sum + parsePercent(formState[key], 0), 0)
-)
+const aresWeightTotal = computed(() => computeAresWeightTotal(formState))
 const aresWeightUnallocated = computed(() => 100 - aresWeightTotal.value)
 
-const rreqWeightTotal = computed(
-  () =>
-    parsePercent(formState.rreqWeightNull, 0) +
-    parsePercent(formState.rreqWeightY, 0) +
-    parsePercent(formState.rreqWeightN, 0)
-)
+const rreqWeightTotal = computed(() => computeRreqWeightTotal(formState))
 const rreqWeightUnallocated = computed(() => 100 - rreqWeightTotal.value)
 
-const expectedFrictionlessRate = computed(() => {
-  const y = parsePercent(formState.aresWeightY, 0)
-  const a = parsePercent(formState.aresWeightA, 0)
-  const i = parsePercent(formState.aresWeightI, 0)
-  const total = aresWeightTotal.value || 100
-  return ((y + a + i) / total) * 100
-})
-
-const expectedChallengeSuccessRate = computed(() => {
-  const total = rreqWeightTotal.value || 100
-  const y = parsePercent(formState.rreqWeightY, 0)
-  return (y / total) * 100
-})
-
-const expectedTransactionSuccessRate = computed(() => {
-  const y = parsePercent(formState.aresWeightY, 0)
-  const a = parsePercent(formState.aresWeightA, 0)
-  const i = parsePercent(formState.aresWeightI, 0)
-  const c = parsePercent(formState.aresWeightC, 0)
-  const d = parsePercent(formState.aresWeightD, 0)
-  const total = aresWeightTotal.value || 100
-  const rreqTotal = rreqWeightTotal.value || 100
-  const rreqY = parsePercent(formState.rreqWeightY, 0)
-  const rreqSuccessRate = rreqY / rreqTotal
-  const successShare = y + a + i + (c + d) * rreqSuccessRate
-  return (successShare / total) * 100
-})
+const expectedRates = computed(() => computeExpectedRates(formState))
+const expectedFrictionlessRate = computed(() => expectedRates.value.expectedFrictionlessRate)
+const expectedChallengeSuccessRate = computed(() => expectedRates.value.expectedChallengeSuccessRate)
+const expectedTransactionSuccessRate = computed(
+  () => expectedRates.value.expectedTransactionSuccessRate
+)
 
 function updateCardInfoFromAcctNumber() {
   const acct = formState.acctNumber || ''
@@ -620,59 +534,29 @@ async function calculateAcctNumberHashed(acctNumber: string) {
 }
 
 function syncStatusDependencies() {
-  const ares = formState.aresTransStatus
-  if (ares === 'C' || ares === 'D') {
-    formState.disableRreqTransStatus = false
-    setField('transStatus', formState.rreqTransStatus)
-  } else {
-    formState.disableRreqTransStatus = true
-    if (formState.rreqTransStatus !== 'NULL_VALUE') setField('rreqTransStatus', 'NULL_VALUE')
-    setField('transStatus', ares)
-  }
+  const next = resolveStatusDependencies({
+    activeMode: props.activeMode,
+    aresTransStatus: formState.aresTransStatus,
+    rreqTransStatus: formState.rreqTransStatus,
+    transStatusReason: formState.transStatusReason,
+    stateMachineReason: formState.stateMachineReason
+  })
 
-  if (ares === 'R') {
-    formState.disableTransStatusReason = false
-    if (formState.transStatusReason === 'NULL_VALUE') setField('transStatusReason', '01')
-  } else {
-    formState.disableTransStatusReason = true
-    if (formState.transStatusReason !== 'NULL_VALUE') setField('transStatusReason', 'NULL_VALUE')
-  }
-  // 3DSS：stm 原因對應 AReq→DS HTTP，不隨 ARes/RReq 強制改寫（避免 S3401/S3402 與假 ARes 綁死）
-  if (props.activeMode === 'dss') {
-    formState.disableStateMachineReason = false
-  } else if (ares === 'Y') {
-    formState.disableStateMachineReason = true
-    setField('stateMachineReasonMode', 'fixed')
-    setField('stateMachineReason', stateMachineReasonForAresForcedPath(props.activeMode, 'y'))
-  } else if (ares === 'C' || ares === 'D') {
-    if (formState.rreqTransStatus === 'Y') {
-      formState.disableStateMachineReason = true
-      setField('stateMachineReasonMode', 'fixed')
-      setField('stateMachineReason', stateMachineReasonForAresForcedPath(props.activeMode, 'rreqY'))
-    } else if (formState.rreqTransStatus === 'NULL_VALUE') {
-      formState.disableStateMachineReason = true
-      setField('stateMachineReasonMode', 'fixed')
-      setField(
-        'stateMachineReason',
-        stateMachineReasonForAresForcedPath(props.activeMode, 'rreqNull')
-      )
-    } else {
-      formState.disableStateMachineReason = false
-      if (formState.stateMachineReason === 'NULL_VALUE')
-        setField('stateMachineReason', defaultStateMachineReason(props.activeMode))
-    }
-  } else {
-    formState.disableStateMachineReason = false
-    if (formState.stateMachineReason === 'NULL_VALUE')
-      setField('stateMachineReason', defaultStateMachineReason(props.activeMode))
-  }
+  formState.disableRreqTransStatus = next.disableRreqTransStatus
+  formState.disableTransStatusReason = next.disableTransStatusReason
+  formState.disableStateMachineReason = next.disableStateMachineReason
+  formState.disableChallengeCancel = next.disableChallengeCancel
 
-  if (ares === 'C' && formState.rreqTransStatus === 'N') {
-    formState.disableChallengeCancel = false
-    if (formState.challengeCancel === 'NULL_VALUE') setField('challengeCancel', '01')
-  } else {
-    formState.disableChallengeCancel = true
+  setField('rreqTransStatus', next.rreqTransStatus)
+  setField('transStatus', next.transStatus)
+  setField('transStatusReason', next.transStatusReason)
+  setField('stateMachineReason', next.stateMachineReason)
+  if (next.stateMachineReasonMode) setField('stateMachineReasonMode', next.stateMachineReasonMode)
+
+  if (next.disableChallengeCancel) {
     if (formState.challengeCancel !== 'NULL_VALUE') setField('challengeCancel', 'NULL_VALUE')
+  } else if (formState.challengeCancel === 'NULL_VALUE') {
+    setField('challengeCancel', '01')
   }
 }
 
@@ -929,36 +813,18 @@ function loadDefaults() {
 }
 
 function generateRandom() {
-  const set = (id: string, val: string) => {
-    setField(id, val)
+  const set = (id: string, val: string) => setField(id, val)
+  const applyUpdates = (updates: Record<string, string>) => {
+    for (const [key, value] of Object.entries(updates)) set(key, value)
   }
-  const syncCountryByNumeric = (numeric: string) => {
-    const code = String(numeric || '').trim() || '156'
-    const info = COUNTRY_NUMERIC_MAP[code]
-    set('merchantCountryCode', code)
-    set('merchantCountryCodeStr', code)
-    set('countryNumeric', code)
-    if (info) {
-      set('countryAlpha2', info.alpha2)
-      set('countryAlpha3', info.alpha3)
-      set('countryName', info.name)
-    }
-  }
-  const syncCurrencyByNumeric = (numeric: string) => {
-    const code = String(numeric || '').trim() || '156'
-    const info = CURRENCY_NUMERIC_MAP[code]
-    set('purchaseCurrency', code)
-    set('currencyNumericCode', code)
-    if (info) {
-      set('currencyAlphabeticCode', info.alphabetic)
-      set('currencyName', info.name)
-      set('currencyMinorUnit', info.minorUnit)
-      set('currencyCodeForRate', info.alphabetic)
-      set('purchaseExponent', info.minorUnit)
-    }
-  }
-  set('acsTransId', cryptoRandomUUID())
-  set('threeDSServerTransId', cryptoRandomUUID().toLowerCase())
+
+  // 1) 先刷新交易 ID，確保每次隨機都有新樣本
+  applyUpdates({
+    acsTransId: cryptoRandomUUID(),
+    threeDSServerTransId: cryptoRandomUUID().toLowerCase()
+  })
+
+  // 2) 權重總和校驗：不符合就直接中止
   if (aresWeightTotal.value !== 100) {
     setStatus(`ARes 權重未分配 ${aresWeightUnallocated.value}% ，請調整至 100%`, 'warning')
     return
@@ -967,335 +833,102 @@ function generateRandom() {
     setStatus(`RReq 權重未分配 ${rreqWeightUnallocated.value}% ，請調整至 100%`, 'warning')
     return
   }
-  // 金額
-  if (formState.enablePurchaseAmountRandom) {
-    set('purchaseAmount', (Math.random() * 990 + 10).toFixed(2))
-    set('usdAmount', (Math.random() * 990 + 10).toFixed(6))
-  }
-  // purchaseCurrency 隨機（僅在勾選時）
-  if (formState.enablePurchaseCurrencyRandom) {
-    const currencyKeys = Object.keys(CURRENCY_NUMERIC_MAP)
-    const picked = currencyKeys[Math.floor(Math.random() * currencyKeys.length)] || '156'
-    syncCurrencyByNumeric(picked)
-  } else {
-    syncCurrencyByNumeric(formState.purchaseCurrency || '156')
-  }
-  // 執行時間
-  if (formState.enableExecTimeRandom) {
-    set('execTime', String(Math.floor(Math.random() * 5000 + 1000)))
-  }
-  if (formState.enableCreqExecTimeRandom) {
-    set('creqExecTime', String(Math.floor(Math.random() * 500 + 300)))
-  }
-  if (formState.enableRreqExecTimeRandom) {
-    set('rreqExecTime', String(Math.floor(Math.random() * 400 + 200)))
-  }
-  if (formState.enableRbaExecTimeRandom) {
-    set('rbaExecTime', String(Math.floor(Math.random() * 150 + 50)))
-  }
-  if (formState.enableCavvExecTimeRandom) {
-    set('cavvExecTime', String(Math.floor(Math.random() * 21 + 10)))
-  }
-  if (formState.enableOtpExecTimeRandom) {
-    set('otpExecTime', String(Math.floor(Math.random() * 61 + 20)))
-  }
-  // 狀態（依照 Grafana-Test-Input.html 的權重分佈）
-  const st = pickWeightedValue(buildAresWeights())
+
+  // 3) 時間/幣別/國別同步
+  const timingGeoUpdates = randomizeTimingAndGeoFields({
+    purchaseCurrency: formState.purchaseCurrency,
+    merchantCountryCode: formState.merchantCountryCode,
+    merchantCountryCodeStr: formState.merchantCountryCodeStr,
+    enablePurchaseCurrencyRandom: formState.enablePurchaseCurrencyRandom,
+    enableMerchantCountryCodeRandom: formState.enableMerchantCountryCodeRandom,
+    enableMerchantCountryAsiaOnly: formState.enableMerchantCountryAsiaOnly,
+    enableExecTimeRandom: formState.enableExecTimeRandom,
+    enableCreqExecTimeRandom: formState.enableCreqExecTimeRandom,
+    enableRreqExecTimeRandom: formState.enableRreqExecTimeRandom,
+    enableRbaExecTimeRandom: formState.enableRbaExecTimeRandom,
+    enableCavvExecTimeRandom: formState.enableCavvExecTimeRandom,
+    enableOtpExecTimeRandom: formState.enableOtpExecTimeRandom,
+    countryNumericMap: COUNTRY_NUMERIC_MAP,
+    currencyNumericMap: CURRENCY_NUMERIC_MAP,
+    merchantCountryAsiaValues: MERCHANT_COUNTRY_CODE_ASIA_VALUES,
+    merchantCountryValues: MERCHANT_COUNTRY_CODE_STR_VALUES
+  })
+  applyUpdates(timingGeoUpdates)
+
+  // 4) 狀態（依照 Grafana-Test-Input.html 的權重分佈）
+  const rolledStatuses = rollRandomStatuses({
+    activeMode: props.activeMode,
+    stateMachineReasonMode: formState.stateMachineReasonMode,
+    stateMachineReason: formState.stateMachineReason,
+    aresWeightY: formState.aresWeightY,
+    aresWeightN: formState.aresWeightN,
+    aresWeightR: formState.aresWeightR,
+    aresWeightC: formState.aresWeightC,
+    aresWeightD: formState.aresWeightD,
+    aresWeightA: formState.aresWeightA,
+    aresWeightI: formState.aresWeightI,
+    aresWeightS: formState.aresWeightS,
+    aresWeightU: formState.aresWeightU,
+    rreqWeightNull: formState.rreqWeightNull,
+    rreqWeightY: formState.rreqWeightY,
+    rreqWeightN: formState.rreqWeightN
+  })
+  const st = rolledStatuses.aresTransStatus
   const challengeCancelRate =
     parsePercent(formState.challengeCancelRate, DEFAULT_CHALLENGE_CANCEL_RATE * 100) / 100
-  set('aresTransStatus', String(st))
-  if (st === 'C' || st === 'D') {
-    const defaultRreqWeights = {
-      nullValue: DEFAULT_RREQ_WEIGHTS[0].weight,
-      y: DEFAULT_RREQ_WEIGHTS[1].weight,
-      n: DEFAULT_RREQ_WEIGHTS[2].weight
-    }
-    const rreqItems = [
-      {
-        value: 'NULL_VALUE',
-        weight: parsePercent(formState.rreqWeightNull, defaultRreqWeights.nullValue)
-      },
-      {
-        value: 'Y',
-        weight: parsePercent(formState.rreqWeightY, defaultRreqWeights.y)
-      },
-      {
-        value: 'N',
-        weight: parsePercent(formState.rreqWeightN, defaultRreqWeights.n)
-      }
-    ]
-    const rreqTotal = rreqItems.reduce((sum, item) => sum + item.weight, 0)
-    const rreqVal =
-      rreqTotal > 0 ? pickWeightedValue(rreqItems) : pickWeightedValue([...DEFAULT_RREQ_WEIGHTS])
-    set('rreqTransStatus', rreqVal)
-    set('transStatus', rreqVal === 'NULL_VALUE' ? String(st) : rreqVal)
-  } else {
-    set('rreqTransStatus', 'NULL_VALUE')
-    set('transStatus', String(st))
-  }
-  // stateMachineReason：ACS 依 ARes/RReq 強制路徑；3DSS 依 AReq→DS 語意加權（與 ARes 旗標解耦）
-  {
-    const stateMachineReasons = getStateMachineReasonValuesForRandom(props.activeMode)
-    const reserved = reservedStateMachineReasonsForFilter(props.activeMode)
-    const fixedReason = String(formState.stateMachineReason || '').trim()
-    if (formState.stateMachineReasonMode === 'random') {
-      if (props.activeMode === 'dss') {
-        set('stateMachineReason', pickRandomStateMachineReasonDssWeighted())
-      } else if (st === 'Y') {
-        set('stateMachineReason', stateMachineReasonForAresForcedPath(props.activeMode, 'y'))
-      } else if (st === 'C' || st === 'D') {
-        if (formState.rreqTransStatus === 'Y') {
-          set('stateMachineReason', stateMachineReasonForAresForcedPath(props.activeMode, 'rreqY'))
-        } else if (formState.rreqTransStatus === 'NULL_VALUE') {
-          set(
-            'stateMachineReason',
-            stateMachineReasonForAresForcedPath(props.activeMode, 'rreqNull')
-          )
-        } else {
-          const candidates = stateMachineReasons.filter((reason) => !reserved.includes(reason))
-          const pickFrom = candidates.length > 0 ? candidates : stateMachineReasons
-          const idx = Math.floor(Math.random() * pickFrom.length)
-          set('stateMachineReason', pickFrom[idx] as string)
-        }
-      } else {
-        const candidates = stateMachineReasons.filter((reason) => !reserved.includes(reason))
-        const pickFrom = candidates.length > 0 ? candidates : stateMachineReasons
-        const idx = Math.floor(Math.random() * pickFrom.length)
-        set('stateMachineReason', pickFrom[idx] as string)
-      }
-    } else {
-      set(
-        'stateMachineReason',
-        fixedReason && fixedReason !== 'NULL_VALUE'
-          ? fixedReason
-          : defaultStateMachineReason(props.activeMode)
-      )
-    }
-  }
-  let effectiveCardScheme = String(formState.cardScheme || '').trim() || 'V'
+  applyUpdates({
+    aresTransStatus: rolledStatuses.aresTransStatus,
+    rreqTransStatus: rolledStatuses.rreqTransStatus,
+    transStatus: rolledStatuses.transStatus,
+    stateMachineReason: rolledStatuses.stateMachineReason
+  })
 
-  // cardScheme 隨機（獨立開關）
-  if (formState.enableCardSchemeRandom) {
-    // 與 CardInfoSection 卡組織選項一致（3DSS CardSchemeEnum：含 C=CUP、T=TPN）
-    const schemePool = ['V', 'M', 'J', 'A', 'C', 'D', 'P', 'S', 'E', 'T', 'U']
-    const picked = schemePool[Math.floor(Math.random() * schemePool.length)] ?? formState.cardScheme
-    if (picked) {
-      set('cardScheme', picked)
-      syncCardSchemeToggles(picked)
-      effectiveCardScheme = picked
-    }
+  // 5) 商務欄位（卡組織/卡號/商戶/reason/challengeCancel）
+  const businessRandomResult = randomizeBusinessFields({
+    aresTransStatus: st,
+    rreqTransStatus: rolledStatuses.rreqTransStatus,
+    transStatusReasonMode: formState.transStatusReasonMode,
+    transStatusReason: formState.transStatusReason,
+    challengeCancelRate,
+    cardScheme: formState.cardScheme,
+    enablePurchaseAmountRandom: formState.enablePurchaseAmountRandom,
+    enableCardSchemeRandom: formState.enableCardSchemeRandom,
+    enableAcctNumberRandom: formState.enableAcctNumberRandom,
+    enableAcquirerMerchantIdRandom: formState.enableAcquirerMerchantIdRandom,
+    enableAcquirerBinRandom: formState.enableAcquirerBinRandom,
+    enableMerchantRandom: formState.enableMerchantRandom,
+    enableVisaScoreRandom: formState.enableVisaScoreRandom,
+    enableMastercardExtension: formState.enableMastercardExtension,
+    enableMastercardExtensionRandom: formState.enableMastercardExtensionRandom,
+    acquirerBinOptions: ACQUIRER_BIN_OPTIONS,
+    merchantOptions: MERCHANT_MCC_OPTIONS
+  })
+  applyUpdates(businessRandomResult.updates)
+  if (businessRandomResult.updates.cardScheme) {
+    syncCardSchemeToggles(businessRandomResult.updates.cardScheme)
   }
-  // 帳號原始值（依卡別前綴）- 僅在勾選時隨機
-  if (formState.enableAcctNumberRandom) {
-    generateRandomAcctNumber()
-  }
-  // acquirerMerchantID 隨機（僅在勾選時）
-  if (formState.enableAcquirerMerchantIdRandom) {
-    const len = 7
-    let rnd = ''
-    for (let i = 0; i < len; i++) rnd += Math.floor(Math.random() * 10)
-    if (rnd.startsWith('0')) rnd = '1' + rnd.substring(1)
-    set('acquirerMerchantId', rnd)
-  }
-  // acquirerBIN 隨機（僅在勾選時）
-  if (formState.enableAcquirerBinRandom) {
-    const pick =
-      ACQUIRER_BIN_OPTIONS[Math.floor(Math.random() * ACQUIRER_BIN_OPTIONS.length)] ||
-      ACQUIRER_BIN_OPTIONS[0]
-    if (pick) set('acquirerBin', pick)
-  }
-  // 商戶名稱 + MCC 隨機（僅在勾選時）
-  if (formState.enableMerchantRandom) {
-    const option =
-      MERCHANT_MCC_OPTIONS[Math.floor(Math.random() * MERCHANT_MCC_OPTIONS.length)] ||
-      MERCHANT_MCC_OPTIONS[0]
-    if (option) {
-      set('merchantName', option.name)
-      set('mcc', option.mcc)
-    }
-  }
-  // Visa Score 隨機（僅在勾選時）
-  if (formState.enableVisaScoreRandom) {
-    const score = Math.floor(Math.random() * 100) // 0-99
-    set('visaRiskBasedAuthenticationScore', String(score))
-    set('cardScheme', 'V')
-    effectiveCardScheme = 'V'
-  }
-  // Mastercard 擴展 Score/Decision 隨機（僅在啟用且勾選隨機時）
-  if (formState.enableMastercardExtension && formState.enableMastercardExtensionRandom) {
-    set('mastercardScore', String(Math.floor(Math.random() * 651)))
-    const pick =
-      MASTERCARD_DECISIONS[Math.floor(Math.random() * MASTERCARD_DECISIONS.length)] ??
-      'Not Low Risk'
-    set('mastercardDecision', pick)
-    set('cardScheme', 'M')
-    effectiveCardScheme = 'M'
+  if (businessRandomResult.updates.acctNumber) {
+    updateCardInfoFromAcctNumber()
   }
 
-  // 當 ARes 為 R 時，transStatusReason 依模式固定或全隨機；否則為 NULL_VALUE
-  if (st === 'R') {
-    const reasons: string[] = []
-    for (let i = 1; i <= 26; i++) reasons.push(String(i).padStart(2, '0'))
-    // 80+ 僅 A/V/M 會出現，且各卡組織碼表不同
-    if (effectiveCardScheme === 'A') {
-      reasons.push('80', '81', '82')
-    } else if (effectiveCardScheme === 'V') {
-      for (let i = 80; i <= 92; i++) reasons.push(String(i))
-    } else if (effectiveCardScheme === 'M') {
-      reasons.push('80', '81', '82', '83', '84', '87', '88', '98')
-    }
-    const fixedReason = String(formState.transStatusReason || '').trim()
-    if (formState.transStatusReasonMode === 'random') {
-      if (reasons.length > 0) {
-        const idx = Math.floor(Math.random() * reasons.length)
-        set('transStatusReason', reasons[idx] as string)
-      } else {
-        set('transStatusReason', '01')
-      }
-    } else {
-      set(
-        'transStatusReason',
-        fixedReason && fixedReason !== 'NULL_VALUE' ? fixedReason : 'NULL_VALUE'
-      )
-    }
-  } else {
-    set('transStatusReason', 'NULL_VALUE')
-  }
-  // messageCategory 隨機（僅在勾選時）
-  if (formState.enableMessageCategory) {
-    const categories = ['01', '02', '80', '85', '86']
-    const mc = categories[Math.floor(Math.random() * categories.length)] as string
-    set('messageCategory', mc)
-  }
-  // deviceChannel 隨機（僅在勾選時）
-  if (formState.enableDeviceChannel) {
-    const chans = ['02', '03']
-    const ch = chans[Math.floor(Math.random() * chans.length)] as string
-    set('deviceChannel', ch)
-  }
-  // threeDSRequestorChallengeInd 隨機（僅在勾選時）- 無狀態限制，值域 01~10
-  if (formState.enableThreeDSRequestorChallengeInd) {
-    const cis = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10']
-    const pick = cis[Math.floor(Math.random() * cis.length)] as string
-    set('threeDSRequestorChallengeInd', pick)
-  }
-  // challengeCancel 自動隨機生成（僅在 ARes=C 且 RReq=N 時才會生效）
-  if (formState.aresTransStatus === 'C' && formState.rreqTransStatus === 'N') {
-    // challengeCancel 值：01, 02, 03, 04, 05, 06, 07, 09, 10
-    const challengeCancelValues = ['01', '02', '03', '04', '05', '06', '07', '09', '10']
-    // 8% 機率生成實際值，92% 機率為 NULL_VALUE（確保 NULL_VALUE > 90%）
-    const shouldSetValue = Math.random() < challengeCancelRate
-    if (shouldSetValue) {
-      const cc = challengeCancelValues[
-        Math.floor(Math.random() * challengeCancelValues.length)
-      ] as string
-      set('challengeCancel', cc)
-    } else {
-      set('challengeCancel', 'NULL_VALUE')
-    }
-  } else {
-    set('challengeCancel', 'NULL_VALUE')
-  }
-  // deviceIpAddress 隨機（IPv4/IPv6 混合，預設 50/50）- 以設備 IP 為主
-  function randInt(max: number): number {
-    return Math.floor(Math.random() * (max + 1))
-  }
-  function randomIPv4(): string {
-    return `${randInt(255)}.${randInt(255)}.${randInt(255)}.${randInt(255)}`
-  }
-  function h4(): string {
-    return Math.floor(Math.random() * 0x10000).toString(16)
-  }
-  function randomIPv6(): string {
-    return `${h4()}:${h4()}:${h4()}:${h4()}:${h4()}:${h4()}:${h4()}:${h4()}`
-  }
-  if (formState.enableDeviceIpAddressRandom) {
-    const deviceIp = Math.random() < 0.5 ? randomIPv4() : randomIPv6()
-    set('deviceIpAddress', deviceIp)
-    // 瀏覽器 IP 跟隨設備 IP
-    set('browserIP', deviceIp)
-  }
-
-  // devicePlatform 隨機（僅在勾選時）
-  if (formState.enableDevicePlatformRandom) {
-    const platforms = ['MacIntel', 'Win32', 'Linux x86_64', 'iPhone', 'Android']
-    const platform = platforms[Math.floor(Math.random() * platforms.length)] as string
-    set('devicePlatform', platform)
-  }
-
-  // deviceLocale 隨機（僅在勾選時）
-  if (formState.enableDeviceLocaleRandom) {
-    const locales = ['zh-TW', 'zh-CN', 'en-US', 'en-GB', 'ja-JP', 'ko-KR']
-    const locale = locales[Math.floor(Math.random() * locales.length)] as string
-    set('deviceLocale', locale)
-  }
-
-  // deviceAdvertisingId 隨機（僅在勾選時）
-  if (formState.enableDeviceAdvertisingIdRandom) {
-    let adId = ''
-    for (let i = 0; i < 32; i++) {
-      adId += Math.floor(Math.random() * 16).toString(16)
-    }
-    set('deviceAdvertisingId', adId)
-  }
-
-  // threeDSCompInd 隨機（僅在勾選時）
-  if (formState.enableThreeDSCompIndRandom) {
-    const compInd = Math.random() < 0.5 ? 'Y' : 'N'
-    set('threeDSCompInd', compInd)
-  }
-
-  // merchantCountryCode 隨機（僅在勾選時）
-  if (formState.enableMerchantCountryCodeRandom) {
-    const pool = formState.enableMerchantCountryAsiaOnly
-      ? MERCHANT_COUNTRY_CODE_ASIA_VALUES
-      : MERCHANT_COUNTRY_CODE_STR_VALUES
-    const randomValue = pool[Math.floor(Math.random() * pool.length)] || '156'
-    syncCountryByNumeric(randomValue)
-  } else {
-    syncCountryByNumeric(formState.merchantCountryCode || formState.merchantCountryCodeStr || '156')
-  }
-  // 如果沒有勾選，使用當前選單中的值（不需要額外設置，因為 getFormData 會讀取）
-
-  // authenticationMethod 隨機（僅在勾選時）
-  if (formState.enableAuthenticationMethodRandom) {
-    const authMethods = ['01', '02', '03', '04', '05']
-    const authMethod = authMethods[Math.floor(Math.random() * authMethods.length)] as string
-    set('authenticationMethod', authMethod)
-  }
-
-  // authenticationType 隨機（僅在勾選時）
-  if (formState.enableAuthenticationTypeRandom) {
-    const authTypes = ['01', '02', '03', '04', '05']
-    const authType = authTypes[Math.floor(Math.random() * authTypes.length)] as string
-    set('authenticationType', authType)
-  }
+  // 6) 3DS/裝置欄位
+  const threeDSDeviceUpdates = randomizeThreeDSDeviceFields({
+    enableMessageCategory: formState.enableMessageCategory,
+    enableDeviceChannel: formState.enableDeviceChannel,
+    enableThreeDSRequestorChallengeInd: formState.enableThreeDSRequestorChallengeInd,
+    enableDeviceIpAddressRandom: formState.enableDeviceIpAddressRandom,
+    enableDevicePlatformRandom: formState.enableDevicePlatformRandom,
+    enableDeviceLocaleRandom: formState.enableDeviceLocaleRandom,
+    enableDeviceAdvertisingIdRandom: formState.enableDeviceAdvertisingIdRandom,
+    enableThreeDSCompIndRandom: formState.enableThreeDSCompIndRandom,
+    enableAuthenticationMethodRandom: formState.enableAuthenticationMethodRandom,
+    enableAuthenticationTypeRandom: formState.enableAuthenticationTypeRandom
+  })
+  applyUpdates(
+    Object.fromEntries(Object.entries(threeDSDeviceUpdates).map(([k, v]) => [k, String(v)]))
+  )
 
   setStatus('隨機數據已生成', 'success')
-}
-
-function generateRandomAcctNumber() {
-  const scheme = formState.cardScheme || 'V'
-  // 與 CardInfoSection 對照表一致；請在 ACS 卡 BIN 維護相同前綴區間（示範用 601352–604352 給 E/P/S/U）
-  let prefix: string
-  if (scheme === 'V') prefix = '414352'
-  else if (scheme === 'M') prefix = '515352'
-  else if (scheme === 'J') prefix = '313352'
-  else if (scheme === 'A') prefix = '656352'
-  else if (scheme === 'C') prefix = '818352'
-  else if (scheme === 'T') prefix = '979352'
-  else if (scheme === 'D') prefix = '364352'
-  else if (scheme === 'E') prefix = '601352'
-  else if (scheme === 'P') prefix = '602352'
-  else if (scheme === 'S') prefix = '603352'
-  else if (scheme === 'U') prefix = '604352'
-  else prefix = '414352'
-  // 產出 13 位亂數字串
-  let suffix = ''
-  for (let i = 0; i < 13; i++) suffix += Math.floor(Math.random() * 10)
-  const acct = prefix + suffix
-  setField('acctNumber', acct)
-  updateCardInfoFromAcctNumber()
 }
 
 function syncCardSchemeToggles(scheme: string) {

@@ -14,7 +14,8 @@
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix --cache",
     "format": "prettier --write src/",
-    "prettier:check": "(prettier --check \"src/**/*.{js,vue,css,scss,json,ts,tsx}\" || (echo Prettier formatting issues detected! && exit 1))"
+    "prettier:check": "(prettier --check \"src/**/*.{js,vue,css,scss,json,ts,tsx}\" || (echo Prettier formatting issues detected! && exit 1))",
+    "test": "vitest run"
   },
   "dependencies": {
     "pinia": "^3.0.4",
@@ -40,6 +41,7 @@
     "vite": "^8.0.2",
     "vite-plugin-vue-devtools": "^8.1.1",
     "prettier": "^3.8.1",
+    "vitest": "^3.2.4",
     "vue-tsc": "^3.2.6"
   }
 }
