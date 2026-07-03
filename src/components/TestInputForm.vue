@@ -551,6 +551,7 @@ function syncStatusDependencies() {
   setField('transStatus', next.transStatus)
   setField('transStatusReason', next.transStatusReason)
   setField('stateMachineReason', next.stateMachineReason)
+  if (next.aresTransStatus) setField('aresTransStatus', next.aresTransStatus)
   if (next.stateMachineReasonMode) setField('stateMachineReasonMode', next.stateMachineReasonMode)
 
   if (next.disableChallengeCancel) {
@@ -1768,6 +1769,15 @@ function buildDocument(form: FormMap, indexName: string, sharedTimestamp?: strin
     }
   } else {
     ;(doc as unknown as Record<string, unknown>).mastercardMessageExtension = null
+  }
+  // riskAssesmentResult：風險評估快照（等於 ares_transStatus，之後不再更新）
+  // 只有有 Visa Score 或 Mastercard Score 的交易才寫入，對應 Grafana panel 的 filter 條件
+  const hasVisaScore =
+    form.visaRiskBasedAuthenticationScore &&
+    String(form.visaRiskBasedAuthenticationScore).trim() !== ''
+  const hasMastercardScore = form.enableMastercardExtension === 'on'
+  if (hasVisaScore || hasMastercardScore) {
+    ;(doc as unknown as Record<string, unknown>).riskAssesmentResult = form.aresTransStatus
   }
   if (indexName.includes('acs-transaction')) {
     doc.acsTransID = form.acsTransId

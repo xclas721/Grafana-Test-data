@@ -104,4 +104,29 @@ describe('useTransactionStatusRules', () => {
     expect(next.transStatus).toBe('Y')
     expect(next.stateMachineReason).toBe('S3401')
   })
+
+  it('System Monitor RReq 錯誤會對齊 Challenge 失敗狀態', () => {
+    const next = resolveStatusDependencies({
+      activeMode: 'acs',
+      aresTransStatus: 'Y',
+      rreqTransStatus: 'NULL_VALUE',
+      transStatusReason: 'NULL_VALUE',
+      stateMachineReason: '3401'
+    })
+    expect(next.aresTransStatus).toBe('C')
+    expect(next.rreqTransStatus).toBe('N')
+    expect(next.transStatus).toBe('N')
+  })
+
+  it('System Monitor OTP 錯誤會對齊 Challenge 失敗狀態', () => {
+    const next = resolveStatusDependencies({
+      activeMode: 'acs',
+      aresTransStatus: 'Y',
+      rreqTransStatus: 'Y',
+      transStatusReason: 'NULL_VALUE',
+      stateMachineReason: '3399'
+    })
+    expect(next.transStatus).toBe('N')
+    expect(next.rreqTransStatus).toBe('N')
+  })
 })

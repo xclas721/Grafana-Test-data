@@ -191,3 +191,82 @@ export function pickRandomStateMachineReasonDssWeighted(): string {
   if (r < 99) return 'S3499'
   return 'S9999'
 }
+
+/** System Monitor 外部介面錯誤（I-05 卡核心 / I-08 RReq / I-10 OTP） */
+export const SYSTEM_MONITOR_EXTERNAL_ERROR_CODES = [
+  '3101',
+  '3102',
+  '3199',
+  '3301',
+  '3302',
+  '3399',
+  '3401',
+  '3402',
+  '3499'
+] as const
+
+export type SystemMonitorExternalErrorCode = (typeof SYSTEM_MONITOR_EXTERNAL_ERROR_CODES)[number]
+
+export function isSystemMonitorExternalErrorCode(code: string): boolean {
+  return (SYSTEM_MONITOR_EXTERNAL_ERROR_CODES as readonly string[]).includes(code)
+}
+
+export type TransactionStatuses = {
+  aresTransStatus: string
+  rreqTransStatus: string
+  transStatus: string
+}
+
+/**
+ * 對齊 System Monitor 錯誤時序查詢條件：
+ * `queryExternalErrorCountTrend` 排除 transStatus ∈ {Y,A,C,D,I}。
+ */
+export function alignStatusesForSystemMonitorError(
+  reason: string,
+  statuses: TransactionStatuses
+): TransactionStatuses {
+  if (!isSystemMonitorExternalErrorCode(reason)) return statuses
+
+  if (reason.startsWith('33') || reason.startsWith('34')) {
+    return {
+      aresTransStatus: 'C',
+      rreqTransStatus: 'N',
+      transStatus: 'N'
+    }
+  }
+
+  return {
+    aresTransStatus: 'N',
+    rreqTransStatus: 'NULL_VALUE',
+    transStatus: 'N'
+  }
+}
+
+function pickUniformAcsErrorExcludingReservedAndSystemMonitor(): string {
+  const reserved = reservedStateMachineReasonsForFilter('acs')
+  const candidates = getStateMachineReasonValuesForRandom('acs').filter(
+    (reason) =>
+      !reserved.includes(reason) &&
+      !(SYSTEM_MONITOR_EXTERNAL_ERROR_CODES as readonly string[]).includes(reason)
+  )
+  if (candidates.length === 0) return '9999'
+  return candidates[Math.floor(Math.random() * candidates.length)] as string
+}
+
+/**
+ * ACS 隨機 stateMachineReason（非 ARes 強制成功路徑）。
+ * 提高 I-05 / I-08 / I-10 對應代碼出現率。
+ */
+export function pickRandomStateMachineReasonAcsWeighted(): string {
+  const r = Math.random() * 100
+  if (r < 1.5) return '3101'
+  if (r < 3) return '3102'
+  if (r < 4.2) return '3199'
+  if (r < 5.7) return '3401'
+  if (r < 7.2) return '3402'
+  if (r < 8.4) return '3499'
+  if (r < 9.6) return '3301'
+  if (r < 10.8) return '3302'
+  if (r < 12.5) return '3399'
+  return pickUniformAcsErrorExcludingReservedAndSystemMonitor()
+}
