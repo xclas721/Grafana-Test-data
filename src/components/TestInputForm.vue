@@ -59,9 +59,6 @@ const statusClass = computed(() => {
         : 'alert alert-info'
 })
 
-const disableCardScheme = computed(
-  () => formState.enableVisaScoreRandom || formState.enableMastercardExtension
-)
 const disableMastercardExtension = computed(() => formState.enableVisaScoreRandom)
 const disableVisaScoreRandom = computed(() => formState.enableMastercardExtension)
 const showMastercardExtension = computed(() => formState.enableMastercardExtension)
@@ -1925,7 +1922,6 @@ defineExpose({
       v-model:enableMastercardExtension="formState.enableMastercardExtension"
       v-model:enableMastercardExtensionRandom="formState.enableMastercardExtensionRandom"
       v-model:enableVisaScoreRandom="formState.enableVisaScoreRandom"
-      :disableCardScheme="disableCardScheme"
       :disableMastercardExtension="disableMastercardExtension"
       :disableVisaScoreRandom="disableVisaScoreRandom"
       :showMastercardExtension="showMastercardExtension"

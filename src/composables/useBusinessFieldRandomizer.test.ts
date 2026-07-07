@@ -36,8 +36,36 @@ describe('useBusinessFieldRandomizer', () => {
       },
       () => 0
     )
-
     expect(result.updates.acctNumber?.startsWith('515352')).toBe(true)
+  })
+
+  it('卡組織隨機不會被擴展隨機覆寫', () => {
+    const result = randomizeBusinessFields(
+      {
+        ...baseInput,
+        cardScheme: 'V',
+        enableCardSchemeRandom: true,
+        enableVisaScoreRandom: true
+      },
+      () => 2 / 11
+    )
+    expect(result.updates.cardScheme).toBe('J')
+    expect(result.updates.visaRiskBasedAuthenticationScore).toBeUndefined()
+  })
+
+  it('卡號依最終卡組織產生', () => {
+    const result = randomizeBusinessFields(
+      {
+        ...baseInput,
+        cardScheme: 'V',
+        enableCardSchemeRandom: true,
+        enableAcctNumberRandom: true,
+        enableVisaScoreRandom: true
+      },
+      () => 2 / 11
+    )
+    expect(result.updates.cardScheme).toBe('J')
+    expect(result.updates.acctNumber?.startsWith('313352')).toBe(true)
   })
 
   it('challengeCancel 觸發時會在候選值內', () => {

@@ -22,7 +22,6 @@ const props = defineProps<{
   enableMastercardExtension: boolean
   enableMastercardExtensionRandom: boolean
   enableVisaScoreRandom: boolean
-  disableCardScheme: boolean
   disableMastercardExtension: boolean
   disableVisaScoreRandom: boolean
   showMastercardExtension: boolean
@@ -82,7 +81,6 @@ const mastercardDecisionOptions: SelectOption[] = [
             :modelValue="props.cardScheme"
             :options="cardSchemeOptions"
             required
-            :disabled="props.disableCardScheme"
             @update:modelValue="(value) => emit('update:cardScheme', String(value))"
           />
           <div class="flex items-center gap-2 mt-2">
@@ -103,8 +101,9 @@ const mastercardDecisionOptions: SelectOption[] = [
           <p class="text-xs text-base-content/60 mt-1">
             提示：
             <br />
-            切到 Visa 會自動勾選隨機 DAF 訊息擴展
-            <br />切到 Mastercard隨機 會自動勾選 M card 訊息擴展 <br />須解除啟用才能修改
+            切到 Visa 會自動勾選 Visa 風險分數隨機
+            <br />
+            切到 Mastercard 會自動勾選 MC 訊息擴展隨機
           </p>
         </div>
         <div>
