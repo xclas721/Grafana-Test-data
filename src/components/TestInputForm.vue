@@ -122,6 +122,9 @@ const formState = reactive({
   currencyCodeForRate: 'CNY',
   cardScheme: 'V',
   acctNumber: '4143520000000123',
+  // 批量灌資料的卡號重複倍率：卡號池大小 = ceil(本次總筆數 / 倍率)。
+  // 10 → 每張卡平均刷 10 次（測去重效能）；1 → 全新不重複（等於現況）。
+  cardPoolRatio: '10',
   cardbin6: '414352',
   acctNumberHashed: '2hpBkDB7ELbcpebGl5RM+HWTQGx3qciOwskcbsEVKC4=',
   acctNumberMask: '414352******0123',
@@ -488,6 +491,22 @@ const expectedTransactionSuccessRate = computed(
   () => expectedRates.value.expectedTransactionSuccessRate
 )
 
+function calculateAcctNumberHashed(acctNumber: string) {
+  // 假資料用途：同步 cyrb53，穩定且每卡唯一即可（A-06 distinct 測試用）
+  let h1 = 0xdeadbeef
+  let h2 = 0x41c6ce57
+  for (let i = 0; i < acctNumber.length; i++) {
+    const ch = acctNumber.charCodeAt(i)
+    h1 = Math.imul(h1 ^ ch, 2654435761)
+    h2 = Math.imul(h2 ^ ch, 1597334677)
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909)
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909)
+  const hashNum = 4294967296 * (2097151 & h2) + (h1 >>> 0)
+  const hashHex = hashNum.toString(16).padStart(16, '0')
+  setField('acctNumberHashed', btoa(hashHex + acctNumber.substring(0, 8)))
+}
+
 function updateCardInfoFromAcctNumber() {
   const acct = formState.acctNumber || ''
   if (acct.length >= 6) setField('cardbin6', acct.substring(0, 6))
@@ -496,37 +515,7 @@ function updateCardInfoFromAcctNumber() {
     const first6 = acct.substring(0, 6)
     const last4 = acct.substring(acct.length - 4)
     setField('acctNumberMask', first6 + '******' + last4)
-    // 優先採用 WebCrypto HMAC-SHA256 + Base64，失敗再退回簡化
     calculateAcctNumberHashed(acct)
-  }
-}
-async function calculateAcctNumberHashed(acctNumber: string) {
-  try {
-    const encoder = new TextEncoder()
-    const keyData = encoder.encode('default_hmac_key')
-    const messageData = encoder.encode(acctNumber)
-    const key = await crypto.subtle.importKey(
-      'raw',
-      keyData,
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    )
-    const signature = await crypto.subtle.sign('HMAC', key, messageData)
-    const hashArray = new Uint8Array(signature)
-    let binary = ''
-    for (let i = 0; i < hashArray.length; i++) binary += String.fromCharCode(Number(hashArray[i]))
-    const hashBase64 = btoa(binary)
-    setField('acctNumberHashed', hashBase64)
-  } catch {
-    // 簡化版雜湊：Base64(簡單hash+前8)
-    let hash = 0
-    for (let i = 0; i < acctNumber.length; i++) {
-      hash = (hash << 5) - hash + acctNumber.charCodeAt(i)
-      hash |= 0
-    }
-    const hashStr = Math.abs(hash).toString(16).padStart(8, '0')
-    setField('acctNumberHashed', btoa(hashStr + acctNumber.substring(0, 8)))
   }
 }
 
@@ -810,7 +799,7 @@ function loadDefaults() {
   setStatus('預設值已載入 (Vue 移植版)', 'success')
 }
 
-function generateRandom() {
+function generateRandom(forcedCard?: { scheme: string; acctNumber: string }) {
   const set = (id: string, val: string) => setField(id, val)
   const applyUpdates = (updates: Record<string, string>) => {
     for (const [key, value] of Object.entries(updates)) set(key, value)
@@ -899,7 +888,9 @@ function generateRandom() {
     enableMastercardExtension: formState.enableMastercardExtension,
     enableMastercardExtensionRandom: formState.enableMastercardExtensionRandom,
     acquirerBinOptions: ACQUIRER_BIN_OPTIONS,
-    merchantOptions: MERCHANT_MCC_OPTIONS
+    merchantOptions: MERCHANT_MCC_OPTIONS,
+    forcedCardScheme: forcedCard?.scheme,
+    forcedAcctNumber: forcedCard?.acctNumber
   })
   applyUpdates(businessRandomResult.updates)
   if (businessRandomResult.updates.cardScheme) {
@@ -1919,6 +1910,7 @@ defineExpose({
       v-model:mastercardStatus="formState.mastercardStatus"
       v-model:visaRiskBasedAuthenticationScore="formState.visaRiskBasedAuthenticationScore"
       v-model:enableAcctNumberRandom="formState.enableAcctNumberRandom"
+      v-model:cardPoolRatio="formState.cardPoolRatio"
       v-model:enableMastercardExtension="formState.enableMastercardExtension"
       v-model:enableMastercardExtensionRandom="formState.enableMastercardExtensionRandom"
       v-model:enableVisaScoreRandom="formState.enableVisaScoreRandom"

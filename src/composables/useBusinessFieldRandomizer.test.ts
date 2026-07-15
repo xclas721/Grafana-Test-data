@@ -47,7 +47,7 @@ describe('useBusinessFieldRandomizer', () => {
         enableCardSchemeRandom: true,
         enableVisaScoreRandom: true
       },
-      () => 2 / 11
+      () => 2 / 10
     )
     expect(result.updates.cardScheme).toBe('J')
     expect(result.updates.visaRiskBasedAuthenticationScore).toBeUndefined()
@@ -62,7 +62,7 @@ describe('useBusinessFieldRandomizer', () => {
         enableAcctNumberRandom: true,
         enableVisaScoreRandom: true
       },
-      () => 2 / 11
+      () => 2 / 10
     )
     expect(result.updates.cardScheme).toBe('J')
     expect(result.updates.acctNumber?.startsWith('313352')).toBe(true)

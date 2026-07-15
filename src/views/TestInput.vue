@@ -15,6 +15,11 @@ import {
   isBatchErrorMixEnabled
 } from '@/shared/utils/batchErrorMix'
 import { fetchElasticsearchBulk } from '@/shared/utils/elasticsearchBulk'
+import {
+  RANDOM_CARD_SCHEMES,
+  generateCardPool,
+  type PoolCard
+} from '@/composables/useBusinessFieldRandomizer'
 
 const mode = ref<'acs' | 'dss'>('acs')
 const formRef = ref<InstanceType<typeof TestInputForm> | null>(null)
@@ -269,6 +274,23 @@ async function batchInsert() {
       )
     }
   }
+  // 卡號重複池：卡號隨機開啟且倍率 > 1 時，建立固定卡池讓卡號重複出現，才能測出去重 panel 的真實效能。
+  let cardPool: PoolCard[] | null = null
+  if (dataBase.enableAcctNumberRandom === 'on') {
+    const ratio = Math.max(1, parseInt(String(dataBase.cardPoolRatio || '10')) || 1)
+    if (ratio > 1) {
+      const schemes =
+        dataBase.enableCardSchemeRandom === 'on'
+          ? [...RANDOM_CARD_SCHEMES]
+          : [String(dataBase.cardScheme || 'V')]
+      const poolSize = Math.max(1, Math.ceil(total / ratio))
+      cardPool = generateCardPool(poolSize, schemes)
+      panel?.addLog?.(
+        'info',
+        `卡號重複池：${poolSize} 張卡（倍率 ${ratio}，共 ${total} 筆，平均每卡約 ${ratio} 次）`
+      )
+    }
+  }
   const baseUrl = dataBase.baseUrl
   const auth = 'Basic ' + btoa(`${dataBase.username}:${dataBase.password}`)
   // 單次 _bulk 筆數：500→較多 round-trip；過大易觸發代理 body 上限或占用大量記憶體。
@@ -391,8 +413,11 @@ async function batchInsert() {
     panel?.setText?.('progressStatus', `第 ${d + 1} 天 (${dateStr}) 處理中...`)
     for (let iTask = 0; iTask < count; iTask++) {
       try {
-        // 每筆先依原規則隨機，再取表單資料
-        form.generateRandom?.()
+        // 每筆先依原規則隨機（有卡池時抽一張卡），再取表單資料
+        const forcedCard = cardPool
+          ? cardPool[Math.floor(Math.random() * cardPool.length)]
+          : undefined
+        form.generateRandom?.(forcedCard)
         const data = form.getFormDataForBatchInsert?.() ?? form.getFormData?.()
         if (!data || Object.keys(data).length === 0) throw new Error('表單資料為空')
         if (isBatchErrorMixEnabled(data)) {
