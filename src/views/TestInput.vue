@@ -20,6 +20,7 @@ import {
   generateCardPool,
   type PoolCard
 } from '@/composables/useBusinessFieldRandomizer'
+import { applyChallengeVerificationMix } from '@/shared/utils/challengeVerificationMix'
 
 const mode = ref<'acs' | 'dss'>('acs')
 const formRef = ref<InstanceType<typeof TestInputForm> | null>(null)
@@ -427,6 +428,9 @@ async function batchInsert() {
           } else {
             applyErrorPresetToFormData(data, PRESET_NO_ERROR)
           }
+        }
+        if (mode.value === 'acs' && data.enableAuthenticationMethodRandom === 'on') {
+          applyChallengeVerificationMix(data)
         }
         // 覆寫當日日期
         if (date) data.currentDate = dateStr

@@ -84,7 +84,7 @@ export function randomizeThreeDSDeviceFields(
     updates.threeDSCompInd = random() < 0.5 ? 'Y' : 'N'
   }
   if (input.enableAuthenticationMethodRandom) {
-    updates.authenticationMethod = pickRandom(['01', '02', '03', '04', '05'], random)
+    updates.authenticationMethod = pickRandom(['01', '02', '03', '04', '05', '09'], random)
   }
   if (input.enableAuthenticationTypeRandom) {
     updates.authenticationType = pickRandom(['01', '02', '03', '04', '05'], random)

@@ -1113,6 +1113,7 @@ const BATCH_INSERT_FORM_KEYS = [
   'enableBrowserGeoIPRandom',
   'enableCustomTimeRange',
   'enableDeviceGeoIPRandom',
+  'enableAuthenticationMethodRandom',
   'enableMastercardExtension',
   'endDateTime',
   'errorCode',
@@ -1383,6 +1384,8 @@ function buildDocument(form: FormMap, indexName: string, sharedTimestamp?: strin
     errorDetail?: string
     errorMessageType?: string
     challengeCancel?: string
+    otpFailedCount?: string
+    resendCounter?: string
     acsTransID?: string
     issuerOid?: string
     threeDSServerTransID?: string
@@ -1487,6 +1490,12 @@ function buildDocument(form: FormMap, indexName: string, sharedTimestamp?: strin
   }
   if (form.authenticationMethod && form.authenticationMethod !== 'NULL_VALUE') {
     doc.authenticationMethod = form.authenticationMethod
+  }
+  if (form.otpFailedCount !== undefined && form.otpFailedCount !== '') {
+    doc.otpFailedCount = form.otpFailedCount
+  }
+  if (form.resendCounter !== undefined && form.resendCounter !== '') {
+    doc.resendCounter = form.resendCounter
   }
   if (form.authenticationType && form.authenticationType !== 'NULL_VALUE') {
     doc.authenticationType = form.authenticationType
