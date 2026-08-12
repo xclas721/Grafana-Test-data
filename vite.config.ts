@@ -1,0 +1,36 @@
+import { fileURLToPath, URL } from 'node:url'
+
+import { defineConfig } from 'vite'
+import tailwindcss from '@tailwindcss/vite'
+import vue from '@vitejs/plugin-vue'
+import vueDevTools from 'vite-plugin-vue-devtools'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [
+    tailwindcss(),
+    vue(),
+    vueDevTools(),
+  ],
+  server: {
+    port: 6600,
+    proxy: {
+      '/acs-auth-web': {
+        target: 'http://localhost:8050',
+        changeOrigin: true,
+      },
+      '/acs-auth': {
+        target: 'http://localhost:30100',
+        changeOrigin: true,
+      },
+    },
+  },
+  preview: {
+    port: 6600,
+  },
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    },
+  },
+})
