@@ -174,15 +174,35 @@ describe('useBusinessFieldRandomizer', () => {
     expect(result.updates.transStatusReason).not.toBe('14')
   })
 
-  it('預設不隨機 requestor；勾選後從清單抽', () => {
+  it('預設不隨機 requestor；勾選後依權重抽', () => {
     const unchanged = randomizeBusinessFields(baseInput, () => 0)
     expect(unchanged.updates.requestorId).toBeUndefined()
 
     const randomized = randomizeBusinessFields(
-      { ...baseInput, enableRequestorRandom: true },
+      {
+        ...baseInput,
+        enableRequestorRandom: true,
+        requestorWeights: [3000, 250]
+      },
       () => 0
     )
     expect(randomized.updates.requestorId).toBe('12128301823081230123')
+  })
+
+  it('商店隨機會跟當前 requestor 池走', () => {
+    const result = randomizeBusinessFields(
+      {
+        ...baseInput,
+        enableMerchantRandom: true,
+        requestorId: '000000',
+        merchantPoolsByRequestor: {
+          '000000': [{ name: 'Small Shop', mcc: '5999' }]
+        }
+      },
+      () => 0
+    )
+    expect(result.updates.merchantName).toBe('Small Shop')
+    expect(result.updates.mcc).toBe('5999')
   })
 
   it('C+N 且其他 challengeCancel 時可灌 reason 14（D-02 其餘桶）', () => {

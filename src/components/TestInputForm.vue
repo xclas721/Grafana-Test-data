@@ -17,9 +17,16 @@ import {
   MERCHANT_COUNTRY_CODE_ASIA_VALUES,
   MERCHANT_COUNTRY_CODE_STR_VALUES
 } from '@/shared/constants/countryCurrency'
-import { MERCHANT_MCC_OPTIONS } from '@/shared/constants/merchantPool'
+import {
+  MERCHANT_MCC_OPTIONS,
+  REQUESTOR_MERCHANT_POOL_MAP
+} from '@/shared/constants/merchantPool'
 import { NULL_VALUE } from '@/shared/constants/nullValue'
-import { DEFAULT_REQUESTOR_ID, REQUESTOR_ID_OPTIONS } from '@/shared/constants/requestorIds'
+import {
+  DEFAULT_REQUESTOR_ID,
+  REQUESTOR_ID_OPTIONS,
+  REQUESTOR_MERCHANT_WEIGHTS
+} from '@/shared/constants/requestorIds'
 import { defaultStateMachineReason } from '@/shared/constants/stateMachineReason'
 import {
   buildTimeRangeDisplayHtml,
@@ -466,6 +473,9 @@ function generateRandom(forcedCard?: { scheme: string; acctNumber: string }) {
     acquirerBinOptions: ACQUIRER_BIN_OPTIONS,
     merchantOptions: MERCHANT_MCC_OPTIONS,
     requestorIdOptions: REQUESTOR_ID_OPTIONS,
+    requestorId: formState.requestorId,
+    requestorWeights: REQUESTOR_MERCHANT_WEIGHTS,
+    merchantPoolsByRequestor: REQUESTOR_MERCHANT_POOL_MAP,
     forcedCardScheme: forcedCard?.scheme,
     forcedAcctNumber: forcedCard?.acctNumber
   })

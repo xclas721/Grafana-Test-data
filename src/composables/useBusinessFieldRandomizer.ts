@@ -5,6 +5,7 @@ import {
   isRreqFailureStatus
 } from '@/composables/useTransactionStatusRules'
 import type { MerchantOption } from '@/shared/constants/merchantPool'
+import { pickWeightedIndex } from '@/shared/constants/requestorIds'
 import type { ProductMode } from '@/shared/constants/stateMachineReason'
 
 export type BusinessRandomInput = {
@@ -28,6 +29,9 @@ export type BusinessRandomInput = {
   acquirerBinOptions: readonly string[]
   merchantOptions: readonly MerchantOption[]
   requestorIdOptions: readonly string[]
+  requestorId?: string
+  requestorWeights?: readonly number[]
+  merchantPoolsByRequestor?: Readonly<Record<string, readonly MerchantOption[]>>
   // 卡號重複池：指定本筆要用的卡組織／卡號（來自批量抽樣），
   // 有值時取代隨機生成，讓同一張卡在多筆交易間重複出現以測試去重效能。
   forcedCardScheme?: string
@@ -137,14 +141,26 @@ export function randomizeBusinessFields(
     updates.acquirerBin = pickRandom(input.acquirerBinOptions, random)
   }
 
-  if (input.enableMerchantRandom) {
-    const option = pickRandom(input.merchantOptions, random)
-    updates.merchantName = option.name
-    updates.mcc = option.mcc
+  let requestorId = input.requestorId
+  if (input.enableRequestorRandom && input.requestorIdOptions.length > 0) {
+    const weights = input.requestorWeights
+    const index =
+      weights && weights.length === input.requestorIdOptions.length
+        ? pickWeightedIndex(weights, random)
+        : Math.floor(random() * input.requestorIdOptions.length)
+    requestorId = input.requestorIdOptions[index] ?? requestorId
+    if (requestorId) updates.requestorId = requestorId
   }
 
-  if (input.enableRequestorRandom && input.requestorIdOptions.length > 0) {
-    updates.requestorId = pickRandom(input.requestorIdOptions, random)
+  if (input.enableMerchantRandom) {
+    const requestorPool =
+      requestorId && input.merchantPoolsByRequestor
+        ? input.merchantPoolsByRequestor[requestorId]
+        : undefined
+    const pool = requestorPool && requestorPool.length > 0 ? requestorPool : input.merchantOptions
+    const option = pickRandom(pool, random)
+    updates.merchantName = option.name
+    updates.mcc = option.mcc
   }
 
   if (effectiveCardScheme === 'V' && input.enableVisaScoreRandom) {

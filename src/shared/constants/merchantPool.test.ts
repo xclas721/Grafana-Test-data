@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { REQUESTOR_ID_OPTIONS, REQUESTOR_MERCHANT_WEIGHTS } from './requestorIds'
 import {
   MERCHANT_MCC_BASE,
   MERCHANT_MCC_OPTIONS,
   MERCHANT_POOL_SIZE,
+  REQUESTOR_MERCHANT_POOL_MAP,
   buildMerchantPool
 } from './merchantPool'
 
@@ -21,5 +23,24 @@ describe('merchantPool', () => {
     const pool = buildMerchantPool(3, MERCHANT_MCC_BASE)
     expect(pool).toHaveLength(3)
     expect(pool[0]?.name).toBe('HiTRUST EMV Demo Merchant')
+  })
+
+  it('requestor 商店池為 3000／250×4／200×10，主池與 250 池會重複', () => {
+    const primaryId = REQUESTOR_ID_OPTIONS[0]
+    const midId = REQUESTOR_ID_OPTIONS[1]
+    const smallId = REQUESTOR_ID_OPTIONS[5]
+    expect(primaryId && REQUESTOR_MERCHANT_POOL_MAP[primaryId]?.length).toBe(3000)
+    expect(midId && REQUESTOR_MERCHANT_POOL_MAP[midId]?.length).toBe(250)
+    expect(smallId && REQUESTOR_MERCHANT_POOL_MAP[smallId]?.length).toBe(200)
+    expect(REQUESTOR_ID_OPTIONS.every((id, i) => REQUESTOR_MERCHANT_POOL_MAP[id]?.length === REQUESTOR_MERCHANT_WEIGHTS[i])).toBe(
+      true
+    )
+
+    const primaryNames = new Set((REQUESTOR_MERCHANT_POOL_MAP[primaryId ?? ''] ?? []).map((m) => m.name))
+    const midNames = (REQUESTOR_MERCHANT_POOL_MAP[midId ?? ''] ?? []).map((m) => m.name)
+    expect(midNames.every((name) => primaryNames.has(name))).toBe(true)
+
+    const smallNames = (REQUESTOR_MERCHANT_POOL_MAP[smallId ?? ''] ?? []).map((m) => m.name)
+    expect(smallNames.some((name) => primaryNames.has(name))).toBe(false)
   })
 })

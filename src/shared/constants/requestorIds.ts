@@ -18,3 +18,22 @@ export const REQUESTOR_ID_OPTIONS = [
 ] as const
 
 export const DEFAULT_REQUESTOR_ID = REQUESTOR_ID_OPTIONS[0]
+
+/** 各 requestor 商店權重（3000 + 250×4 + 200×10 = 6000）。 */
+export const REQUESTOR_MERCHANT_WEIGHTS = [
+  3000, 250, 250, 250, 250, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200
+] as const
+
+export const REQUESTOR_WEIGHT_TOTAL = REQUESTOR_MERCHANT_WEIGHTS.reduce((sum, w) => sum + w, 0)
+
+export function pickWeightedIndex(weights: readonly number[], random: () => number): number {
+  const total = weights.reduce((sum, w) => sum + w, 0)
+  if (total <= 0 || weights.length === 0) return 0
+  let cursor = random() * total
+  for (let i = 0; i < weights.length; i++) {
+    const weight = weights[i] ?? 0
+    if (cursor < weight) return i
+    cursor -= weight
+  }
+  return weights.length - 1
+}

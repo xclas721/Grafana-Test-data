@@ -1,3 +1,8 @@
+import {
+  REQUESTOR_ID_OPTIONS,
+  REQUESTOR_MERCHANT_WEIGHTS
+} from '@/shared/constants/requestorIds'
+
 export type MerchantOption = { name: string; mcc: string }
 
 /** 品牌種子；其餘筆數用編號變體補到 MERCHANT_POOL_SIZE。 */
@@ -51,3 +56,40 @@ export function buildMerchantPool(
 
 /** 測資商戶隨機池（預設開啟）。 */
 export const MERCHANT_MCC_OPTIONS: readonly MerchantOption[] = buildMerchantPool()
+
+/**
+ * 各 requestor 商店池。主 requestor 用前 3000；4 個 250 從這 3000 切片（會重複）；
+ * 其餘 10 個各 200，用後 2000。
+ */
+export function buildRequestorMerchantPools(
+  merchants: readonly MerchantOption[] = MERCHANT_MCC_OPTIONS,
+  requestorIds: readonly string[] = REQUESTOR_ID_OPTIONS,
+  weights: readonly number[] = REQUESTOR_MERCHANT_WEIGHTS
+): Readonly<Record<string, readonly MerchantOption[]>> {
+  const primarySize = weights[0] ?? 0
+  const primary = merchants.slice(0, primarySize)
+  const tail = merchants.slice(primarySize)
+  const pools: Record<string, readonly MerchantOption[]> = {}
+  let midOffset = 0
+  let tailOffset = 0
+
+  for (let i = 0; i < requestorIds.length; i++) {
+    const id = requestorIds[i]
+    const weight = weights[i] ?? 0
+    if (!id) continue
+    if (i === 0) {
+      pools[id] = primary
+      continue
+    }
+    if (i <= 4) {
+      pools[id] = primary.slice(midOffset, midOffset + weight)
+      midOffset += weight
+      continue
+    }
+    pools[id] = tail.slice(tailOffset, tailOffset + weight)
+    tailOffset += weight
+  }
+  return pools
+}
+
+export const REQUESTOR_MERCHANT_POOL_MAP = buildRequestorMerchantPools()

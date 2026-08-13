@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_REQUESTOR_ID, REQUESTOR_ID_OPTIONS } from './requestorIds'
+import {
+  DEFAULT_REQUESTOR_ID,
+  REQUESTOR_ID_OPTIONS,
+  REQUESTOR_MERCHANT_WEIGHTS,
+  REQUESTOR_WEIGHT_TOTAL,
+  pickWeightedIndex
+} from './requestorIds'
 
 describe('requestorIds', () => {
   it('固定 15 個 requestor，預設用第一筆', () => {
@@ -22,5 +28,18 @@ describe('requestorIds', () => {
       '888888',
       '999999'
     ])
+  })
+
+  it('權重 3000／250×4／200×10，總和 6000', () => {
+    expect(REQUESTOR_MERCHANT_WEIGHTS).toHaveLength(REQUESTOR_ID_OPTIONS.length)
+    expect([...REQUESTOR_MERCHANT_WEIGHTS]).toEqual([
+      3000, 250, 250, 250, 250, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200
+    ])
+    expect(REQUESTOR_WEIGHT_TOTAL).toBe(6000)
+  })
+
+  it('pickWeightedIndex 依權重落桶', () => {
+    expect(pickWeightedIndex(REQUESTOR_MERCHANT_WEIGHTS, () => 0)).toBe(0)
+    expect(pickWeightedIndex(REQUESTOR_MERCHANT_WEIGHTS, () => 0.5)).toBe(1)
   })
 })

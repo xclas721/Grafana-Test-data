@@ -68,7 +68,9 @@ const emit = defineEmits<{
               隨機 Requestor ID
             </label>
           </div>
-          <p class="text-xs text-error mt-2">固定清單 15 個，預設不隨機</p>
+          <p class="text-xs text-error mt-2">
+            15 個；勾選後依 3000／250×4／200×10 加權，預設不隨機
+          </p>
         </div>
         <div>
           <Input

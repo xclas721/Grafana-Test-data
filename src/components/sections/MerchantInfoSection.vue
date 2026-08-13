@@ -82,7 +82,7 @@ const merchantCountryOptions: SelectOption[] = [
             </label>
           </div>
           <p class="text-xs text-error mt-2">
-            隨機池 {{ MERCHANT_POOL_SIZE }} 筆（預設開啟）：22 家品牌 + 編號變體
+            全球 {{ MERCHANT_POOL_SIZE }} 筆；依 requestor 池 3000／250×4／200×10（可重複）
           </p>
           <details class="mt-3">
             <summary class="text-xs text-base-content/60 cursor-pointer">
