@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
 import { NULL_VALUE } from '@/shared/constants/nullValue'
+import { DEFAULT_REQUESTOR_ID } from '@/shared/constants/requestorIds'
 import { BATCH_INSERT_FORM_KEYS, type FormMap } from '@/shared/utils/testDataDocument'
 
 export type TestInputFormState = {
@@ -109,6 +110,7 @@ export type TestInputFormState = {
   enableMerchantCountryCodeRandom: boolean
   enableMerchantCountryAsiaOnly: boolean
   enableMerchantRandom: boolean
+  enableRequestorRandom: boolean
   enableCardSchemeRandom: boolean
   enableMastercardExtension: boolean
   enableMastercardExtensionRandom: boolean
@@ -157,7 +159,7 @@ export function createInitialFormState(options?: {
     endDateTime: '',
     timezone: 'browser',
     issuerOid: '06b4b203-da05-73f9-256f-454929df6076',
-    requestorId: '12128301823081230123',
+    requestorId: DEFAULT_REQUESTOR_ID,
     acsTransId: '',
     threeDSServerTransId: '',
     aresTransStatus: 'N',
@@ -254,6 +256,7 @@ export function createInitialFormState(options?: {
     enableMerchantCountryCodeRandom: true,
     enableMerchantCountryAsiaOnly: true,
     enableMerchantRandom: true,
+    enableRequestorRandom: false,
     enableCardSchemeRandom: true,
     enableMastercardExtension: false,
     enableMastercardExtensionRandom: false,

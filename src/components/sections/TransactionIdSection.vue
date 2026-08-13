@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import Card from '@/shared/components/Card.vue'
 import Input from '@/shared/components/Input.vue'
+import { REQUESTOR_ID_OPTIONS } from '@/shared/constants/requestorIds'
 
 const props = defineProps<{
   issuerOid: string
   requestorId: string
+  enableRequestorRandom: boolean
   acsTransId: string
   threeDSServerTransId: string
 }>()
@@ -12,6 +14,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:issuerOid': [value: string]
   'update:requestorId': [value: string]
+  'update:enableRequestorRandom': [value: boolean]
   'update:acsTransId': [value: string]
   'update:threeDSServerTransId': [value: string]
 }>()
@@ -30,13 +33,43 @@ const emit = defineEmits<{
           required
           @update:modelValue="(value) => emit('update:issuerOid', String(value))"
         />
-        <Input
-          id="requestorId"
-          label="Requestor ID (requestorId)"
-          :modelValue="props.requestorId"
-          required
-          @update:modelValue="(value) => emit('update:requestorId', String(value))"
-        />
+        <div>
+          <div class="form-control w-full">
+            <label class="label" for="requestorId">
+              <span class="label-text">
+                Requestor ID (requestorId)
+                <span class="text-error">*</span>
+              </span>
+            </label>
+            <select
+              id="requestorId"
+              class="select select-bordered select-sm w-full"
+              required
+              :value="props.requestorId"
+              @change="
+                emit('update:requestorId', String(($event.target as HTMLSelectElement).value))
+              "
+            >
+              <option v-for="id in REQUESTOR_ID_OPTIONS" :key="id" :value="id">{{ id }}</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2 mt-2">
+            <input
+              type="checkbox"
+              id="enableRequestorRandom"
+              class="checkbox checkbox-sm"
+              :checked="props.enableRequestorRandom"
+              @change="
+                (event) =>
+                  emit('update:enableRequestorRandom', (event.target as HTMLInputElement).checked)
+              "
+            />
+            <label for="enableRequestorRandom" class="text-sm text-base-content/60">
+              隨機 Requestor ID
+            </label>
+          </div>
+          <p class="text-xs text-error mt-2">固定清單 15 個，預設不隨機</p>
+        </div>
         <div>
           <Input
             id="acsTransId"

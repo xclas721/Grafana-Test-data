@@ -14,11 +14,13 @@ const baseInput = {
   enableAcquirerMerchantIdRandom: false,
   enableAcquirerBinRandom: false,
   enableMerchantRandom: false,
+  enableRequestorRandom: false,
   enableVisaScoreRandom: false,
   enableMastercardExtension: false,
   enableMastercardExtensionRandom: false,
   acquirerBinOptions: ['1231234', '9999999'],
-  merchantOptions: [{ name: 'Demo', mcc: '5661' }]
+  merchantOptions: [{ name: 'Demo', mcc: '5661' }],
+  requestorIdOptions: ['12128301823081230123', '000000']
 }
 
 describe('useBusinessFieldRandomizer', () => {
@@ -170,6 +172,17 @@ describe('useBusinessFieldRandomizer', () => {
     expect(result.updates.challengeCancel).toBe('NULL_VALUE')
     expect(result.updates.transStatusReason).not.toBe('NULL_VALUE')
     expect(result.updates.transStatusReason).not.toBe('14')
+  })
+
+  it('預設不隨機 requestor；勾選後從清單抽', () => {
+    const unchanged = randomizeBusinessFields(baseInput, () => 0)
+    expect(unchanged.updates.requestorId).toBeUndefined()
+
+    const randomized = randomizeBusinessFields(
+      { ...baseInput, enableRequestorRandom: true },
+      () => 0
+    )
+    expect(randomized.updates.requestorId).toBe('12128301823081230123')
   })
 
   it('C+N 且其他 challengeCancel 時可灌 reason 14（D-02 其餘桶）', () => {

@@ -17,7 +17,9 @@ import {
   MERCHANT_COUNTRY_CODE_ASIA_VALUES,
   MERCHANT_COUNTRY_CODE_STR_VALUES
 } from '@/shared/constants/countryCurrency'
+import { MERCHANT_MCC_OPTIONS } from '@/shared/constants/merchantPool'
 import { NULL_VALUE } from '@/shared/constants/nullValue'
+import { DEFAULT_REQUESTOR_ID, REQUESTOR_ID_OPTIONS } from '@/shared/constants/requestorIds'
 import { defaultStateMachineReason } from '@/shared/constants/stateMachineReason'
 import {
   buildTimeRangeDisplayHtml,
@@ -146,31 +148,6 @@ const ARES_WEIGHT_KEYS = [
 
 const DEFAULT_CHALLENGE_CANCEL_RATE = 0.08
 
-const MERCHANT_MCC_OPTIONS = [
-  { name: 'HiTRUST EMV Demo Merchant', mcc: '5661' },
-  { name: "McDonald's", mcc: '5814' },
-  { name: 'Burger King', mcc: '5814' },
-  { name: 'KFC', mcc: '5814' },
-  { name: 'Starbucks', mcc: '5812' },
-  { name: 'Subway', mcc: '5814' },
-  { name: 'Pizza Hut', mcc: '5812' },
-  { name: "Domino's Pizza", mcc: '5812' },
-  { name: 'Walmart Supercenter', mcc: '5411' },
-  { name: 'Costco Wholesale', mcc: '5300' },
-  { name: 'Amazon Marketplace', mcc: '5262' },
-  { name: 'Apple Store', mcc: '5732' },
-  { name: 'Microsoft Store', mcc: '5732' },
-  { name: 'IKEA', mcc: '5712' },
-  { name: 'H&M', mcc: '5651' },
-  { name: 'Zara', mcc: '5691' },
-  { name: 'Nike Retail Store', mcc: '5651' },
-  { name: 'Adidas Retail Store', mcc: '5651' },
-  { name: 'Hilton Hotels', mcc: '7011' },
-  { name: 'Marriott Hotels', mcc: '7011' },
-  { name: 'Uber Rides', mcc: '4121' },
-  { name: 'Global Leisure Rewards', mcc: '5816' }
-] as const
-
 const ACQUIRER_BIN_OPTIONS = ['1231234', '1239999', '9991234', '9999999'] as const
 
 const aresWeightTotal = computed(() => computeAresWeightTotal(formState))
@@ -266,7 +243,7 @@ function loadDefaults() {
   setField('endDateTime', '')
   updateCustomTimeRangeFromNow()
   setField('issuerOid', '06b4b203-da05-73f9-256f-454929df6076')
-  setField('requestorId', '12128301823081230123')
+  setField('requestorId', DEFAULT_REQUESTOR_ID)
   setField('acsTransId', cryptoRandomUUID())
   setField('threeDSServerTransId', cryptoRandomUUID().toLowerCase())
   setField('aresTransStatus', 'N')
@@ -366,6 +343,7 @@ function loadDefaults() {
   formState.enableMerchantCountryCodeRandom = true
   formState.enableMerchantCountryAsiaOnly = true
   formState.enableMerchantRandom = true
+  formState.enableRequestorRandom = false
   formState.enableCardSchemeRandom = true
   formState.enableMastercardExtension = false
   formState.enableMastercardExtensionRandom = false
@@ -481,11 +459,13 @@ function generateRandom(forcedCard?: { scheme: string; acctNumber: string }) {
     enableAcquirerMerchantIdRandom: formState.enableAcquirerMerchantIdRandom,
     enableAcquirerBinRandom: formState.enableAcquirerBinRandom,
     enableMerchantRandom: formState.enableMerchantRandom,
+    enableRequestorRandom: formState.enableRequestorRandom,
     enableVisaScoreRandom: formState.enableVisaScoreRandom,
     enableMastercardExtension: formState.enableMastercardExtension,
     enableMastercardExtensionRandom: formState.enableMastercardExtensionRandom,
     acquirerBinOptions: ACQUIRER_BIN_OPTIONS,
     merchantOptions: MERCHANT_MCC_OPTIONS,
+    requestorIdOptions: REQUESTOR_ID_OPTIONS,
     forcedCardScheme: forcedCard?.scheme,
     forcedAcctNumber: forcedCard?.acctNumber
   })
@@ -717,6 +697,7 @@ defineExpose({
     <TransactionIdSection
       v-model:issuerOid="formState.issuerOid"
       v-model:requestorId="formState.requestorId"
+      v-model:enableRequestorRandom="formState.enableRequestorRandom"
       v-model:acsTransId="formState.acsTransId"
       v-model:threeDSServerTransId="formState.threeDSServerTransId"
     />

@@ -2,6 +2,7 @@
 import Card from '@/shared/components/Card.vue'
 import Input from '@/shared/components/Input.vue'
 import Select, { type SelectOption } from '@/shared/components/Select.vue'
+import { MERCHANT_MCC_BASE, MERCHANT_POOL_SIZE } from '@/shared/constants/merchantPool'
 
 const props = defineProps<{
   merchantName: string
@@ -80,10 +81,12 @@ const merchantCountryOptions: SelectOption[] = [
               隨機商戶名稱與 MCC
             </label>
           </div>
-          <p class="text-xs text-error mt-2">使用預設清單隨機配對</p>
+          <p class="text-xs text-error mt-2">
+            隨機池 {{ MERCHANT_POOL_SIZE }} 筆（預設開啟）：22 家品牌 + 編號變體
+          </p>
           <details class="mt-3">
             <summary class="text-xs text-base-content/60 cursor-pointer">
-              商戶清單 (點我展開)
+              品牌種子 (點我展開)
             </summary>
             <div class="mt-2 overflow-x-auto">
               <table class="table table-xs">
@@ -94,89 +97,9 @@ const merchantCountryOptions: SelectOption[] = [
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>McDonald's</td>
-                    <td>5814</td>
-                  </tr>
-                  <tr>
-                    <td>Burger King</td>
-                    <td>5814</td>
-                  </tr>
-                  <tr>
-                    <td>KFC</td>
-                    <td>5814</td>
-                  </tr>
-                  <tr>
-                    <td>Starbucks</td>
-                    <td>5812</td>
-                  </tr>
-                  <tr>
-                    <td>Subway</td>
-                    <td>5814</td>
-                  </tr>
-                  <tr>
-                    <td>Pizza Hut</td>
-                    <td>5812</td>
-                  </tr>
-                  <tr>
-                    <td>Domino's Pizza</td>
-                    <td>5812</td>
-                  </tr>
-                  <tr>
-                    <td>Walmart Supercenter</td>
-                    <td>5411</td>
-                  </tr>
-                  <tr>
-                    <td>Costco Wholesale</td>
-                    <td>5300</td>
-                  </tr>
-                  <tr>
-                    <td>Amazon Marketplace</td>
-                    <td>5262</td>
-                  </tr>
-                  <tr>
-                    <td>Apple Store</td>
-                    <td>5732</td>
-                  </tr>
-                  <tr>
-                    <td>Microsoft Store</td>
-                    <td>5732</td>
-                  </tr>
-                  <tr>
-                    <td>IKEA</td>
-                    <td>5712</td>
-                  </tr>
-                  <tr>
-                    <td>H&amp;M</td>
-                    <td>5651</td>
-                  </tr>
-                  <tr>
-                    <td>Zara</td>
-                    <td>5691</td>
-                  </tr>
-                  <tr>
-                    <td>Nike Retail Store</td>
-                    <td>5651</td>
-                  </tr>
-                  <tr>
-                    <td>Adidas Retail Store</td>
-                    <td>5651</td>
-                  </tr>
-                  <tr>
-                    <td>Hilton Hotels</td>
-                    <td>7011</td>
-                  </tr>
-                  <tr>
-                    <td>Marriott Hotels</td>
-                    <td>7011</td>
-                  </tr>
-                  <tr>
-                    <td>Uber Rides</td>
-                    <td>4121</td>
-                  </tr>
-                  <tr>
-                    <td>Global Leisure Rewards</td>
-                    <td>5816</td>
+                  <tr v-for="merchant in MERCHANT_MCC_BASE" :key="merchant.name">
+                    <td>{{ merchant.name }}</td>
+                    <td>{{ merchant.mcc }}</td>
                   </tr>
                 </tbody>
               </table>

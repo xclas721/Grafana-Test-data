@@ -4,9 +4,8 @@ import {
   isAresFailureStatus,
   isRreqFailureStatus
 } from '@/composables/useTransactionStatusRules'
+import type { MerchantOption } from '@/shared/constants/merchantPool'
 import type { ProductMode } from '@/shared/constants/stateMachineReason'
-
-type MerchantOption = { name: string; mcc: string }
 
 export type BusinessRandomInput = {
   activeMode?: ProductMode
@@ -22,11 +21,13 @@ export type BusinessRandomInput = {
   enableAcquirerMerchantIdRandom: boolean
   enableAcquirerBinRandom: boolean
   enableMerchantRandom: boolean
+  enableRequestorRandom: boolean
   enableVisaScoreRandom: boolean
   enableMastercardExtension: boolean
   enableMastercardExtensionRandom: boolean
   acquirerBinOptions: readonly string[]
   merchantOptions: readonly MerchantOption[]
+  requestorIdOptions: readonly string[]
   // 卡號重複池：指定本筆要用的卡組織／卡號（來自批量抽樣），
   // 有值時取代隨機生成，讓同一張卡在多筆交易間重複出現以測試去重效能。
   forcedCardScheme?: string
@@ -140,6 +141,10 @@ export function randomizeBusinessFields(
     const option = pickRandom(input.merchantOptions, random)
     updates.merchantName = option.name
     updates.mcc = option.mcc
+  }
+
+  if (input.enableRequestorRandom && input.requestorIdOptions.length > 0) {
+    updates.requestorId = pickRandom(input.requestorIdOptions, random)
   }
 
   if (effectiveCardScheme === 'V' && input.enableVisaScoreRandom) {

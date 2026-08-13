@@ -10,6 +10,9 @@ describe('useTestInputFormState', () => {
     expect(state.transStatusReasonMode).toBe('random')
     expect(state.enableBatchErrorMix).toBe(true)
     expect(state.disableRreqTransStatus).toBe(true)
+    expect(state.enableMerchantRandom).toBe(true)
+    expect(state.enableRequestorRandom).toBe(false)
+    expect(state.requestorId).toBe('12128301823081230123')
   })
 
   it('setField 可直接寫入字串欄位', () => {
