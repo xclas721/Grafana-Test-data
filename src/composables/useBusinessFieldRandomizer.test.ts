@@ -205,6 +205,21 @@ describe('useBusinessFieldRandomizer', () => {
     expect(result.updates.mcc).toBe('5999')
   })
 
+  it('商店隨機 Zipf：random=0 抽到池內第一家', () => {
+    const result = randomizeBusinessFields(
+      {
+        ...baseInput,
+        enableMerchantRandom: true,
+        merchantOptions: [
+          { name: 'Hot Shop', mcc: '5814' },
+          { name: 'Cold Shop', mcc: '5999' }
+        ]
+      },
+      () => 0
+    )
+    expect(result.updates.merchantName).toBe('Hot Shop')
+  })
+
   it('C+N 且其他 challengeCancel 時可灌 reason 14（D-02 其餘桶）', () => {
     // call1: 觸發 cancel；call2: 0.9 → 其他 cancel 桶；call3: pickRandom；call4: reason=14
     let call = 0

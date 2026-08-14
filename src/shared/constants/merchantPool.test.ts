@@ -5,18 +5,37 @@ import {
   MERCHANT_MCC_OPTIONS,
   MERCHANT_POOL_SIZE,
   REQUESTOR_MERCHANT_POOL_MAP,
-  buildMerchantPool
+  buildMerchantPool,
+  pickZipfIndex
 } from './merchantPool'
 
 describe('merchantPool', () => {
-  it('隨機池 5000 筆且名稱不重複', () => {
+  it('隨機池 5000 筆且名稱不重複，沒有編號變體', () => {
     expect(MERCHANT_POOL_SIZE).toBe(5000)
     expect(MERCHANT_MCC_OPTIONS).toHaveLength(5000)
     expect(new Set(MERCHANT_MCC_OPTIONS.map((m) => m.name)).size).toBe(5000)
+    expect(MERCHANT_MCC_OPTIONS.some((m) => /#\d{4}$/.test(m.name))).toBe(false)
   })
 
   it('前 22 筆是品牌種子', () => {
     expect(MERCHANT_MCC_OPTIONS.slice(0, MERCHANT_MCC_BASE.length)).toEqual([...MERCHANT_MCC_BASE])
+  })
+
+  it('品牌 MCC 對齊常見卡組分類', () => {
+    const byName = Object.fromEntries(MERCHANT_MCC_BASE.map((m) => [m.name, m.mcc]))
+    expect(byName["McDonald's"]).toBe('5814')
+    expect(byName.Starbucks).toBe('5814')
+    expect(byName['Pizza Hut']).toBe('5814')
+    expect(byName["Domino's Pizza"]).toBe('5814')
+    expect(byName['Amazon Marketplace']).toBe('5399')
+    expect(byName['Nike Retail Store']).toBe('5941')
+    expect(byName['Adidas Retail Store']).toBe('5941')
+    expect(byName['HiTRUST EMV Demo Merchant']).toBe('5999')
+  })
+
+  it('Zipf 抽樣偏向池子前面的店', () => {
+    expect(pickZipfIndex(3000, () => 0)).toBe(0)
+    expect(pickZipfIndex(3000, () => 0.99)).toBeGreaterThan(0)
   })
 
   it('buildMerchantPool 可指定大小', () => {

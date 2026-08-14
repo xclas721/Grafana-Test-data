@@ -1,30 +1,35 @@
 import {
+  MERCHANT_KINDS,
+  MERCHANT_NAME_CORES,
+  MERCHANT_NAME_PREFIXES
+} from '@/shared/constants/merchantNameLexicon'
+import {
   REQUESTOR_ID_OPTIONS,
   REQUESTOR_MERCHANT_WEIGHTS
 } from '@/shared/constants/requestorIds'
 
 export type MerchantOption = { name: string; mcc: string }
 
-/** 品牌種子；其餘筆數用編號變體補到 MERCHANT_POOL_SIZE。 */
+/** 已知品牌；其餘用獨立店名補到 MERCHANT_POOL_SIZE。 */
 export const MERCHANT_MCC_BASE: readonly MerchantOption[] = [
-  { name: 'HiTRUST EMV Demo Merchant', mcc: '5661' },
+  { name: 'HiTRUST EMV Demo Merchant', mcc: '5999' },
   { name: "McDonald's", mcc: '5814' },
   { name: 'Burger King', mcc: '5814' },
   { name: 'KFC', mcc: '5814' },
-  { name: 'Starbucks', mcc: '5812' },
+  { name: 'Starbucks', mcc: '5814' },
   { name: 'Subway', mcc: '5814' },
-  { name: 'Pizza Hut', mcc: '5812' },
-  { name: "Domino's Pizza", mcc: '5812' },
+  { name: 'Pizza Hut', mcc: '5814' },
+  { name: "Domino's Pizza", mcc: '5814' },
   { name: 'Walmart Supercenter', mcc: '5411' },
   { name: 'Costco Wholesale', mcc: '5300' },
-  { name: 'Amazon Marketplace', mcc: '5262' },
+  { name: 'Amazon Marketplace', mcc: '5399' },
   { name: 'Apple Store', mcc: '5732' },
   { name: 'Microsoft Store', mcc: '5732' },
   { name: 'IKEA', mcc: '5712' },
   { name: 'H&M', mcc: '5651' },
   { name: 'Zara', mcc: '5691' },
-  { name: 'Nike Retail Store', mcc: '5651' },
-  { name: 'Adidas Retail Store', mcc: '5651' },
+  { name: 'Nike Retail Store', mcc: '5941' },
+  { name: 'Adidas Retail Store', mcc: '5941' },
   { name: 'Hilton Hotels', mcc: '7011' },
   { name: 'Marriott Hotels', mcc: '7011' },
   { name: 'Uber Rides', mcc: '4121' },
@@ -33,23 +38,40 @@ export const MERCHANT_MCC_BASE: readonly MerchantOption[] = [
 
 export const MERCHANT_POOL_SIZE = 5000
 
+function independentMerchantAt(index: number): MerchantOption {
+  const prefixCount = MERCHANT_NAME_PREFIXES.length
+  const coreCount = MERCHANT_NAME_CORES.length
+  const kindCount = MERCHANT_KINDS.length
+  const prefix = MERCHANT_NAME_PREFIXES[index % prefixCount] as string
+  const core = MERCHANT_NAME_CORES[Math.floor(index / prefixCount) % coreCount] as string
+  const kind = MERCHANT_KINDS[Math.floor(index / (prefixCount * coreCount)) % kindCount] as {
+    suffix: string
+    mcc: string
+  }
+  return { name: `${prefix} ${core} ${kind.suffix}`, mcc: kind.mcc }
+}
+
 export function buildMerchantPool(
   size: number = MERCHANT_POOL_SIZE,
   base: readonly MerchantOption[] = MERCHANT_MCC_BASE
 ): MerchantOption[] {
   const source = base.length > 0 ? base : [{ name: 'Merchant', mcc: '5999' }]
   const count = Math.max(1, Math.floor(size))
+  const used = new Set<string>()
   const result: MerchantOption[] = []
-  for (let i = 0; i < count; i++) {
-    const seed = source[i % source.length] as MerchantOption
-    if (i < source.length) {
-      result.push({ name: seed.name, mcc: seed.mcc })
-      continue
-    }
-    result.push({
-      name: `${seed.name} #${String(i + 1).padStart(4, '0')}`,
-      mcc: seed.mcc
-    })
+  for (const seed of source) {
+    if (result.length >= count) break
+    if (used.has(seed.name)) continue
+    used.add(seed.name)
+    result.push({ name: seed.name, mcc: seed.mcc })
+  }
+  let cursor = 0
+  while (result.length < count) {
+    const next = independentMerchantAt(cursor)
+    cursor += 1
+    if (used.has(next.name)) continue
+    used.add(next.name)
+    result.push(next)
   }
   return result
 }
@@ -93,3 +115,27 @@ export function buildRequestorMerchantPools(
 }
 
 export const REQUESTOR_MERCHANT_POOL_MAP = buildRequestorMerchantPools()
+
+/** 池內順位權重：前面的店交易較多（Zipf）。 */
+export const MERCHANT_ZIPF_EXPONENT = 0.9
+
+export function merchantRankWeight(rank: number, exponent: number = MERCHANT_ZIPF_EXPONENT): number {
+  return 1 / (rank + 1) ** exponent
+}
+
+export function pickZipfIndex(
+  length: number,
+  random: () => number,
+  exponent: number = MERCHANT_ZIPF_EXPONENT
+): number {
+  if (length <= 1) return 0
+  let total = 0
+  for (let i = 0; i < length; i++) total += merchantRankWeight(i, exponent)
+  let cursor = random() * total
+  for (let i = 0; i < length; i++) {
+    const weight = merchantRankWeight(i, exponent)
+    if (cursor < weight) return i
+    cursor -= weight
+  }
+  return length - 1
+}

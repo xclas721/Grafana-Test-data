@@ -5,6 +5,7 @@ import {
   isRreqFailureStatus
 } from '@/composables/useTransactionStatusRules'
 import type { MerchantOption } from '@/shared/constants/merchantPool'
+import { pickZipfIndex } from '@/shared/constants/merchantPool'
 import { pickWeightedIndex } from '@/shared/constants/requestorIds'
 import type { ProductMode } from '@/shared/constants/stateMachineReason'
 
@@ -158,7 +159,7 @@ export function randomizeBusinessFields(
         ? input.merchantPoolsByRequestor[requestorId]
         : undefined
     const pool = requestorPool && requestorPool.length > 0 ? requestorPool : input.merchantOptions
-    const option = pickRandom(pool, random)
+    const option = pool[pickZipfIndex(pool.length, random)] ?? pickRandom(pool, random)
     updates.merchantName = option.name
     updates.mcc = option.mcc
   }

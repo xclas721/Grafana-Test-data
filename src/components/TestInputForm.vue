@@ -264,7 +264,7 @@ function loadDefaults() {
   setField('merchantCountryCode', '156')
   setField('acquirerMerchantId', '8909191')
   setField('acquirerBin', '1231234')
-  setField('mcc', '5661')
+  setField('mcc', '5999')
   setField('purchaseAmount', '100')
   setField('purchaseCurrency', '156')
   setField('purchaseExponent', '2')

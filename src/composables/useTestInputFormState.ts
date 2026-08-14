@@ -189,7 +189,7 @@ export function createInitialFormState(options?: {
     merchantCountryCode: '156',
     acquirerMerchantId: '8909191',
     acquirerBin: '1231234',
-    mcc: '5661',
+    mcc: '5999',
     purchaseAmount: '100',
     purchaseCurrency: '156',
     purchaseExponent: '2',
