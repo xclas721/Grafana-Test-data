@@ -4,6 +4,7 @@ import HomePage from '@/views/HomePage.vue'
 import RootLayout from '@/views/RootLayout.vue'
 import TestInput from '@/views/TestInput.vue'
 import TestDataLayout from '@/views/TestDataLayout.vue'
+import RandomWeightsPage from '@/views/RandomWeightsPage.vue'
 import DDoSRateLimitLayout from '@/views/ddos/DDoSRateLimitLayout.vue'
 import DDoSAreqCardTest from '@/views/ddos/DDoSAreqCardTest.vue'
 import DDoSAreqMerchantTest from '@/views/ddos/DDoSAreqMerchantTest.vue'
@@ -33,6 +34,11 @@ const router = createRouter({
           path: '',
           name: 'test-data',
           component: TestInput
+        },
+        {
+          path: 'random-weights',
+          name: 'random-weights',
+          component: RandomWeightsPage
         }
       ]
     },

@@ -9,6 +9,7 @@ Vue 3 + Vite 前端工具，用來產生 **ACS／3DSS** 假交易資料（供 El
 | 區塊 | 路徑 | 說明 |
 |------|------|------|
 | 測試資料產生 | `/test-data` | ACS／3DSS 測資表單、加權隨機、批次產生，可 bulk 寫入 ES |
+| 隨機機率說明 | `/test-data/random-weights` | Requestor／商店池權重與 MCC（狀態權重之後補） |
 | DDoS 限流測試 | `/rate-limit-test/*` | AReq 卡號／商戶、CReq Checkpoint1／2、3DS Method |
 
 ### 測試資料產生

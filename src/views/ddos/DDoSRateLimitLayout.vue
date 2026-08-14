@@ -83,6 +83,15 @@ const menuItems = [
               </RouterLink>
             </li>
             <li>
+              <RouterLink
+                to="/test-data/random-weights"
+                :class="{ active: route.path === '/test-data/random-weights' }"
+                class="flex items-center gap-2 rounded-lg transition-all text-sm"
+              >
+                隨機機率說明
+              </RouterLink>
+            </li>
+            <li>
               <details :open="route.path.startsWith('/rate-limit-test')" class="group">
                 <summary
                   :class="{ active: route.path.startsWith('/rate-limit-test') }"

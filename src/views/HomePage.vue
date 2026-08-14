@@ -9,10 +9,12 @@ import { RouterLink } from 'vue-router'
       <p class="text-base-content/70 mb-4">本工具提供以下功能：</p>
       <ul class="list-disc list-inside space-y-2 text-base-content/80 mb-6">
         <li><strong>測試資料產生</strong> — ACS / 3DSS 測試資料產生器</li>
+        <li><strong>隨機機率說明</strong> — Requestor／商店池權重（狀態權重之後補）</li>
         <li><strong>DDoS 限流測試</strong> — AReq / CReq / 3DS Method 限流驗證</li>
       </ul>
       <div class="flex flex-wrap gap-4">
         <RouterLink to="/test-data" class="btn btn-primary">測試資料產生</RouterLink>
+        <RouterLink to="/test-data/random-weights" class="btn btn-outline">隨機機率說明</RouterLink>
         <RouterLink to="/rate-limit-test" class="btn btn-outline">DDoS 限流測試</RouterLink>
       </div>
     </div>

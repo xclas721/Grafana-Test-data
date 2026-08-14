@@ -35,7 +35,13 @@ const sectionLinks = [
       <div class="navbar bg-base-100 border-b border-base-300 px-6">
         <div class="flex-1 flex-col items-start">
           <div class="text-xl font-bold text-base-content">Grafana Test Data</div>
-          <div class="text-xs text-base-content/60">ACS / 3DSS 測試資料產生器</div>
+          <div class="text-xs text-base-content/60">
+            {{
+              route.path === '/test-data/random-weights'
+                ? '隨機機率說明'
+                : 'ACS / 3DSS 測試資料產生器'
+            }}
+          </div>
         </div>
         <div class="flex-none">
           <label for="test-data-drawer" class="btn btn-square btn-ghost lg:hidden">
@@ -77,9 +83,9 @@ const sectionLinks = [
             class="menu gap-1 [&_a.active]:bg-neutral-focus [&_a.active]:text-neutral-content [&_summary.active]:bg-neutral-focus [&_summary.active]:text-neutral-content"
           >
             <li>
-              <details :open="route.path === '/test-data'" class="group">
+              <details :open="route.path.startsWith('/test-data')" class="group">
                 <summary
-                  :class="{ active: route.path === '/test-data' }"
+                  :class="{ active: route.path.startsWith('/test-data') }"
                   class="flex items-center gap-3 rounded-lg transition-all cursor-pointer"
                 >
                   <span class="flex-1">測試資料產生</span>
@@ -102,6 +108,15 @@ const sectionLinks = [
                       class="flex items-center gap-2 rounded-lg transition-all text-sm"
                     >
                       測試資料產生
+                    </RouterLink>
+                  </li>
+                  <li>
+                    <RouterLink
+                      to="/test-data/random-weights"
+                      :class="{ active: route.path === '/test-data/random-weights' }"
+                      class="flex items-center gap-2 rounded-lg transition-all text-sm"
+                    >
+                      隨機機率說明
                     </RouterLink>
                   </li>
                   <li v-for="s in sectionLinks" v-show="route.path === '/test-data'" :key="s.href">
