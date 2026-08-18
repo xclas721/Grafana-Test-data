@@ -28,25 +28,68 @@ export type RreqWeightInput = {
   rreqWeightR: string
 }
 
+export const FORM_DEFAULT_ARES_WEIGHTS = {
+  Y: 6,
+  N: 10,
+  R: 10,
+  C: 64,
+  D: 0,
+  A: 0,
+  I: 1,
+  S: 0,
+  U: 9
+} as const
+
+export const FORM_DEFAULT_RREQ_WEIGHTS = {
+  NULL_VALUE: 5,
+  Y: 74,
+  N: 8,
+  U: 7,
+  R: 6
+} as const
+
+/** Challenge 失敗時寫入 challengeCancel 的機率（%）。 */
+export const FORM_DEFAULT_CHALLENGE_CANCEL_RATE = 8
+
+export const ARES_STATUS_MEANING: Record<string, string> = {
+  Y: 'Authentication Successful（免密成功）',
+  N: 'Not Authenticated',
+  U: 'Authentication Could Not Be Performed',
+  A: 'Attempts Processing Performed',
+  C: 'Challenge Required',
+  D: 'Challenge Required; Decoupled Authentication',
+  R: 'Authentication Rejected',
+  I: 'Informational Only（NPA）',
+  S: 'Challenge Required; SPC'
+}
+
+export const RREQ_STATUS_MEANING: Record<string, string> = {
+  NULL_VALUE: '無 RReq（Frictionless 或挑戰未完成）',
+  Y: 'Challenge 最終成功',
+  N: 'Challenge 最終未認證',
+  U: 'Challenge 無法完成',
+  R: 'Challenge 最終拒絕'
+}
+
 export const DEFAULT_ARES_STATUS_WEIGHTS = [
-  { value: 'Y', weight: 40 },
-  { value: 'N', weight: 5 },
-  { value: 'R', weight: 5 },
-  { value: 'C', weight: 25 },
-  { value: 'D', weight: 5 },
-  { value: 'A', weight: 5 },
-  { value: 'I', weight: 5 },
-  { value: 'S', weight: 5 },
-  { value: 'U', weight: 5 }
+  { value: 'Y', weight: FORM_DEFAULT_ARES_WEIGHTS.Y },
+  { value: 'N', weight: FORM_DEFAULT_ARES_WEIGHTS.N },
+  { value: 'R', weight: FORM_DEFAULT_ARES_WEIGHTS.R },
+  { value: 'C', weight: FORM_DEFAULT_ARES_WEIGHTS.C },
+  { value: 'D', weight: FORM_DEFAULT_ARES_WEIGHTS.D },
+  { value: 'A', weight: FORM_DEFAULT_ARES_WEIGHTS.A },
+  { value: 'I', weight: FORM_DEFAULT_ARES_WEIGHTS.I },
+  { value: 'S', weight: FORM_DEFAULT_ARES_WEIGHTS.S },
+  { value: 'U', weight: FORM_DEFAULT_ARES_WEIGHTS.U }
 ]
 
 /** RReq：含失敗 N／U／R，供 Insight 失敗原因熱力（B-11／B-12）有三欄資料。 */
 export const DEFAULT_RREQ_WEIGHTS = [
-  { value: 'NULL_VALUE', weight: 5 },
-  { value: 'Y', weight: 74 },
-  { value: 'N', weight: 8 },
-  { value: 'U', weight: 7 },
-  { value: 'R', weight: 6 }
+  { value: 'NULL_VALUE', weight: FORM_DEFAULT_RREQ_WEIGHTS.NULL_VALUE },
+  { value: 'Y', weight: FORM_DEFAULT_RREQ_WEIGHTS.Y },
+  { value: 'N', weight: FORM_DEFAULT_RREQ_WEIGHTS.N },
+  { value: 'U', weight: FORM_DEFAULT_RREQ_WEIGHTS.U },
+  { value: 'R', weight: FORM_DEFAULT_RREQ_WEIGHTS.R }
 ] as const
 
 export function isAresFailureStatus(ares: string): boolean {
@@ -80,17 +123,16 @@ export function parsePercent(value: string, fallback: number): number {
 }
 
 export function buildAresWeights(input: AresWeightInput): Array<{ value: string; weight: number }> {
-  const defaults = { Y: 40, N: 5, R: 5, C: 25, D: 5, A: 5, I: 5, S: 5, U: 5 } as const
   const items = [
-    { value: 'Y', weight: parsePercent(input.aresWeightY, defaults.Y) },
-    { value: 'N', weight: parsePercent(input.aresWeightN, defaults.N) },
-    { value: 'R', weight: parsePercent(input.aresWeightR, defaults.R) },
-    { value: 'C', weight: parsePercent(input.aresWeightC, defaults.C) },
-    { value: 'D', weight: parsePercent(input.aresWeightD, defaults.D) },
-    { value: 'A', weight: parsePercent(input.aresWeightA, defaults.A) },
-    { value: 'I', weight: parsePercent(input.aresWeightI, defaults.I) },
-    { value: 'S', weight: parsePercent(input.aresWeightS, defaults.S) },
-    { value: 'U', weight: parsePercent(input.aresWeightU, defaults.U) }
+    { value: 'Y', weight: parsePercent(input.aresWeightY, FORM_DEFAULT_ARES_WEIGHTS.Y) },
+    { value: 'N', weight: parsePercent(input.aresWeightN, FORM_DEFAULT_ARES_WEIGHTS.N) },
+    { value: 'R', weight: parsePercent(input.aresWeightR, FORM_DEFAULT_ARES_WEIGHTS.R) },
+    { value: 'C', weight: parsePercent(input.aresWeightC, FORM_DEFAULT_ARES_WEIGHTS.C) },
+    { value: 'D', weight: parsePercent(input.aresWeightD, FORM_DEFAULT_ARES_WEIGHTS.D) },
+    { value: 'A', weight: parsePercent(input.aresWeightA, FORM_DEFAULT_ARES_WEIGHTS.A) },
+    { value: 'I', weight: parsePercent(input.aresWeightI, FORM_DEFAULT_ARES_WEIGHTS.I) },
+    { value: 'S', weight: parsePercent(input.aresWeightS, FORM_DEFAULT_ARES_WEIGHTS.S) },
+    { value: 'U', weight: parsePercent(input.aresWeightU, FORM_DEFAULT_ARES_WEIGHTS.U) }
   ]
   const total = items.reduce((sum, item) => sum + item.weight, 0)
   if (total <= 0) return DEFAULT_ARES_STATUS_WEIGHTS
@@ -112,13 +154,15 @@ export function computeAresWeightTotal(input: AresWeightInput): number {
 }
 
 export function buildRreqWeights(input: RreqWeightInput): Array<{ value: string; weight: number }> {
-  const defaults = { nullValue: 5, y: 74, n: 8, u: 7, r: 6 } as const
   const items = [
-    { value: 'NULL_VALUE', weight: parsePercent(input.rreqWeightNull, defaults.nullValue) },
-    { value: 'Y', weight: parsePercent(input.rreqWeightY, defaults.y) },
-    { value: 'N', weight: parsePercent(input.rreqWeightN, defaults.n) },
-    { value: 'U', weight: parsePercent(input.rreqWeightU, defaults.u) },
-    { value: 'R', weight: parsePercent(input.rreqWeightR, defaults.r) }
+    {
+      value: 'NULL_VALUE',
+      weight: parsePercent(input.rreqWeightNull, FORM_DEFAULT_RREQ_WEIGHTS.NULL_VALUE)
+    },
+    { value: 'Y', weight: parsePercent(input.rreqWeightY, FORM_DEFAULT_RREQ_WEIGHTS.Y) },
+    { value: 'N', weight: parsePercent(input.rreqWeightN, FORM_DEFAULT_RREQ_WEIGHTS.N) },
+    { value: 'U', weight: parsePercent(input.rreqWeightU, FORM_DEFAULT_RREQ_WEIGHTS.U) },
+    { value: 'R', weight: parsePercent(input.rreqWeightR, FORM_DEFAULT_RREQ_WEIGHTS.R) }
   ]
   const total = items.reduce((sum, item) => sum + item.weight, 0)
   if (total <= 0) return [...DEFAULT_RREQ_WEIGHTS]

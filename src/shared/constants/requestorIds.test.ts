@@ -30,12 +30,12 @@ describe('requestorIds', () => {
     ])
   })
 
-  it('權重 3000／250×4／200×10，總和 6000', () => {
+  it('權重 3000／250×4／100×10，總和 5000', () => {
     expect(REQUESTOR_MERCHANT_WEIGHTS).toHaveLength(REQUESTOR_ID_OPTIONS.length)
     expect([...REQUESTOR_MERCHANT_WEIGHTS]).toEqual([
-      3000, 250, 250, 250, 250, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200
+      3000, 250, 250, 250, 250, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100
     ])
-    expect(REQUESTOR_WEIGHT_TOTAL).toBe(6000)
+    expect(REQUESTOR_WEIGHT_TOTAL).toBe(5000)
   })
 
   it('pickWeightedIndex 依權重落桶', () => {

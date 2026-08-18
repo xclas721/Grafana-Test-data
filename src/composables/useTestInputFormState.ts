@@ -1,6 +1,11 @@
 import { reactive } from 'vue'
 import { NULL_VALUE } from '@/shared/constants/nullValue'
 import { DEFAULT_REQUESTOR_ID } from '@/shared/constants/requestorIds'
+import {
+  FORM_DEFAULT_ARES_WEIGHTS,
+  FORM_DEFAULT_CHALLENGE_CANCEL_RATE,
+  FORM_DEFAULT_RREQ_WEIGHTS
+} from '@/composables/useTransactionStatusRules'
 import { BATCH_INSERT_FORM_KEYS, type FormMap } from '@/shared/utils/testDataDocument'
 
 export type TestInputFormState = {
@@ -170,21 +175,21 @@ export function createInitialFormState(options?: {
     transStatusReasonMode: 'random',
     stateMachineReasonMode: 'random',
     challengeCancel: NULL_VALUE,
-    aresWeightY: '6',
-    aresWeightN: '10',
-    aresWeightR: '10',
-    aresWeightC: '64',
-    aresWeightD: '0',
-    aresWeightA: '0',
-    aresWeightI: '1',
-    aresWeightS: '0',
-    aresWeightU: '9',
-    rreqWeightNull: '5',
-    rreqWeightY: '74',
-    rreqWeightN: '8',
-    rreqWeightU: '7',
-    rreqWeightR: '6',
-    challengeCancelRate: '8',
+    aresWeightY: String(FORM_DEFAULT_ARES_WEIGHTS.Y),
+    aresWeightN: String(FORM_DEFAULT_ARES_WEIGHTS.N),
+    aresWeightR: String(FORM_DEFAULT_ARES_WEIGHTS.R),
+    aresWeightC: String(FORM_DEFAULT_ARES_WEIGHTS.C),
+    aresWeightD: String(FORM_DEFAULT_ARES_WEIGHTS.D),
+    aresWeightA: String(FORM_DEFAULT_ARES_WEIGHTS.A),
+    aresWeightI: String(FORM_DEFAULT_ARES_WEIGHTS.I),
+    aresWeightS: String(FORM_DEFAULT_ARES_WEIGHTS.S),
+    aresWeightU: String(FORM_DEFAULT_ARES_WEIGHTS.U),
+    rreqWeightNull: String(FORM_DEFAULT_RREQ_WEIGHTS.NULL_VALUE),
+    rreqWeightY: String(FORM_DEFAULT_RREQ_WEIGHTS.Y),
+    rreqWeightN: String(FORM_DEFAULT_RREQ_WEIGHTS.N),
+    rreqWeightU: String(FORM_DEFAULT_RREQ_WEIGHTS.U),
+    rreqWeightR: String(FORM_DEFAULT_RREQ_WEIGHTS.R),
+    challengeCancelRate: String(FORM_DEFAULT_CHALLENGE_CANCEL_RATE),
     merchantName: 'HiTRUST EMV Demo Merchant',
     merchantCountryCode: '156',
     acquirerMerchantId: '8909191',

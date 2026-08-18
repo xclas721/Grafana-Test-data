@@ -38,6 +38,9 @@ import {
   computeAresWeightTotal,
   computeExpectedRates,
   computeRreqWeightTotal,
+  FORM_DEFAULT_ARES_WEIGHTS,
+  FORM_DEFAULT_CHALLENGE_CANCEL_RATE,
+  FORM_DEFAULT_RREQ_WEIGHTS,
   parsePercent,
   rollRandomStatuses,
   resolveStatusDependencies
@@ -153,7 +156,7 @@ const ARES_WEIGHT_KEYS = [
   'aresWeightU'
 ] as const
 
-const DEFAULT_CHALLENGE_CANCEL_RATE = 0.08
+const DEFAULT_CHALLENGE_CANCEL_RATE = FORM_DEFAULT_CHALLENGE_CANCEL_RATE / 100
 
 const ACQUIRER_BIN_OPTIONS = ['1231234', '1239999', '9991234', '9999999'] as const
 
@@ -220,7 +223,10 @@ function syncStatusDependencies() {
   setField('transStatusReason', next.transStatusReason)
   setField('stateMachineReason', next.stateMachineReason)
   if (next.aresTransStatus) setField('aresTransStatus', next.aresTransStatus)
-  if (next.stateMachineReasonMode) setField('stateMachineReasonMode', next.stateMachineReasonMode)
+  // 不寫回 stateMachineReasonMode：該欄是「下一筆隨機」的使用者偏好。
+  // resolveStatusDependencies 對 System Monitor／ARes=Y 等會回傳 mode=fixed；
+  // 若寫回 form，批次 generateRandom 會在第一次抽到 31xx／34xx 後鎖死，
+  // 後續全部被 alignStatusesForSystemMonitorError 改成 ares/transStatus=N（見 70k 筆幾乎全 N）。
 
   if (next.disableChallengeCancel) {
     if (formState.challengeCancel !== NULL_VALUE) setField('challengeCancel', NULL_VALUE)
@@ -327,21 +333,21 @@ function loadDefaults() {
   setField('currencyAlphabeticCode', 'CNY')
   setField('currencyNumericCode', '156')
   syncStatusDependencies()
-  setField('aresWeightY', '6')
-  setField('aresWeightN', '10')
-  setField('aresWeightR', '10')
-  setField('aresWeightC', '64')
-  setField('aresWeightD', '0')
-  setField('aresWeightA', '0')
-  setField('aresWeightI', '1')
-  setField('aresWeightS', '0')
-  setField('aresWeightU', '9')
-  setField('rreqWeightNull', '5')
-  setField('rreqWeightY', '74')
-  setField('rreqWeightN', '8')
-  setField('rreqWeightU', '7')
-  setField('rreqWeightR', '6')
-  setField('challengeCancelRate', '8')
+  setField('aresWeightY', String(FORM_DEFAULT_ARES_WEIGHTS.Y))
+  setField('aresWeightN', String(FORM_DEFAULT_ARES_WEIGHTS.N))
+  setField('aresWeightR', String(FORM_DEFAULT_ARES_WEIGHTS.R))
+  setField('aresWeightC', String(FORM_DEFAULT_ARES_WEIGHTS.C))
+  setField('aresWeightD', String(FORM_DEFAULT_ARES_WEIGHTS.D))
+  setField('aresWeightA', String(FORM_DEFAULT_ARES_WEIGHTS.A))
+  setField('aresWeightI', String(FORM_DEFAULT_ARES_WEIGHTS.I))
+  setField('aresWeightS', String(FORM_DEFAULT_ARES_WEIGHTS.S))
+  setField('aresWeightU', String(FORM_DEFAULT_ARES_WEIGHTS.U))
+  setField('rreqWeightNull', String(FORM_DEFAULT_RREQ_WEIGHTS.NULL_VALUE))
+  setField('rreqWeightY', String(FORM_DEFAULT_RREQ_WEIGHTS.Y))
+  setField('rreqWeightN', String(FORM_DEFAULT_RREQ_WEIGHTS.N))
+  setField('rreqWeightU', String(FORM_DEFAULT_RREQ_WEIGHTS.U))
+  setField('rreqWeightR', String(FORM_DEFAULT_RREQ_WEIGHTS.R))
+  setField('challengeCancelRate', String(FORM_DEFAULT_CHALLENGE_CANCEL_RATE))
   formState.enablePurchaseAmountRandom = true
   formState.enablePurchaseCurrencyRandom = true
   formState.enableAcquirerMerchantIdRandom = true

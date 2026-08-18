@@ -44,13 +44,13 @@ describe('merchantPool', () => {
     expect(pool[0]?.name).toBe('HiTRUST EMV Demo Merchant')
   })
 
-  it('requestor 商店池為 3000／250×4／200×10，主池與 250 池會重複', () => {
+  it('requestor 商店池為 3000／250×4／100×10，主池與 250 池會重複', () => {
     const primaryId = REQUESTOR_ID_OPTIONS[0]
     const midId = REQUESTOR_ID_OPTIONS[1]
     const smallId = REQUESTOR_ID_OPTIONS[5]
     expect(primaryId && REQUESTOR_MERCHANT_POOL_MAP[primaryId]?.length).toBe(3000)
     expect(midId && REQUESTOR_MERCHANT_POOL_MAP[midId]?.length).toBe(250)
-    expect(smallId && REQUESTOR_MERCHANT_POOL_MAP[smallId]?.length).toBe(200)
+    expect(smallId && REQUESTOR_MERCHANT_POOL_MAP[smallId]?.length).toBe(100)
     expect(REQUESTOR_ID_OPTIONS.every((id, i) => REQUESTOR_MERCHANT_POOL_MAP[id]?.length === REQUESTOR_MERCHANT_WEIGHTS[i])).toBe(
       true
     )

@@ -81,7 +81,7 @@ export const MERCHANT_MCC_OPTIONS: readonly MerchantOption[] = buildMerchantPool
 
 /**
  * 各 requestor 商店池。主 requestor 用前 3000；4 個 250 從這 3000 切片（會重複）；
- * 其餘 10 個各 200，用後 2000。
+ * 其餘 10 個各 100，用後 2000 的前 1000。
  */
 export function buildRequestorMerchantPools(
   merchants: readonly MerchantOption[] = MERCHANT_MCC_OPTIONS,

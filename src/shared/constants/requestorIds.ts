@@ -19,9 +19,9 @@ export const REQUESTOR_ID_OPTIONS = [
 
 export const DEFAULT_REQUESTOR_ID = REQUESTOR_ID_OPTIONS[0]
 
-/** 各 requestor 商店權重（3000 + 250×4 + 200×10 = 6000）。 */
+/** 各 requestor 商店權重（3000 + 250×4 + 100×10 = 5000）。 */
 export const REQUESTOR_MERCHANT_WEIGHTS = [
-  3000, 250, 250, 250, 250, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200
+  3000, 250, 250, 250, 250, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100
 ] as const
 
 export const REQUESTOR_WEIGHT_TOTAL = REQUESTOR_MERCHANT_WEIGHTS.reduce((sum, w) => sum + w, 0)

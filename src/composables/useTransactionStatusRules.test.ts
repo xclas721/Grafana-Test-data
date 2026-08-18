@@ -29,7 +29,7 @@ describe('useTransactionStatusRules', () => {
     })
 
     expect(weights[0]?.value).toBe('Y')
-    expect(weights[0]?.weight).toBe(40)
+    expect(weights[0]?.weight).toBe(6)
   })
 
   it('會正確計算交易成功率', () => {
@@ -189,6 +189,33 @@ describe('useTransactionStatusRules', () => {
     expect(next.rreqTransStatus).toBe('NULL_VALUE')
     expect(next.transStatus).toBe('Y')
     expect(next.stateMachineReason).toBe('S3401')
+  })
+
+  it('固定 mode + System Monitor 3199 會強制 ares/transStatus=N（批次勿鎖 mode）', () => {
+    const next = rollRandomStatuses({
+      activeMode: 'acs',
+      stateMachineReasonMode: 'fixed',
+      stateMachineReason: '3199',
+      aresWeightY: '100',
+      aresWeightN: '0',
+      aresWeightR: '0',
+      aresWeightC: '0',
+      aresWeightD: '0',
+      aresWeightA: '0',
+      aresWeightI: '0',
+      aresWeightS: '0',
+      aresWeightU: '0',
+      rreqWeightNull: '0',
+      rreqWeightY: '100',
+      rreqWeightN: '0',
+      rreqWeightU: '0',
+      rreqWeightR: '0'
+    })
+
+    // 權重雖為 Y=100，但 3199 對齊會覆寫成 N
+    expect(next.aresTransStatus).toBe('N')
+    expect(next.transStatus).toBe('N')
+    expect(next.stateMachineReason).toBe('3199')
   })
 
   it('System Monitor RReq 錯誤會對齊 Challenge 失敗狀態', () => {

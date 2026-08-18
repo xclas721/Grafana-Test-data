@@ -69,7 +69,7 @@ const emit = defineEmits<{
             </label>
           </div>
           <p class="text-xs text-error mt-2">
-            15 個；勾選後依 3000／250×4／200×10 加權，預設不隨機
+            15 個；勾選後依 3000／250×4／100×10 加權，預設不隨機
           </p>
         </div>
         <div>
