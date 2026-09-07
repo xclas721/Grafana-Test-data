@@ -27,7 +27,9 @@ const proxyBadgeLabel = computed(() =>
         <span class="text-sm font-semibold shrink-0 text-base-content/80">API 網域</span>
         <span
           class="badge badge-sm shrink-0"
-          :class="store.proxyEnv === 'remote' ? 'badge-warning' : 'badge-ghost'"
+          :class="
+            store.proxyEnv === 'remote' ? 'badge-warning text-warning-content' : 'badge-ghost'
+          "
         >
           {{ proxyBadgeLabel }}
         </span>
@@ -63,27 +65,23 @@ const proxyBadgeLabel = computed(() =>
         >
           <div class="space-y-3">
             <p class="text-xs text-base-content/60">
-              切換：<code class="text-xs">npm run dev</code>（Local）或
-              <code class="text-xs">npm run dev:remote</code>（讀
-              .env.remote；未指定目標會啟動失敗）。 Proxy 目標只在 env，網頁不設 Remote
-              host。改完需重開。
+              一般留空，走 Vite proxy。只有要直打某個 origin 才填（可能遇 CORS）。
             </p>
-            <div class="text-sm font-semibold">進階：覆寫基礎 URL（留空＝走上面的 Vite proxy）</div>
             <Input
               v-model="store.acsAuthBase"
               label="acs-auth"
-              placeholder="留空＝proxy；或填 http://localhost:30100"
+              placeholder="例如 http://localhost:30100"
               class="text-sm"
             />
             <Input
               v-model="store.acsAuthWebBase"
               label="acs-auth-web"
-              placeholder="留空＝proxy；或填 http://localhost:8050"
+              placeholder="例如 http://localhost:8050"
               class="text-sm"
             />
             <div class="flex gap-2">
               <button type="button" class="btn btn-ghost btn-sm" @click="store.useProxyPaths">
-                改回走 proxy
+                清空（走 Vite proxy）
               </button>
               <button type="button" class="btn btn-ghost btn-sm" @click="store.loadDefaults">
                 還原 .env 預設
@@ -93,8 +91,11 @@ const proxyBadgeLabel = computed(() =>
         </div>
       </div>
     </div>
-    <p v-if="store.proxyEnv === 'remote'" class="text-xs text-warning">
-      目前 proxy 為 Remote（目標見 .env.remote）：真 3DS API，不是 ES 假資料。
+    <p
+      v-if="store.proxyEnv === 'remote'"
+      class="text-xs font-medium text-warning-content bg-warning px-2 py-1 rounded w-fit"
+    >
+      Remote：真 ACS／3DS API，不是灌 ES 假資料。
     </p>
   </div>
 </template>

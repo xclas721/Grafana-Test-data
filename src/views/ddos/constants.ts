@@ -60,16 +60,15 @@ export const PLACEHOLDER = {
 export const PREREQUISITES = {
   title: '測試前準備',
   items: [
-    'Local（預設）：npm run dev，proxy → localhost:30100／8050；頂欄留空',
-    'Remote：npm run dev:remote，目標必須寫在 .env.remote（缺 VITE_PROXY_*_TARGET 會啟動失敗）；頂欄留空。真 3DS API，非灌假資料',
-    '切換目標＝改 env 後重開 Vite；網頁不設定 Remote host',
-    '進階才在頂欄填完整 URL（直打；Remote 常有 CORS）。部署可用 nginx 反代'
+    '頂欄 badge 確認是 Local 或 Remote；API 網域一般留空走 Vite proxy',
+    'Remote 會打真 ACS（3DS），不是灌 ES 假資料',
+    '進階才在頂欄填完整 origin（直打；可能 CORS）'
   ]
 } as const
 
 /** 操作步驟：所有測試共用 */
 export const OPERATION_STEPS = [
-  '確認已用 npm run dev（Local）或 dev:remote 啟動，頂欄 badge 正確且 URL 留空',
+  '確認頂欄 badge 正確且 API 網域留空',
   '點擊「載入預設值」或依需求調整參數',
   '點擊「開始測試」執行',
   '觀察測試日誌與結果摘要，必要時可「停止測試」'
