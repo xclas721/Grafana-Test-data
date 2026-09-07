@@ -60,15 +60,16 @@ export const PLACEHOLDER = {
 export const PREREQUISITES = {
   title: '測試前準備',
   items: [
-    '請確保 acs-auth (port 30100)、acs-auth-web (port 8050) 服務已啟動',
-    '開發環境：頂欄留空時，由 Vite proxy 轉發至 localhost',
-    '部署環境：請在頂欄「API 網域」設定完整 URL，或透過 nginx 反向代理'
+    'Local（預設）：npm run dev，proxy → localhost:30100／8050；頂欄留空',
+    'Remote：npm run dev:remote，目標必須寫在 .env.remote（缺 VITE_PROXY_*_TARGET 會啟動失敗）；頂欄留空。真 3DS API，非灌假資料',
+    '切換目標＝改 env 後重開 Vite；網頁不設定 Remote host',
+    '進階才在頂欄填完整 URL（直打；Remote 常有 CORS）。部署可用 nginx 反代'
   ]
 } as const
 
 /** 操作步驟：所有測試共用 */
 export const OPERATION_STEPS = [
-  '確認頂欄 API 網域已設定（或留空使用 proxy）',
+  '確認已用 npm run dev（Local）或 dev:remote 啟動，頂欄 badge 正確且 URL 留空',
   '點擊「載入預設值」或依需求調整參數',
   '點擊「開始測試」執行',
   '觀察測試日誌與結果摘要，必要時可「停止測試」'

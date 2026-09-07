@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:remote": "vite --mode remote",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",

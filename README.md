@@ -33,7 +33,8 @@ Vue 3 + Vite 前端工具，用來產生 **ACS／3DSS** 假交易資料（供 El
 - CReq Checkpoint1、Checkpoint2
 - 3DS Method
 
-API 網域預設可由建置期環境變數注入（見 `.env.example`）。
+開發可用 Local（`npm run dev`，預設）或 Remote（`npm run dev:remote`，目標必填於 `.env.remote`）。  
+**Remote host 只寫在 env，不在網頁設定。** 建置期也可注入 `VITE_ACS_AUTH_*`（見 `.env.example`）。
 
 ## 技術棧
 
@@ -46,8 +47,14 @@ API 網域預設可由建置期環境變數注入（見 `.env.example`）。
 
 ```sh
 npm install
-npm run dev
+npm run dev          # Local（預設）：proxy → localhost:30100 / 8050
+npm run dev:remote   # Remote：讀 .env.remote；未指定 VITE_PROXY_*_TARGET 會啟動失敗
 ```
+
+DDoS 頂欄只顯示目前 **proxy: Local｜Remote**（來自啟動時的 env）。  
+切換 Remote：編輯 `.env.remote` 後執行 `npm run dev:remote`（需重開）。網頁不填 Remote host。
+
+Remote 會打真 3DS API（限流／log／可能落庫）。**測資／ES bulk 僅本機假資料，不要接到 Remote。**
 
 其他常用指令：
 
@@ -61,12 +68,15 @@ npm run format         # Prettier 格式化 src/
 
 ### 環境變數
 
-複製 `.env.example` 為 `.env`／`.env.production`（視部署方式）：
+複製 `.env.example` 為 `.env`／`.env.production`（視部署方式）。Remote 見 `.env.remote`（`npm run dev:remote` 必填 proxy 目標）。
 
 | 變數 | 用途 |
 |------|------|
-| `VITE_ACS_AUTH_BASE` | ACS Auth API 網域（限流測試預設） |
-| `VITE_ACS_AUTH_WEB_BASE` | ACS Auth Web 網域 |
+| `VITE_TARGET_ENV` | `local`／`remote`（前端 badge） |
+| `VITE_PROXY_ACS_AUTH_TARGET` | Vite proxy：`/acs-auth` 轉發目標 |
+| `VITE_PROXY_ACS_AUTH_WEB_TARGET` | Vite proxy：`/acs-auth-web` 轉發目標 |
+| `VITE_ACS_AUTH_BASE` | 頂欄 acs-auth 預設（可選；留空走相對路徑） |
+| `VITE_ACS_AUTH_WEB_BASE` | 頂欄 acs-auth-web 預設（可選） |
 
 也可改由 nginx 反代 `/acs-auth`、`/acs-auth-web`，前端留空相對路徑。
 
