@@ -32,6 +32,11 @@ export default defineConfig(({ mode }) => {
       )
     : env.VITE_PROXY_ACS_AUTH_WEB_TARGET?.trim() || 'http://localhost:8050'
 
+  if (isRemote) {
+    console.log(`[dev:remote] VITE_PROXY_ACS_AUTH_TARGET=${acsAuthTarget}`)
+    console.log(`[dev:remote] VITE_PROXY_ACS_AUTH_WEB_TARGET=${acsAuthWebTarget}`)
+  }
+
   return {
     plugins: [tailwindcss(), vue(), vueDevTools()],
     server: {
