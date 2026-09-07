@@ -60,15 +60,14 @@ export const PLACEHOLDER = {
 export const PREREQUISITES = {
   title: '測試前準備',
   items: [
-    '頂欄 badge 確認是 Local 或 Remote；API 網域一般留空走 Vite proxy',
-    'Remote 會打真 ACS（3DS），不是灌 ES 假資料',
-    '進階才在頂欄填完整 origin（直打；可能 CORS）'
+    '頂欄 badge 確認是 Local 或 Remote（由啟動指令決定）',
+    'Remote 會打真 ACS（3DS），不是灌 ES 假資料'
   ]
 } as const
 
 /** 操作步驟：所有測試共用 */
 export const OPERATION_STEPS = [
-  '確認頂欄 badge 正確且 API 網域留空',
+  '確認頂欄 badge 正確',
   '點擊「載入預設值」或依需求調整參數',
   '點擊「開始測試」執行',
   '觀察測試日誌與結果摘要，必要時可「停止測試」'

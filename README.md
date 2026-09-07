@@ -52,7 +52,7 @@ npm run dev:remote   # Remote：讀 .env.remote；未指定 VITE_PROXY_*_TARGET 
 ```
 
 DDoS 頂欄只顯示目前 **proxy: Local｜Remote**（來自啟動時的 env）。  
-切換 Remote：編輯 `.env.remote` 後執行 `npm run dev:remote`（需重開）。網頁不填 Remote host。
+切換 Remote：編輯 `.env.remote` 後執行 `npm run dev:remote`（需重開）。
 
 Remote 會打真 3DS API（限流／log／可能落庫）。**測資／ES bulk 僅本機假資料，不要接到 Remote。**
 
@@ -75,8 +75,8 @@ npm run format         # Prettier 格式化 src/
 | `VITE_TARGET_ENV` | `local`／`remote`（前端 badge） |
 | `VITE_PROXY_ACS_AUTH_TARGET` | Vite proxy：`/acs-auth` 轉發目標 |
 | `VITE_PROXY_ACS_AUTH_WEB_TARGET` | Vite proxy：`/acs-auth-web` 轉發目標 |
-| `VITE_ACS_AUTH_BASE` | 頂欄 acs-auth 預設（可選；留空走相對路徑） |
-| `VITE_ACS_AUTH_WEB_BASE` | 頂欄 acs-auth-web 預設（可選） |
+| `VITE_ACS_AUTH_BASE` | 建置期 acs-auth origin（可選；留空走相對路徑／proxy） |
+| `VITE_ACS_AUTH_WEB_BASE` | 建置期 acs-auth-web origin（可選） |
 
 也可改由 nginx 反代 `/acs-auth`、`/acs-auth-web`，前端留空相對路徑。
 
