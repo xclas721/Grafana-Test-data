@@ -3,10 +3,7 @@ import {
   MERCHANT_NAME_CORES,
   MERCHANT_NAME_PREFIXES
 } from '@/shared/constants/merchantNameLexicon'
-import {
-  REQUESTOR_ID_OPTIONS,
-  REQUESTOR_MERCHANT_WEIGHTS
-} from '@/shared/constants/requestorIds'
+import { REQUESTOR_ID_OPTIONS, REQUESTOR_MERCHANT_WEIGHTS } from '@/shared/constants/requestorIds'
 
 export type MerchantOption = { name: string; mcc: string }
 
@@ -119,7 +116,10 @@ export const REQUESTOR_MERCHANT_POOL_MAP = buildRequestorMerchantPools()
 /** 池內順位權重：前面的店交易較多（Zipf）。 */
 export const MERCHANT_ZIPF_EXPONENT = 0.9
 
-export function merchantRankWeight(rank: number, exponent: number = MERCHANT_ZIPF_EXPONENT): number {
+export function merchantRankWeight(
+  rank: number,
+  exponent: number = MERCHANT_ZIPF_EXPONENT
+): number {
   return 1 / (rank + 1) ** exponent
 }
 

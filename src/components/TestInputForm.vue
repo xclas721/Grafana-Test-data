@@ -17,10 +17,7 @@ import {
   MERCHANT_COUNTRY_CODE_ASIA_VALUES,
   MERCHANT_COUNTRY_CODE_STR_VALUES
 } from '@/shared/constants/countryCurrency'
-import {
-  MERCHANT_MCC_OPTIONS,
-  REQUESTOR_MERCHANT_POOL_MAP
-} from '@/shared/constants/merchantPool'
+import { MERCHANT_MCC_OPTIONS, REQUESTOR_MERCHANT_POOL_MAP } from '@/shared/constants/merchantPool'
 import { NULL_VALUE } from '@/shared/constants/nullValue'
 import {
   DEFAULT_REQUESTOR_ID,

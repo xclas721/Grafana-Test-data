@@ -238,8 +238,7 @@ export function createInitialFormState(options?: {
     deviceAdvertisingId: '4d4427f20375a66287430edd54bd82d2',
     threeDSCompInd: 'Y',
     merchantCountryCodeStr: '156',
-    performancePath:
-      '/acs-auth/auth/V/2.2.0/06b4b203-da05-73f9-256f-454929df6076/001/areq',
+    performancePath: '/acs-auth/auth/V/2.2.0/06b4b203-da05-73f9-256f-454929df6076/001/areq',
     execTime: '5437',
     creqExecTime: '500',
     rreqExecTime: '400',

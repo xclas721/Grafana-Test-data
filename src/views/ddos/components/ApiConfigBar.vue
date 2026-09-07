@@ -64,12 +64,11 @@ const proxyBadgeLabel = computed(() =>
           <div class="space-y-3">
             <p class="text-xs text-base-content/60">
               切換：<code class="text-xs">npm run dev</code>（Local）或
-              <code class="text-xs">npm run dev:remote</code>（讀 .env.remote；未指定目標會啟動失敗）。
-              Proxy 目標只在 env，網頁不設 Remote host。改完需重開。
+              <code class="text-xs">npm run dev:remote</code>（讀
+              .env.remote；未指定目標會啟動失敗）。 Proxy 目標只在 env，網頁不設 Remote
+              host。改完需重開。
             </p>
-            <div class="text-sm font-semibold">
-              進階：覆寫基礎 URL（留空＝走上面的 Vite proxy）
-            </div>
+            <div class="text-sm font-semibold">進階：覆寫基礎 URL（留空＝走上面的 Vite proxy）</div>
             <Input
               v-model="store.acsAuthBase"
               label="acs-auth"

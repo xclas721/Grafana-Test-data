@@ -268,9 +268,7 @@ export function buildDocument(
     errorDetail: form.errorDetail,
     errorMessageType: form.errorMessageType,
     challengeCancel:
-      form.challengeCancel && form.challengeCancel !== NULL_VALUE
-        ? form.challengeCancel
-        : undefined
+      form.challengeCancel && form.challengeCancel !== NULL_VALUE ? form.challengeCancel : undefined
   }
   if (form.deviceIpAddress && form.deviceIpAddress.trim() !== '') {
     doc.deviceIpAddress = form.deviceIpAddress

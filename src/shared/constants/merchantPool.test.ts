@@ -51,11 +51,15 @@ describe('merchantPool', () => {
     expect(primaryId && REQUESTOR_MERCHANT_POOL_MAP[primaryId]?.length).toBe(3000)
     expect(midId && REQUESTOR_MERCHANT_POOL_MAP[midId]?.length).toBe(250)
     expect(smallId && REQUESTOR_MERCHANT_POOL_MAP[smallId]?.length).toBe(100)
-    expect(REQUESTOR_ID_OPTIONS.every((id, i) => REQUESTOR_MERCHANT_POOL_MAP[id]?.length === REQUESTOR_MERCHANT_WEIGHTS[i])).toBe(
-      true
-    )
+    expect(
+      REQUESTOR_ID_OPTIONS.every(
+        (id, i) => REQUESTOR_MERCHANT_POOL_MAP[id]?.length === REQUESTOR_MERCHANT_WEIGHTS[i]
+      )
+    ).toBe(true)
 
-    const primaryNames = new Set((REQUESTOR_MERCHANT_POOL_MAP[primaryId ?? ''] ?? []).map((m) => m.name))
+    const primaryNames = new Set(
+      (REQUESTOR_MERCHANT_POOL_MAP[primaryId ?? ''] ?? []).map((m) => m.name)
+    )
     const midNames = (REQUESTOR_MERCHANT_POOL_MAP[midId ?? ''] ?? []).map((m) => m.name)
     expect(midNames.every((name) => primaryNames.has(name))).toBe(true)
 

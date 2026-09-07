@@ -72,10 +72,12 @@ const expectedRates = computed(() =>
       <div class="card-body">
         <h1 class="card-title text-2xl">隨機機率說明</h1>
         <p class="text-base-content/70">
-          數字跟測資表單預設同一套常數。商店／Requestor 已改池與 Zipf；ARes／RReq／status 先把現況寫上（測資頁仍可手動改權重）。
+          數字跟測資表單預設同一套常數。商店／Requestor 已改池與 Zipf；ARes／RReq／status
+          先把現況寫上（測資頁仍可手動改權重）。
         </p>
         <p class="text-sm text-base-content/60">
-          預設：Requestor 不隨機（固定第一個）；商店隨機開啟。要看到下表 Requestor 分佈，請在測資頁勾「隨機 Requestor ID」。
+          預設：Requestor 不隨機（固定第一個）；商店隨機開啟。要看到下表 Requestor
+          分佈，請在測資頁勾「隨機 Requestor ID」。
         </p>
       </div>
     </div>
@@ -84,9 +86,14 @@ const expectedRates = computed(() =>
       <div class="card-body">
         <h2 class="card-title text-lg">一筆資料怎麼抽</h2>
         <ol class="list-decimal list-inside space-y-2 text-sm text-base-content/80">
-          <li>若有勾 Requestor 隨機：依權重抽 15 個之一（總權重 {{ REQUESTOR_WEIGHT_TOTAL }}）。</li>
+          <li>
+            若有勾 Requestor 隨機：依權重抽 15 個之一（總權重 {{ REQUESTOR_WEIGHT_TOTAL }}）。
+          </li>
           <li>對到該 Requestor 的商店池（3000／250／100）。</li>
-          <li>若有勾商店隨機：在該池裡 Zipf 抽一家（指數 {{ MERCHANT_ZIPF_EXPONENT }}），同時帶該店 MCC。</li>
+          <li>
+            若有勾商店隨機：在該池裡 Zipf 抽一家（指數 {{ MERCHANT_ZIPF_EXPONENT }}），同時帶該店
+            MCC。
+          </li>
         </ol>
       </div>
     </div>
@@ -95,7 +102,8 @@ const expectedRates = computed(() =>
       <div class="card-body overflow-x-auto">
         <h2 class="card-title text-lg">Requestor 權重</h2>
         <p class="text-sm text-base-content/60 mb-3">
-          權重同時是「被抽到的相對次數」與「商店池大小」。四個 250 從主池 3000 切片（店會重複）；後 10 個各 100，從全球池後 2000 切開，不跟主池重複。
+          權重同時是「被抽到的相對次數」與「商店池大小」。四個 250 從主池 3000 切片（店會重複）；後
+          10 個各 100，從全球池後 2000 切開，不跟主池重複。
         </p>
         <table class="table table-sm">
           <thead>
@@ -120,7 +128,8 @@ const expectedRates = computed(() =>
       <div class="card-body overflow-x-auto">
         <h2 class="card-title text-lg">商店池 Zipf（主池 3000 為例）</h2>
         <p class="text-sm text-base-content/60 mb-3">
-          全球 {{ MERCHANT_POOL_SIZE }} 家。主池前面是 22 家品牌，所以熱門店交易會明顯多於後面的獨立店。
+          全球 {{ MERCHANT_POOL_SIZE }} 家。主池前面是 22
+          家品牌，所以熱門店交易會明顯多於後面的獨立店。
         </p>
         <table class="table table-sm">
           <thead>
@@ -183,7 +192,10 @@ const expectedRates = computed(() =>
           <li>先抽 ARes（所有交易）。</li>
           <li>只有 ARes 是 C 或 D 才抽 RReq；其餘交易沒有 RReq。</li>
           <li>transStatus：非挑戰用 ARes；挑戰用 RReq（RReq 為 NULL 則仍用 ARes）。</li>
-          <li>challengeCancel 只在挑戰失敗（N／U／R）時，依「取消機率」決定要不要寫 cancel；ACS 再對 cancel→stm／reason。</li>
+          <li>
+            challengeCancel 只在挑戰失敗（N／U／R）時，依「取消機率」決定要不要寫 cancel；ACS 再對
+            cancel→stm／reason。
+          </li>
         </ol>
         <p class="text-sm text-base-content/60 mt-2">
           下表是表單預設。測資頁改權重後，實際抽樣以表單為準。
@@ -241,7 +253,10 @@ const expectedRates = computed(() =>
     <div class="card bg-base-100 border border-base-300 shadow-sm">
       <div class="card-body">
         <h2 class="card-title text-lg">預設下期望成功率</h2>
-        <p class="text-sm text-base-content/60 mb-2">跟測資表單同一套公式：Frictionless＝Y＋A＋I；挑戰成功＝RReq 的 Y；整筆成功再把 C／D 乘上挑戰成功率。</p>
+        <p class="text-sm text-base-content/60 mb-2">
+          跟測資表單同一套公式：Frictionless＝Y＋A＋I；挑戰成功＝RReq 的 Y；整筆成功再把 C／D
+          乘上挑戰成功率。
+        </p>
         <table class="table table-sm">
           <thead>
             <tr>
@@ -252,15 +267,21 @@ const expectedRates = computed(() =>
           <tbody>
             <tr>
               <td>Frictionless</td>
-              <td class="text-right font-mono">{{ expectedRates.expectedFrictionlessRate.toFixed(2) }}</td>
+              <td class="text-right font-mono">
+                {{ expectedRates.expectedFrictionlessRate.toFixed(2) }}
+              </td>
             </tr>
             <tr>
               <td>Challenge 成功（相對挑戰筆）</td>
-              <td class="text-right font-mono">{{ expectedRates.expectedChallengeSuccessRate.toFixed(2) }}</td>
+              <td class="text-right font-mono">
+                {{ expectedRates.expectedChallengeSuccessRate.toFixed(2) }}
+              </td>
             </tr>
             <tr>
               <td>整筆交易成功</td>
-              <td class="text-right font-mono">{{ expectedRates.expectedTransactionSuccessRate.toFixed(2) }}</td>
+              <td class="text-right font-mono">
+                {{ expectedRates.expectedTransactionSuccessRate.toFixed(2) }}
+              </td>
             </tr>
           </tbody>
         </table>

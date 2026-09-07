@@ -82,7 +82,8 @@ const merchantCountryOptions: SelectOption[] = [
             </label>
           </div>
           <p class="text-xs text-error mt-2">
-            獨立店名 {{ MERCHANT_POOL_SIZE }} 筆；商店 Zipf 權重（熱門店較多交易）；requestor 池 3000／250×4／100×10
+            獨立店名 {{ MERCHANT_POOL_SIZE }} 筆；商店 Zipf 權重（熱門店較多交易）；requestor 池
+            3000／250×4／100×10
           </p>
           <details class="mt-3">
             <summary class="text-xs text-base-content/60 cursor-pointer">

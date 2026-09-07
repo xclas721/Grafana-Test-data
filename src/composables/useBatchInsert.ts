@@ -63,10 +63,7 @@ export function shouldRefreshCustomTimeRange(
   days: number,
   data: Record<string, string> | undefined
 ): boolean {
-  return (
-    days === 0 ||
-    (data?.enableCustomTimeRange === 'on' && data?.enableAutoTimeRange === 'on')
-  )
+  return days === 0 || (data?.enableCustomTimeRange === 'on' && data?.enableAutoTimeRange === 'on')
 }
 
 /** 將 total 筆資料分配到 distributionDays 個日曆日（最後一日收斂剩餘筆數） */
@@ -226,10 +223,7 @@ export async function runBatchInsert(params: BatchInsertRunParams): Promise<void
     }
   }
 
-  panel.addLog?.(
-    'info',
-    `每批 ${BULK_RECORD_LIMIT} 筆，同時最多 ${BULK_CONCURRENCY} 個 _bulk 請求`
-  )
+  panel.addLog?.('info', `每批 ${BULK_RECORD_LIMIT} 筆，同時最多 ${BULK_CONCURRENCY} 個 _bulk 請求`)
 
   const bulkLines: string[] = []
   let bulkRecords: BulkRecordMeta[] = []
@@ -305,9 +299,7 @@ export async function runBatchInsert(params: BatchInsertRunParams): Promise<void
 
     for (let iTask = 0; iTask < count; iTask++) {
       try {
-        const forcedCard = cardPool
-          ? cardPool[Math.floor(random() * cardPool.length)]!
-          : undefined
+        const forcedCard = cardPool ? cardPool[Math.floor(random() * cardPool.length)]! : undefined
         form.generateRandom?.(forcedCard)
         const data = form.getFormDataForBatchInsert?.() ?? form.getFormData?.()
         if (!data || Object.keys(data).length === 0) throw new Error('表單資料為空')

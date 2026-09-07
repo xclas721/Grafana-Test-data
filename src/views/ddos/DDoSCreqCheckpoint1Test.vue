@@ -17,17 +17,8 @@ import { LABELS, SECTION_TITLES, BUTTONS, CARD_TITLES, STAT_LABELS, PLACEHOLDER 
 import { useDDoSTestRunner } from './composables/useDDoSTestRunner'
 
 const apiConfig = useApiConfigStore()
-const {
-  isTesting,
-  shouldStop,
-  stats,
-  logs,
-  addLog,
-  getLogClass,
-  beginTest,
-  endTest,
-  stopTest
-} = useDDoSTestRunner()
+const { isTesting, shouldStop, stats, logs, addLog, getLogClass, beginTest, endTest, stopTest } =
+  useDDoSTestRunner()
 
 const config = reactive({
   cardScheme: 'V',

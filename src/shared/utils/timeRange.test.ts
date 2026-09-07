@@ -34,11 +34,7 @@ describe('timeRange', () => {
   })
 
   it('getCustomRangeUtc 會交換顛倒的起訖時間', () => {
-    const range = getCustomRangeUtc(
-      '2026-08-12T10:00:00',
-      '2026-08-12T08:00:00',
-      'browser'
-    )
+    const range = getCustomRangeUtc('2026-08-12T10:00:00', '2026-08-12T08:00:00', 'browser')
     expect(range).not.toBeNull()
     expect(range!.startUtcMs).toBeLessThanOrEqual(range!.clampedEndUtcMs)
   })
