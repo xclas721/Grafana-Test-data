@@ -6,7 +6,7 @@ import DDoSSection from './components/DDoSSection.vue'
 import DDoSTestIntro from './components/DDoSTestIntro.vue'
 import Button from '@/shared/components/Button.vue'
 import ParamInput from '@/shared/components/ParamInput.vue'
-import { build3DSMethodFormData, generateUUID } from '@/shared/utils/ddos-utils'
+import { build3DSMethodFormData, generateUUID, classifyThreeDSMethodResponse } from '@/shared/utils/ddos-utils'
 import { useApiConfigStore } from '@/stores/apiConfig'
 import { LABELS, SECTION_TITLES, BUTTONS, CARD_TITLES, STAT_LABELS, PLACEHOLDER } from './constants'
 import { useDDoSTestRunner } from './composables/useDDoSTestRunner'
@@ -31,7 +31,7 @@ const config = reactive({
   threeDSServerTransIDRandom: true,
   threeDSMethodNotificationURL: 'http://localhost:8040/3dsmethod/notify',
   /** 必填。請求 path 為 /3dsmethod/{issuerOid}/collect */
-  issuerOid: '06b4b203-da05-73f9-256f-454929df6076'
+  issuerOid: '1c6cc770-061d-e6b4-cfc0-c0330a01c45f'
 })
 
 const firstBlockedAt = ref<number | null>(null)
@@ -40,7 +40,7 @@ function loadDefaults() {
   config.requestCount = 10
   config.threeDSServerTransIDRandom = true
   config.threeDSMethodNotificationURL = 'http://localhost:8040/3dsmethod/notify'
-  config.issuerOid = '06b4b203-da05-73f9-256f-454929df6076'
+  config.issuerOid = '1c6cc770-061d-e6b4-cfc0-c0330a01c45f'
 }
 
 function getThreeDSServerTransID() {
@@ -82,23 +82,12 @@ async function runTest() {
       })
       const ms = Date.now() - start
       const text = await res.text()
+      const { outcome, reason } = classifyThreeDSMethodResponse(res.status, text)
 
-      if (!text || text.trim() === '') {
+      if (outcome === 'blocked') {
         stats.rateLimitCount++
         if (!firstBlockedAt.value) firstBlockedAt.value = i
-        addLog('error', `[${i}/${config.requestCount}] BLOCKED (empty, ${ms}ms)`)
-      } else if (/error_3dsmethod|DDoS|Invalid ACS/.test(text)) {
-        stats.rateLimitCount++
-        if (!firstBlockedAt.value) firstBlockedAt.value = i
-        addLog('error', `[${i}/${config.requestCount}] BLOCKED (error page, ${ms}ms)`)
-      } else if (res.status === 403) {
-        stats.rateLimitCount++
-        if (!firstBlockedAt.value) firstBlockedAt.value = i
-        addLog('error', `[${i}/${config.requestCount}] BLOCKED (HTTP 403, ${ms}ms)`)
-      } else if (res.status >= 400) {
-        stats.rateLimitCount++
-        if (!firstBlockedAt.value) firstBlockedAt.value = i
-        addLog('error', `[${i}/${config.requestCount}] BLOCKED (HTTP ${res.status}, ${ms}ms)`)
+        addLog('error', `[${i}/${config.requestCount}] BLOCKED (${reason}, ${ms}ms)`)
       } else {
         stats.successCount++
         addLog('success', `[${i}/${config.requestCount}] PASS (${ms}ms)`)

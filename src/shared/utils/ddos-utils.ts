@@ -40,6 +40,8 @@ export function buildAReqBody(params: AReqBodyParams): Record<string, unknown> {
     messageVersion: '2.2.0',
     threeDSCompInd: 'Y',
     threeDSRequestorAuthenticationInd: '01',
+    /** 03 = Challenge requested；搭配正確有效卡／效期較易拿到 acsURL */
+    threeDSRequestorChallengeInd: '03',
     threeDSRequestorID: '12128301823081230123',
     threeDSRequestorName: 'HiTRUST EMV 3DS Demo Site',
     threeDSRequestorURL: 'http://localhost:8040',
@@ -59,7 +61,8 @@ export function buildAReqBody(params: AReqBodyParams): Record<string, unknown> {
     browserScreenWidth: '1920',
     browserTZ: '-480',
     browserUserAgent: 'Mozilla/5.0',
-    cardExpiryDate: '3012',
+    /** 與 SIM EPS `app.auth.expiryDate=3112` 對齊；3012 會被判 INVALID_CARD(06) */
+    cardExpiryDate: '3112',
     acctInfo: { chAccAgeInd: '01' },
     acctNumber: params.cardNumber,
     acctID: 'F123**6789',
@@ -113,11 +116,20 @@ export function resolveUrl(baseUrl: string, path: string): string {
 }
 
 /**
- * 將後端回傳的 redirect URL 改寫為同源代理，避免直接請求 127.0.0.1:8050 或 localhost:8050 時觸發 CORS。
+ * 將後端回傳的 challenge／creq URL 改寫為同源 Vite proxy。
+ * Local：localhost:8050；Remote：demo／sim 的 /acs-auth-web/... 絕對網址。
  */
 export function rewriteUrlForProxy(url: string): string {
   if (typeof window === 'undefined') return url
   const origin = window.location.origin
+  try {
+    const parsed = new URL(url)
+    if (parsed.pathname.includes('/acs-auth-web') || parsed.pathname.includes('/acs-auth/')) {
+      return `${origin}${parsed.pathname}${parsed.search}`
+    }
+  } catch {
+    /* ignore invalid URL */
+  }
   if (url.includes('http://localhost:8050')) {
     return url.replace(/http:\/\/localhost:8050/, origin)
   }
@@ -125,4 +137,41 @@ export function rewriteUrlForProxy(url: string): string {
     return url.replace(/http:\/\/127\.0\.0\.1:8050/, origin)
   }
   return url
+}
+
+export type ThreeDSMethodOutcome = 'pass' | 'blocked'
+
+/**
+ * 判定 3DS Method collect 回應。
+ * 限流後若 Status=END 會回成功快取頁（response.html，無指紋腳本），不可當 PASS。
+ */
+export function classifyThreeDSMethodResponse(
+  status: number,
+  text: string
+): { outcome: ThreeDSMethodOutcome; reason: string } {
+  const body = text ?? ''
+  if (!body.trim()) {
+    return { outcome: 'blocked', reason: 'empty' }
+  }
+  if (status === 403) {
+    return { outcome: 'blocked', reason: 'HTTP 403' }
+  }
+  if (status >= 400) {
+    return { outcome: 'blocked', reason: `HTTP ${status}` }
+  }
+  if (/error_3dsmethod|DDoS|Invalid ACS|Transaction ID Not Recognized|error-msg/i.test(body)) {
+    return { outcome: 'blocked', reason: 'error page' }
+  }
+  const looksLikeCollect =
+    /fingerprint2|Fingerprint2|diiaJsUrl|deviceAdvertisingId|deviceFingrprintLog|collect_diia/i.test(
+      body
+    )
+  if (looksLikeCollect) {
+    return { outcome: 'pass', reason: 'collect page' }
+  }
+  // response.html：限流 END 快取或完成頁（無指紋腳本）
+  if (/threeDSMethodData/i.test(body) && /form1/i.test(body)) {
+    return { outcome: 'blocked', reason: 'cached/response page' }
+  }
+  return { outcome: 'pass', reason: 'ok' }
 }

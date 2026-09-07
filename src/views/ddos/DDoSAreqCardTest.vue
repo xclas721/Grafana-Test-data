@@ -19,7 +19,7 @@ const { isTesting, shouldStop, stats, logs, addLog, getLogClass, beginTest, endT
 const config = reactive({
   cardScheme: 'V',
   version: '2.2.0',
-  issuerOid: '06b4b203-da05-73f9-256f-454929df6076',
+  issuerOid: '1c6cc770-061d-e6b4-cfc0-c0330a01c45f',
   issuerOidRandom: false,
   projectId: '001',
   cardCount: 5,
@@ -44,7 +44,7 @@ const cardSchemeOptions = [
 function loadDefaults() {
   config.cardScheme = 'V'
   config.version = '2.2.0'
-  config.issuerOid = '06b4b203-da05-73f9-256f-454929df6076'
+  config.issuerOid = '1c6cc770-061d-e6b4-cfc0-c0330a01c45f'
   config.projectId = '001'
   config.cardCount = 5
   config.requestsPerCard = 7

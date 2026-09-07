@@ -45,7 +45,7 @@ function minimalForm(overrides: Partial<FormMap> = {}): FormMap {
     errorDetail: NULL_VALUE,
     errorMessageType: NULL_VALUE,
     challengeCancel: NULL_VALUE,
-    issuerOid: '06b4b203-da05-73f9-256f-454929df6076',
+    issuerOid: '1c6cc770-061d-e6b4-cfc0-c0330a01c45f',
     acsTransId: 'acs-id-1',
     threeDSServerTransId: '3dss-id-1',
     currencyMinorUnit: '2',
@@ -95,7 +95,7 @@ describe('testDataDocument', () => {
       zeroRandom
     )
     expect(document.acsTransID).toBe('acs-id-1')
-    expect(document.issuerOid).toBe('06b4b203-da05-73f9-256f-454929df6076')
+    expect(document.issuerOid).toBe('1c6cc770-061d-e6b4-cfc0-c0330a01c45f')
     expect(document.threeDSServerTransID).toBeUndefined()
   })
 

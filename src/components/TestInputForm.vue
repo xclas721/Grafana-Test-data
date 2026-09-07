@@ -252,7 +252,7 @@ function loadDefaults() {
   setField('startDateTime', '')
   setField('endDateTime', '')
   updateCustomTimeRangeFromNow()
-  setField('issuerOid', '06b4b203-da05-73f9-256f-454929df6076')
+  setField('issuerOid', '1c6cc770-061d-e6b4-cfc0-c0330a01c45f')
   setField('requestorId', DEFAULT_REQUESTOR_ID)
   setField('acsTransId', cryptoRandomUUID())
   setField('threeDSServerTransId', cryptoRandomUUID().toLowerCase())
@@ -305,7 +305,7 @@ function loadDefaults() {
   setField('merchantCountryCodeStr', '156')
   setField(
     'performancePath',
-    '/acs-auth/auth/V/2.2.0/06b4b203-da05-73f9-256f-454929df6076/001/areq'
+    '/acs-auth/auth/V/2.2.0/1c6cc770-061d-e6b4-cfc0-c0330a01c45f/001/areq'
   )
   setField('execTime', '5437')
   setField('creqExecTime', '500')

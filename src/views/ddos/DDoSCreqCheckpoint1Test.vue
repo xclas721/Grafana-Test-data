@@ -23,7 +23,7 @@ const { isTesting, shouldStop, stats, logs, addLog, getLogClass, beginTest, endT
 const config = reactive({
   cardScheme: 'V',
   version: '2.2.0',
-  issuerOid: '06b4b203-da05-73f9-256f-454929df6076',
+  issuerOid: '1c6cc770-061d-e6b4-cfc0-c0330a01c45f',
   projectId: '001',
   requestCount: 15,
   acctNumber: '4143520000000123',
@@ -44,7 +44,7 @@ const firstBlockedAt = ref<number | null>(null)
 function loadDefaults() {
   config.cardScheme = 'V'
   config.version = '2.2.0'
-  config.issuerOid = '06b4b203-da05-73f9-256f-454929df6076'
+  config.issuerOid = '1c6cc770-061d-e6b4-cfc0-c0330a01c45f'
   config.projectId = '001'
   config.requestCount = 15
   config.acctNumber = '4143520000000123'
@@ -84,13 +84,19 @@ async function runTest() {
       body: areqBody
     })
     const areqData = await areqRes.json()
-    if (!areqData.acsTransID || !areqData.acsURL) {
-      throw new Error('AReq response missing acsTransID or acsURL')
+    if (areqData.transStatus !== 'C' || !areqData.acsTransID || !areqData.acsURL) {
+      throw new Error(
+        `AReq 未進入 Challenge（需要 transStatus=C + acsURL）。` +
+          ` 實際 messageType=${areqData.messageType} transStatus=${areqData.transStatus}` +
+          ` reason=${areqData.transStatusReason ?? '-'} errorCode=${areqData.errorCode ?? '-'}` +
+          ` hasAcsURL=${Boolean(areqData.acsURL)}`
+      )
     }
     acsTransID = areqData.acsTransID
     creqUrl = rewriteUrlForProxy(areqData.acsURL)
 
     addLog('info', `acsTransID: ${acsTransID}`)
+    addLog('info', `transStatus: ${areqData.transStatus}`)
     addLog('info', `creqUrl: ${creqUrl}`)
     addLog('info', `Step2: send ${config.requestCount} CReq requests`)
     addLog('info', 'Expected: once blocked, stays blocked')

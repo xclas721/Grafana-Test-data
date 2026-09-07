@@ -61,7 +61,8 @@ export const PREREQUISITES = {
   title: '測試前準備',
   items: [
     '頂欄 badge 確認是 Local 或 Remote（由啟動指令決定）',
-    'Remote 會打真 ACS（3DS），不是灌 ES 假資料'
+    'Remote 會打真 ACS（3DS），不是灌 ES 假資料',
+    'CReq 需 Challenge：AReq 效期用 3112（對齊 SIM EPS），勿用 3012'
   ]
 } as const
 
@@ -116,6 +117,6 @@ export const TEST_DESCRIPTIONS = {
     principle:
       '以 threeDSServerTransID 為 key，採用 Token Bucket 演算法，每個 ID 獨立 bucket、容量 5 tokens（依 duration 補充）。同一 ID 連續請求時，前 5 次通過，第 6 次起應被阻擋。',
     config: 'acs.threeds.method.limit.strategy.capacity = 5',
-    expected: '預期：前 5 次 PASS，第 6 次起 BLOCKED。'
+    expected: '預期：前 5 次 PASS，第 6 次起 BLOCKED。限流快取成功頁也算 BLOCKED。'
   }
 } as const
