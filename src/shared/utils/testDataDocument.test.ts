@@ -143,4 +143,120 @@ describe('testDataDocument', () => {
     expect(document.browserGeoIP).toBeDefined()
     expect((document.browserGeoIP as Record<string, unknown>).country_iso_code).toBe('CN')
   })
+
+  describe('fingerprintMode', () => {
+    it('預設（未帶 fingerprintMode）不寫入 transRecordType/fingerprintMethod', () => {
+      const { document } = buildDocument(
+        minimalForm(),
+        'acs-transaction-2020-01-15',
+        '2020-01-15T08:00:00.000Z',
+        zeroRandom
+      )
+      expect(document.transRecordType).toBeUndefined()
+      expect(document.fingerprintMethod).toBeUndefined()
+      expect(document.diiaDeviceInfo).toBeUndefined()
+    })
+
+    it("fingerprintMode='off' 完全不動 fingerprint 相關欄位", () => {
+      const { document } = buildDocument(
+        minimalForm({
+          fingerprintMode: 'off',
+          deviceChannel: '02',
+          threeDSCompInd: 'Y'
+        }),
+        'acs-transaction-2020-01-15',
+        '2020-01-15T08:00:00.000Z',
+        zeroRandom
+      )
+      expect(document.transRecordType).toBeUndefined()
+      expect(document.fingerprintMethod).toBeUndefined()
+      expect(document.diiaDeviceInfo).toBeUndefined()
+    })
+
+    it("fingerprintMode='diia-only' 且符合 Method 條件時寫入 diiaDeviceInfo.ipGeo，且 fingerprintMethod=DIIA", () => {
+      const { document } = buildDocument(
+        minimalForm({
+          fingerprintMode: 'diia-only',
+          deviceChannel: '02',
+          threeDSCompInd: 'Y'
+        }),
+        'acs-transaction-2020-01-15',
+        '2020-01-15T08:00:00.000Z',
+        zeroRandom
+      )
+      expect(document.transRecordType).toBe('MASTER')
+      expect(document.fingerprintMethod).toBe('DIIA')
+      expect(document.diiaDeviceInfo).toBeDefined()
+      const diia = document.diiaDeviceInfo as Record<string, unknown>
+      expect(diia.ipGeo).toBeDefined()
+      expect(typeof (diia.ipGeo as Record<string, unknown>).lat).toBe('number')
+      expect(typeof diia.isVpn).toBe('boolean')
+    })
+
+    it("fingerprintMode='fp2-only' 且符合 Method 條件時 fingerprintMethod=FP2 且無 diiaDeviceInfo", () => {
+      const { document } = buildDocument(
+        minimalForm({
+          fingerprintMode: 'fp2-only',
+          deviceChannel: '02',
+          threeDSCompInd: 'Y'
+        }),
+        'acs-transaction-2020-01-15',
+        '2020-01-15T08:00:00.000Z',
+        zeroRandom
+      )
+      expect(document.fingerprintMethod).toBe('FP2')
+      expect(document.diiaDeviceInfo).toBeUndefined()
+    })
+
+    it('非 browser 或無 Method 條件時不寫入 fingerprintMethod（但仍可有 transRecordType）', () => {
+      const { document } = buildDocument(
+        minimalForm({
+          fingerprintMode: 'mixed',
+          deviceChannel: '03',
+          threeDSCompInd: 'Y'
+        }),
+        'acs-transaction-2020-01-15',
+        '2020-01-15T08:00:00.000Z',
+        zeroRandom
+      )
+      expect(document.fingerprintMethod).toBeUndefined()
+      expect(document.diiaDeviceInfo).toBeUndefined()
+      expect(document.transRecordType).toBe('MASTER')
+    })
+
+    it('fingerprintMethod 與 diiaDeviceInfo 互斥：FP2 筆不會帶 diiaDeviceInfo', () => {
+      const random = () => 0.5
+      const { document } = buildDocument(
+        minimalForm({
+          fingerprintMode: 'mixed',
+          deviceChannel: '02',
+          threeDSCompInd: 'Y'
+        }),
+        'acs-transaction-2020-01-15',
+        '2020-01-15T08:00:00.000Z',
+        random
+      )
+      if (document.fingerprintMethod === 'FP2') {
+        expect(document.diiaDeviceInfo).toBeUndefined()
+      } else if (document.fingerprintMethod === 'DIIA') {
+        expect(document.diiaDeviceInfo).toBeDefined()
+      }
+    })
+
+    it('3dss-transaction 索引不寫入 fingerprint 相關欄位', () => {
+      const { document } = buildDocument(
+        minimalForm({
+          fingerprintMode: 'diia-only',
+          deviceChannel: '02',
+          threeDSCompInd: 'Y'
+        }),
+        '3dss-transaction-2020-01-15',
+        '2020-01-15T08:00:00.000Z',
+        zeroRandom
+      )
+      expect(document.transRecordType).toBeUndefined()
+      expect(document.fingerprintMethod).toBeUndefined()
+      expect(document.diiaDeviceInfo).toBeUndefined()
+    })
+  })
 })

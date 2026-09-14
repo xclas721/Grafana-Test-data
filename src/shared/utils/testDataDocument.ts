@@ -2,6 +2,10 @@ import { GEOIP_COUNTRY_CODE_MAP } from '@/shared/constants/countryCurrency'
 import { GEOIP_CITIES, continentNameForCountryCode } from '@/shared/constants/geoIpCities'
 import { NULL_VALUE } from '@/shared/constants/nullValue'
 import { convertToUTC } from '@/shared/utils/timeRange'
+import {
+  resolveFingerprintFields,
+  type FingerprintMode
+} from '@/shared/utils/diiaDeviceInfoGenerator'
 
 export type FormMap = Record<string, string>
 
@@ -88,7 +92,8 @@ export const BATCH_INSERT_FORM_KEYS = [
   'acctNumberHashed',
   'acctNumberMask',
   'acquirerBin',
-  'acquirerMerchantId'
+  'acquirerMerchantId',
+  'fingerprintMode'
 ] as const
 
 type BuiltDoc = {
@@ -130,6 +135,9 @@ type BuiltDoc = {
   acsTransID?: string
   issuerOid?: string
   threeDSServerTransID?: string
+  transRecordType?: string
+  fingerprintMethod?: string
+  diiaDeviceInfo?: Record<string, unknown>
   [key: string]: unknown
 }
 
@@ -392,6 +400,29 @@ export function buildDocument(
   }
   if (indexName.includes('3dss-transaction')) {
     doc.threeDSServerTransID = form.threeDSServerTransId
+  }
+  const fingerprintMode = (form.fingerprintMode || 'off') as FingerprintMode
+  if (indexName.includes('acs-transaction') && fingerprintMode !== 'off') {
+    const fingerprintFields = resolveFingerprintFields({
+      mode: fingerprintMode,
+      deviceChannel: form.deviceChannel,
+      threeDSCompInd: form.threeDSCompInd,
+      countryCodeForGeoIP,
+      countryInfo,
+      random
+    })
+    if (fingerprintFields.transRecordType) {
+      doc.transRecordType = fingerprintFields.transRecordType
+    }
+    if (fingerprintFields.fingerprintMethod) {
+      doc.fingerprintMethod = fingerprintFields.fingerprintMethod
+    }
+    if (fingerprintFields.diiaDeviceInfo) {
+      doc.diiaDeviceInfo = fingerprintFields.diiaDeviceInfo
+    }
+    if (fingerprintFields.suppressDeviceAdvertisingId) {
+      delete doc.deviceAdvertisingId
+    }
   }
   return { document: doc, utcDateStr: currentDateTime.split('T')[0] }
 }

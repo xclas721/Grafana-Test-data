@@ -16,6 +16,7 @@ const props = defineProps<{
   deviceLocale: string
   deviceAdvertisingId: string
   threeDSCompInd: string
+  fingerprintMode: string
   merchantCountryCodeStr: string
   enableAll3DSParamsRandom: boolean
   enableMessageCategory: boolean
@@ -46,6 +47,7 @@ const emit = defineEmits<{
   'update:deviceLocale': [value: string]
   'update:deviceAdvertisingId': [value: string]
   'update:threeDSCompInd': [value: string]
+  'update:fingerprintMode': [value: string]
   'update:merchantCountryCodeStr': [value: string]
   'update:enableAll3DSParamsRandom': [value: boolean]
   'update:enableMessageCategory': [value: boolean]
@@ -123,6 +125,13 @@ const threeDSCompIndOptions: SelectOption[] = [
   { value: '', label: '留空' },
   { value: 'Y', label: 'Y - Yes' },
   { value: 'N', label: 'N - No' }
+]
+
+const fingerprintModeOptions: SelectOption[] = [
+  { value: 'off', label: 'off - 維持現狀（不寫 transRecordType/fingerprintMethod）' },
+  { value: 'mixed', label: 'mixed - FP2/DIIA 依比例混合（預設）' },
+  { value: 'fp2-only', label: 'fp2-only - 有 Method 一律 FP2' },
+  { value: 'diia-only', label: 'diia-only - 有 Method 一律 DIIA' }
 ]
 
 const merchantCountryCodeStrOptions: SelectOption[] = [
@@ -456,6 +465,19 @@ const merchantCountryCodeStrOptions: SelectOption[] = [
             </label>
           </div>
           <p class="text-xs text-error mt-2">可隨機生成 (Y/N)</p>
+        </div>
+        <div>
+          <Select
+            id="fingerprintMode"
+            label="指紋模式 (transRecordType/fingerprintMethod/diiaDeviceInfo)"
+            :modelValue="props.fingerprintMode"
+            :options="fingerprintModeOptions"
+            @update:modelValue="(value) => emit('update:fingerprintMode', String(value))"
+          />
+          <p class="text-xs text-base-content/60 mt-2">
+            僅 deviceChannel=02 且 threeDSCompInd=Y 的子集才可能寫入 fingerprintMethod；mixed 預設約
+            35% DIIA / 65% FP2
+          </p>
         </div>
         <div class="rounded-md border border-error/40 bg-error/5 p-3">
           <Select

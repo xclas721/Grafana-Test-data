@@ -305,6 +305,7 @@ function loadDefaults() {
   setField('deviceLocale', 'zh-TW')
   setField('deviceAdvertisingId', '4d4427f20375a66287430edd54bd82d2')
   setField('threeDSCompInd', 'Y')
+  setField('fingerprintMode', 'mixed')
   setField('merchantCountryCodeStr', '156')
   setField(
     'performancePath',
@@ -834,6 +835,7 @@ defineExpose({
       v-model:deviceLocale="formState.deviceLocale"
       v-model:deviceAdvertisingId="formState.deviceAdvertisingId"
       v-model:threeDSCompInd="formState.threeDSCompInd"
+      v-model:fingerprintMode="formState.fingerprintMode"
       v-model:merchantCountryCodeStr="formState.merchantCountryCodeStr"
       v-model:enableAll3DSParamsRandom="formState.enableAll3DSParamsRandom"
       v-model:enableMessageCategory="formState.enableMessageCategory"
