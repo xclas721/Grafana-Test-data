@@ -80,6 +80,7 @@ const messageVersionOptions: SelectOption[] = [
 ]
 
 const deviceChannelOptions: SelectOption[] = [
+  { value: '01', label: '01 - App-based' },
   { value: '02', label: '02 - Browser (BRW)' },
   { value: '03', label: '03 - 3DS Requestor Initiated (3RI)' }
 ]

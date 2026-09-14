@@ -58,7 +58,7 @@ export function randomizeThreeDSDeviceFields(
     updates.messageCategory = pickRandom(['01', '02', '80', '85', '86'], random)
   }
   if (input.enableDeviceChannel) {
-    updates.deviceChannel = pickRandom(['02', '03'], random)
+    updates.deviceChannel = pickRandom(['01', '02', '03'], random)
   }
   if (input.enableThreeDSRequestorChallengeInd) {
     updates.threeDSRequestorChallengeInd = pickRandom(
@@ -87,7 +87,10 @@ export function randomizeThreeDSDeviceFields(
     updates.deviceAdvertisingId = randomHex(32, random)
   }
   if (input.enableThreeDSCompIndRandom) {
-    updates.threeDSCompInd = random() < 0.5 ? 'Y' : 'N'
+    // threeDSCompInd 依 EMV 3DS spec (Annex B.1) 僅為 Browser-based AReq 必填欄位；
+    // 本次隨機若同時把 deviceChannel 改成 01(App-based)/03(3RI)，就不該帶這個欄位。
+    updates.threeDSCompInd =
+      updates.deviceChannel && updates.deviceChannel !== '02' ? '' : random() < 0.5 ? 'Y' : 'N'
   }
   if (input.enableAuthenticationMethodRandom) {
     updates.authenticationMethod = pickRandom(['01', '02', '03', '04', '05', '09'], random)
