@@ -13,6 +13,7 @@ import { fetchElasticsearchBulk } from '@/shared/utils/elasticsearchBulk'
 import {
   RANDOM_CARD_SCHEMES,
   generateCardPool,
+  generateMerchantIdPool,
   type PoolCard
 } from '@/composables/useBusinessFieldRandomizer'
 
@@ -24,7 +25,7 @@ export type BulkRecordMeta = { itemCount: number; dateStr: string }
 export type BatchInsertFormApi = {
   getFormData?: () => Record<string, string> | undefined
   getFormDataForBatchInsert?: () => Record<string, string> | undefined
-  generateRandom?: (forcedCard?: PoolCard) => void
+  generateRandom?: (forcedCard?: PoolCard, forcedMerchantId?: string) => void
   generateSharedTimestamp?: (data: Record<string, string>) => string
   buildDocument?: (
     data: Record<string, string>,
@@ -147,6 +148,21 @@ export function resolveCardPool(
   return { pool: generateCardPool(poolSize, schemes, random), poolSize, ratio }
 }
 
+/** 商店 ID 重複池固定倍率：沒有對應 UI 欄位可調，取跟卡號池預設倍率相近的值即可，
+ *  目的只是讓商店在批量資料裡自然重複，不是給使用者細調的旋鈕。 */
+const MERCHANT_POOL_RATIO = 10
+
+export function resolveMerchantIdPool(
+  dataBase: Record<string, string>,
+  total: number,
+  random: () => number = Math.random
+): { pool: string[]; poolSize: number; ratio: number } | null {
+  if (dataBase.enableAcquirerMerchantIdRandom !== 'on') return null
+  const ratio = MERCHANT_POOL_RATIO
+  const poolSize = Math.max(1, Math.ceil(total / ratio))
+  return { pool: generateMerchantIdPool(poolSize, random), poolSize, ratio }
+}
+
 export async function runBatchInsert(params: BatchInsertRunParams): Promise<void> {
   const { mode, form, panel } = params
   const random = params.random ?? Math.random
@@ -212,6 +228,15 @@ export async function runBatchInsert(params: BatchInsertRunParams): Promise<void
     panel.addLog?.(
       'info',
       `卡號重複池：${cardPoolInfo.poolSize} 張卡（倍率 ${cardPoolInfo.ratio}，共 ${total} 筆，平均每卡約 ${cardPoolInfo.ratio} 次）`
+    )
+  }
+
+  const merchantIdPoolInfo = resolveMerchantIdPool(dataBase, total, random)
+  const merchantIdPool = merchantIdPoolInfo?.pool ?? null
+  if (merchantIdPoolInfo) {
+    panel.addLog?.(
+      'info',
+      `商店 ID 重複池：${merchantIdPoolInfo.poolSize} 個商店（倍率 ${merchantIdPoolInfo.ratio}，共 ${total} 筆，平均每個商店約 ${merchantIdPoolInfo.ratio} 次）`
     )
   }
 
@@ -308,7 +333,10 @@ export async function runBatchInsert(params: BatchInsertRunParams): Promise<void
         const forcedCard = cardPool
           ? cardPool[Math.floor(random() * cardPool.length)]!
           : undefined
-        form.generateRandom?.(forcedCard)
+        const forcedMerchantId = merchantIdPool
+          ? merchantIdPool[Math.floor(random() * merchantIdPool.length)]!
+          : undefined
+        form.generateRandom?.(forcedCard, forcedMerchantId)
         const data = form.getFormDataForBatchInsert?.() ?? form.getFormData?.()
         if (!data || Object.keys(data).length === 0) throw new Error('表單資料為空')
 

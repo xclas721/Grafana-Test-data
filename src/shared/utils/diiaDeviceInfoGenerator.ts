@@ -14,6 +14,7 @@ export type ResolveFingerprintFieldsParams = {
   methodExecutionRate?: number
   diiaRatio?: number
   udidPoolSize?: number
+  ipPoolSize?: number
   random: () => number
 }
 
@@ -27,6 +28,9 @@ export type FingerprintFieldsResult = {
 const DEFAULT_METHOD_EXECUTION_RATE = 0.85
 const DEFAULT_DIIA_RATIO = 0.35
 const DEFAULT_UDID_POOL_SIZE = 200
+/** IP pool 刻意比 udid pool 小，讓多個 udid 有機會共用同一個 IP（模擬裝置農場/NAT），
+ *  同一 udid 也有機會在不同交易中换到 pool 內的別的 IP（模擬裝置換網路）。 */
+const DEFAULT_IP_POOL_SIZE = 40
 
 const TRANS_RECORD_TYPE_WEIGHTS = [
   ['MASTER', 0.92],
@@ -73,12 +77,22 @@ export function generateDiiaUdid(random: () => number, poolSize = DEFAULT_UDID_P
   return stableUdidFromIndex(idx)
 }
 
-function randomInt(max: number, random: () => number): number {
-  return Math.floor(random() * (max + 1))
+/** 種子跟 stableUdidFromIndex 錯開，避免同一 index 在兩個 pool 間看起來相關。 */
+function stableIpFromIndex(index: number): string {
+  const rnd = mulberry32(index * 7919 + 104729)
+  const octet = () => Math.floor(rnd() * 256)
+  return `${octet()}.${octet()}.${octet()}.${octet()}`
 }
 
-function randomIPv4(random: () => number): string {
-  return `${randomInt(255, random)}.${randomInt(255, random)}.${randomInt(255, random)}.${randomInt(255, random)}`
+/** 用有限 pool index 反推 IP，讓多筆交易/多個 udid 有機會共用同一個 IP，
+ *  N-19（Top IP + unique udid cardinality）與 N-20（裝置關聯圖）才有東西可聚合。 */
+export function generateDiiaIp(random: () => number, poolSize = DEFAULT_IP_POOL_SIZE): string {
+  const idx = Math.floor(random() * poolSize)
+  return stableIpFromIndex(idx)
+}
+
+function randomInt(max: number, random: () => number): number {
+  return Math.floor(random() * (max + 1))
 }
 
 const DEVICE_TYPE_WEIGHTS = [
@@ -178,6 +192,7 @@ export type GenerateDiiaDeviceInfoParams = {
   countryCodeForGeoIP: string
   countryInfo: DiiaCountryInfo
   udidPoolSize?: number
+  ipPoolSize?: number
   random: () => number
 }
 
@@ -221,7 +236,7 @@ export function generateDiiaDeviceInfo(
     deviceType,
     osName,
     browserName,
-    ip: randomIPv4(random),
+    ip: generateDiiaIp(random, params.ipPoolSize),
     ipCountry: countryInfo.alpha2,
     ipCity: sourceCity.name,
     ipGeo: {
@@ -276,6 +291,7 @@ export function resolveFingerprintFields(
     countryCodeForGeoIP: params.countryCodeForGeoIP,
     countryInfo: params.countryInfo,
     udidPoolSize: params.udidPoolSize,
+    ipPoolSize: params.ipPoolSize,
     random
   })
 

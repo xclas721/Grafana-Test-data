@@ -37,6 +37,10 @@ export type BusinessRandomInput = {
   // 有值時取代隨機生成，讓同一張卡在多筆交易間重複出現以測試去重效能。
   forcedCardScheme?: string
   forcedAcctNumber?: string
+  // 商店 ID 重複池：指定本筆要用的 acquirerMerchantId（來自批量抽樣），
+  // 有值時取代隨機生成，讓同一個商店在多筆交易/多個 udid 間重複出現，
+  // 裝置關聯圖（N-20）才有「多個裝置共用同一商店」的聚類可看。
+  forcedMerchantId?: string
 }
 
 export type PoolCard = { scheme: string; acctNumber: string }
@@ -110,6 +114,25 @@ export function generateCardPool(
   return pool
 }
 
+/**
+ * 產生固定大小的 acquirerMerchantId 重複池。批量灌資料時每筆從池中隨機抽一個，
+ * 讓同一商店在多筆交易/多個 udid 間重複出現，裝置關聯圖（N-20）的商店節點才會
+ * 匯聚（而不是每筆都各自獨立的死枝葉）。
+ */
+export function generateMerchantIdPool(
+  size: number,
+  random: () => number = Math.random
+): string[] {
+  const count = Math.max(1, Math.floor(size))
+  const pool: string[] = []
+  for (let i = 0; i < count; i++) {
+    let merchantId = randomDigits(7, random)
+    if (merchantId.startsWith('0')) merchantId = `1${merchantId.substring(1)}`
+    pool.push(merchantId)
+  }
+  return pool
+}
+
 export function randomizeBusinessFields(
   input: BusinessRandomInput,
   random: () => number = Math.random
@@ -133,8 +156,13 @@ export function randomizeBusinessFields(
   }
 
   if (input.enableAcquirerMerchantIdRandom) {
-    let merchantId = randomDigits(7, random)
-    if (merchantId.startsWith('0')) merchantId = `1${merchantId.substring(1)}`
+    const merchantId =
+      input.forcedMerchantId ??
+      (() => {
+        let id = randomDigits(7, random)
+        if (id.startsWith('0')) id = `1${id.substring(1)}`
+        return id
+      })()
     updates.acquirerMerchantId = merchantId
   }
 
