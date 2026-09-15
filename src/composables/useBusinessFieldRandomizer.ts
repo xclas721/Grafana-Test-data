@@ -37,10 +37,6 @@ export type BusinessRandomInput = {
   // 有值時取代隨機生成，讓同一張卡在多筆交易間重複出現以測試去重效能。
   forcedCardScheme?: string
   forcedAcctNumber?: string
-  // 商店 ID 重複池：指定本筆要用的 acquirerMerchantId（來自批量抽樣），
-  // 有值時取代隨機生成，讓同一個商店在多筆交易/多個 udid 間重複出現，
-  // 裝置關聯圖（N-20）才有「多個裝置共用同一商店」的聚類可看。
-  forcedMerchantId?: string
 }
 
 export type PoolCard = { scheme: string; acctNumber: string }
@@ -114,23 +110,42 @@ export function generateCardPool(
   return pool
 }
 
-/**
- * 產生固定大小的 acquirerMerchantId 重複池。批量灌資料時每筆從池中隨機抽一個，
- * 讓同一商店在多筆交易/多個 udid 間重複出現，裝置關聯圖（N-20）的商店節點才會
- * 匯聚（而不是每筆都各自獨立的死枝葉）。
- */
-export function generateMerchantIdPool(
-  size: number,
-  random: () => number = Math.random
-): string[] {
-  const count = Math.max(1, Math.floor(size))
-  const pool: string[] = []
-  for (let i = 0; i < count; i++) {
-    let merchantId = randomDigits(7, random)
-    if (merchantId.startsWith('0')) merchantId = `1${merchantId.substring(1)}`
-    pool.push(merchantId)
+/** 簡易 mulberry32 PRNG：同一 seed 永遠產生同一序列，用於由 pool index 反推穩定 merchantId
+ *  （跟 diiaDeviceInfoGenerator 的 udid／ip 池化用同一招，不需要記錄任何狀態）。 */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0
+  return function () {
+    a |= 0
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
-  return pool
+}
+
+/** 種子跟 udid/ip 的 stable-from-index 錯開，避免看起來相關。 */
+function stableMerchantIdFromIndex(index: number): string {
+  const rnd = mulberry32(index * 2654435761 + 40503)
+  let id = ''
+  for (let i = 0; i < 7; i++) id += Math.floor(rnd() * 10)
+  if (id.startsWith('0')) id = `1${id.substring(1)}`
+  return id
+}
+
+const DEFAULT_MERCHANT_POOL_SIZE = 500
+
+/**
+ * 用有限 pool index 反推 acquirerMerchantId，同一個 index 永遠對應同一個商店 ID。
+ * 跟 udid／ip 用同一套「固定種子映射」手法：不管分幾次批次、隔多久呼叫，同一個抽到的
+ * index 結果都一樣，天然讓多筆交易/多個 udid 共用同一個商店，裝置關聯圖（N-20）的商店
+ * 節點才會匯聚——不像「每次批次各自隨機生成一批池子」那樣，批次之間彼此不重疊。
+ */
+export function generateMerchantId(
+  random: () => number = Math.random,
+  poolSize: number = DEFAULT_MERCHANT_POOL_SIZE
+): string {
+  const idx = Math.floor(random() * poolSize)
+  return stableMerchantIdFromIndex(idx)
 }
 
 export function randomizeBusinessFields(
@@ -156,14 +171,7 @@ export function randomizeBusinessFields(
   }
 
   if (input.enableAcquirerMerchantIdRandom) {
-    const merchantId =
-      input.forcedMerchantId ??
-      (() => {
-        let id = randomDigits(7, random)
-        if (id.startsWith('0')) id = `1${id.substring(1)}`
-        return id
-      })()
-    updates.acquirerMerchantId = merchantId
+    updates.acquirerMerchantId = generateMerchantId(random)
   }
 
   if (input.enableAcquirerBinRandom) {

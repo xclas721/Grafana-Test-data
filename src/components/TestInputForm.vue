@@ -385,10 +385,7 @@ function loadDefaults() {
   setStatus('預設值已載入 (Vue 移植版)', 'success')
 }
 
-function generateRandom(
-  forcedCard?: { scheme: string; acctNumber: string },
-  forcedMerchantId?: string
-) {
+function generateRandom(forcedCard?: { scheme: string; acctNumber: string }) {
   const set = (id: string, val: string) => setField(id, val)
   const applyUpdates = (updates: Record<string, string>) => {
     for (const [key, value] of Object.entries(updates)) set(key, value)
@@ -487,8 +484,7 @@ function generateRandom(
     requestorWeights: REQUESTOR_MERCHANT_WEIGHTS,
     merchantPoolsByRequestor: REQUESTOR_MERCHANT_POOL_MAP,
     forcedCardScheme: forcedCard?.scheme,
-    forcedAcctNumber: forcedCard?.acctNumber,
-    forcedMerchantId
+    forcedAcctNumber: forcedCard?.acctNumber
   })
   applyUpdates(businessRandomResult.updates)
   if (businessRandomResult.updates.cardScheme) {
