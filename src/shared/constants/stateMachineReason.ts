@@ -95,8 +95,10 @@ export const STATE_MACHINE_REASON_OPTIONS_ACS: SelectOption[] = [
   { value: '5501', label: '5501 - 尚未收到離線驗證結果' },
   { value: '5502', label: '5502 - 離線驗證失敗' },
   { value: '9999', label: '9999 - 系統錯誤' },
-  { value: '9001', label: '9001 - 收到 Error' },
-  { value: '9002', label: '9002 - 偵測到 DDOS 攻擊' }
+  // 9001/9002 已於 2026-06-23（threeds-acs-v3 25e9c6a69）汰換：與 StateMachineStateEnum 同號不同義，
+  // ERROR_RECEIVED(9001) 直接移除、無替代碼；DDOS_DETECTED 由 9002 改為 9990。
+  // 灌 9001/9002 會產生後端 StateMachineReasonEnum 認不得的資料（PDF 匯出會整列濾掉）。
+  { value: '9990', label: '9990 - 偵測到 DDOS 攻擊' }
 ]
 
 /** 3DSS：對齊 threeds-server-v3 StateMachineReasonEnum（S 前綴） */
