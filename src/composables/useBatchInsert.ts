@@ -24,7 +24,7 @@ export type BulkRecordMeta = { itemCount: number; dateStr: string }
 export type BatchInsertFormApi = {
   getFormData?: () => Record<string, string> | undefined
   getFormDataForBatchInsert?: () => Record<string, string> | undefined
-  generateRandom?: (forcedCard?: PoolCard) => void
+  generateRandom?: (forcedCard?: PoolCard) => void | Promise<void>
   generateSharedTimestamp?: (data: Record<string, string>) => string
   buildDocument?: (
     data: Record<string, string>,
@@ -308,7 +308,7 @@ export async function runBatchInsert(params: BatchInsertRunParams): Promise<void
         const forcedCard = cardPool
           ? cardPool[Math.floor(random() * cardPool.length)]!
           : undefined
-        form.generateRandom?.(forcedCard)
+        await form.generateRandom?.(forcedCard)
         const data = form.getFormDataForBatchInsert?.() ?? form.getFormData?.()
         if (!data || Object.keys(data).length === 0) throw new Error('表單資料為空')
 

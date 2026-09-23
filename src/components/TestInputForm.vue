@@ -418,7 +418,7 @@ function loadDefaults() {
   setStatus('預設值已載入 (Vue 移植版)', 'success')
 }
 
-function generateRandom(forcedCard?: { scheme: string; acctNumber: string }) {
+async function generateRandom(forcedCard?: { scheme: string; acctNumber: string }) {
   const set = (id: string, val: string) => setField(id, val)
   const applyUpdates = (updates: Record<string, string>) => {
     for (const [key, value] of Object.entries(updates)) set(key, value)
@@ -524,7 +524,7 @@ function generateRandom(forcedCard?: { scheme: string; acctNumber: string }) {
     syncCardSchemeToggles(businessRandomResult.updates.cardScheme)
   }
   if (businessRandomResult.updates.acctNumber) {
-    updateCardInfoFromAcctNumber()
+    await updateCardInfoFromAcctNumber()
   }
 
   // 6) 3DS/裝置欄位
