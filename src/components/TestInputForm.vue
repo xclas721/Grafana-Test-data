@@ -175,23 +175,56 @@ const expectedTransactionSuccessRate = computed(
   () => expectedRates.value.expectedTransactionSuccessRate
 )
 
-function calculateAcctNumberHashed(acctNumber: string) {
-  // 假資料用途：同步 cyrb53，穩定且每卡唯一即可（A-06 distinct 測試用）
-  let h1 = 0xdeadbeef
-  let h2 = 0x41c6ce57
-  for (let i = 0; i < acctNumber.length; i++) {
-    const ch = acctNumber.charCodeAt(i)
-    h1 = Math.imul(h1 ^ ch, 2654435761)
-    h2 = Math.imul(h2 ^ ch, 1597334677)
-  }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909)
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909)
-  const hashNum = 4294967296 * (2097151 & h2) + (h1 >>> 0)
-  const hashHex = hashNum.toString(16).padStart(16, '0')
-  setField('acctNumberHashed', btoa(hashHex + acctNumber.substring(0, 8)))
+function base64ToBytes(base64: string): Uint8Array {
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes
 }
 
-function updateCardInfoFromAcctNumber() {
+async function calculateAcctNumberHashed(acctNumber: string) {
+  // 暫時比照後端 HashUtil 的兩種演算法，用 formState.hashMode 切換：
+  // - 'salt'：single 模式、無啟用中 HMAC CEK 時的降級路徑
+  //   CodingUtil.getMessageDigest(data, salt, "SHA-256", BASE64) → md.update(salt); md.update(data)
+  //   即 Base64(SHA-256(hashSalt + acctNumber))
+  // - 'hmac'：已設定真正 HMAC 金鑰時
+  //   CodingUtil.getMessageDigestHmac(data, hmacKeyValue, "HmacSHA256", BASE64)
+  //   即 Base64(HMAC-SHA256(key=hmacKeyBase64 解碼後的 bytes, data=acctNumber))
+  const encoder = new TextEncoder()
+  const dataBytes = encoder.encode(acctNumber)
+
+  if (formState.hashMode === 'hmac') {
+    if (!formState.hmacKeyBase64) {
+      setField('acctNumberHashed', '')
+      return
+    }
+    try {
+      const keyBytes = base64ToBytes(formState.hmacKeyBase64)
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        keyBytes,
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      )
+      const signature = await crypto.subtle.sign('HMAC', cryptoKey, dataBytes)
+      setField('acctNumberHashed', btoa(String.fromCharCode(...new Uint8Array(signature))))
+    } catch (e) {
+      setField('acctNumberHashed', '')
+      console.error('HMAC 金鑰格式錯誤（需為 Base64）', e)
+    }
+    return
+  }
+
+  const saltBytes = encoder.encode(formState.hashSalt || '')
+  const combined = new Uint8Array(saltBytes.length + dataBytes.length)
+  combined.set(saltBytes, 0)
+  combined.set(dataBytes, saltBytes.length)
+  const digest = await crypto.subtle.digest('SHA-256', combined)
+  setField('acctNumberHashed', btoa(String.fromCharCode(...new Uint8Array(digest))))
+}
+
+async function updateCardInfoFromAcctNumber() {
   const acct = formState.acctNumber || ''
   if (acct.length >= 6) setField('cardbin6', acct.substring(0, 6))
   if (acct.length >= 8) setField('cardbin8', acct.substring(0, 8))
@@ -199,7 +232,7 @@ function updateCardInfoFromAcctNumber() {
     const first6 = acct.substring(0, 6)
     const last4 = acct.substring(acct.length - 4)
     setField('acctNumberMask', first6 + '******' + last4)
-    calculateAcctNumberHashed(acct)
+    await calculateAcctNumberHashed(acct)
   }
 }
 
@@ -638,6 +671,15 @@ watch(
 )
 
 watch(
+  () => [formState.hashMode, formState.hashSalt, formState.hmacKeyBase64],
+  () => {
+    if ((formState.acctNumber || '').length >= 10) {
+      calculateAcctNumberHashed(formState.acctNumber)
+    }
+  }
+)
+
+watch(
   () => formState.deviceIpAddress,
   (value) => {
     if (value && value !== formState.browserIP) setField('browserIP', value)
@@ -802,6 +844,9 @@ defineExpose({
       v-model:acctNumber="formState.acctNumber"
       v-model:cardbin6="formState.cardbin6"
       v-model:acctNumberHashed="formState.acctNumberHashed"
+      v-model:hashMode="formState.hashMode"
+      v-model:hashSalt="formState.hashSalt"
+      v-model:hmacKeyBase64="formState.hmacKeyBase64"
       v-model:acctNumberMask="formState.acctNumberMask"
       v-model:cardbin8="formState.cardbin8"
       v-model:enableCardSchemeRandom="formState.enableCardSchemeRandom"

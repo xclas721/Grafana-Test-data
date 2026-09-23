@@ -8,6 +8,9 @@ const props = defineProps<{
   acctNumber: string
   cardbin6: string
   acctNumberHashed: string
+  hashMode: 'salt' | 'hmac'
+  hashSalt: string
+  hmacKeyBase64: string
   acctNumberMask: string
   cardbin8: string
   enableCardSchemeRandom: boolean
@@ -33,6 +36,9 @@ const emit = defineEmits<{
   'update:acctNumber': [value: string]
   'update:cardbin6': [value: string]
   'update:acctNumberHashed': [value: string]
+  'update:hashMode': [value: 'salt' | 'hmac']
+  'update:hashSalt': [value: string]
+  'update:hmacKeyBase64': [value: string]
   'update:acctNumberMask': [value: string]
   'update:cardbin8': [value: string]
   'update:enableCardSchemeRandom': [value: boolean]
@@ -62,6 +68,11 @@ const cardSchemeOptions: SelectOption[] = [
   { value: 'E', label: 'E - EftPos' },
   { value: 'T', label: 'T - Thai Payment Network' },
   { value: 'U', label: 'U - UL-STP' }
+]
+
+const hashModeOptions: SelectOption[] = [
+  { value: 'salt', label: 'SHA-256 + Salt（single 模式無 HMAC 金鑰時的降級路徑）' },
+  { value: 'hmac', label: 'HmacSHA256（已設定真正 HMAC 金鑰）' }
 ]
 
 const mastercardDecisionOptions: SelectOption[] = [
@@ -232,7 +243,50 @@ const mastercardDecisionOptions: SelectOption[] = [
             :disabled="true"
             @update:modelValue="(value) => emit('update:acctNumberHashed', String(value))"
           />
-          <p class="text-xs text-base-content/60 mt-1">自動從帳號原始值計算（同步雜湊 + Base64）</p>
+          <p class="text-xs text-base-content/60 mt-1">
+            自動從帳號原始值計算，演算法依右側「雜湊演算法」欄位切換
+          </p>
+        </div>
+        <div class="rounded-md border border-warning/40 bg-warning/5 p-3">
+          <Select
+            id="hashMode"
+            label="雜湊演算法 (hashMode)"
+            :modelValue="props.hashMode"
+            :options="hashModeOptions"
+            @update:modelValue="(value) => emit('update:hashMode', value as 'salt' | 'hmac')"
+          />
+          <p class="text-xs text-error mt-1">
+            本區塊欄位都不會 POST 出去，僅用於本機計算 acctNumberHashed，需比對本機資料庫目前設定
+          </p>
+
+          <template v-if="props.hashMode === 'salt'">
+            <Input
+              id="hashSalt"
+              label="雜湊鹽值 (hashSalt)"
+              class="mt-2"
+              :modelValue="props.hashSalt"
+              @update:modelValue="(value) => emit('update:hashSalt', String(value))"
+            />
+            <p class="text-xs text-base-content/60 mt-1">
+              預設值為 acs-core 未覆寫 acs.core.hash-salt 時的 Java 預設鹽值；若本機有另外設定該
+              property，請自行修改此欄位
+            </p>
+          </template>
+
+          <template v-else>
+            <Input
+              id="hmacKeyBase64"
+              label="HMAC 金鑰 (Base64)"
+              class="mt-2"
+              :modelValue="props.hmacKeyBase64"
+              placeholder="貼上本機 KMS 目前生效的 HMAC 金鑰（Base64）"
+              @update:modelValue="(value) => emit('update:hmacKeyBase64', String(value))"
+            />
+            <p class="text-xs text-base-content/60 mt-1">
+              需為 acs-core 實際使用中、已解開(unwrap)的金鑰明碼，Base64 編碼；留空則
+              acctNumberHashed 不會計算
+            </p>
+          </template>
         </div>
         <div>
           <Input

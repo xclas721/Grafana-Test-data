@@ -71,6 +71,9 @@ export type TestInputFormState = {
   cardPoolRatio: string
   cardbin6: string
   acctNumberHashed: string
+  hashMode: 'salt' | 'hmac'
+  hashSalt: string
+  hmacKeyBase64: string
   acctNumberMask: string
   cardbin8: string
   visaDafMessageExtension: string
@@ -217,6 +220,9 @@ export function createInitialFormState(options?: {
     cardPoolRatio: '10',
     cardbin6: '414352',
     acctNumberHashed: '2hpBkDB7ELbcpebGl5RM+HWTQGx3qciOwskcbsEVKC4=',
+    hashMode: 'salt',
+    hashSalt: '3fn5re-7AouA',
+    hmacKeyBase64: '',
     acctNumberMask: '414352******0123',
     cardbin8: '41435200',
     visaDafMessageExtension: 'null',
