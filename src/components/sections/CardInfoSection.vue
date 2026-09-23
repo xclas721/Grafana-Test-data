@@ -282,6 +282,11 @@ const mastercardDecisionOptions: SelectOption[] = [
               placeholder="貼上本機 KMS 目前生效的 HMAC 金鑰（Base64）"
               @update:modelValue="(value) => emit('update:hmacKeyBase64', String(value))"
             />
+            <p class="text-xs text-error mt-1">
+              這是 repo 作者本機的 HMAC 金鑰，每個人的本機 DB 第一次啟動 acs-admin-backend
+              時各自隨機產生，不會跟別人一樣！其他人請改成自己本機解出來的金鑰（查法見
+              commit 說明），不要沿用這個值
+            </p>
             <p class="text-xs text-base-content/60 mt-1">
               需為 acs-core 實際使用中、已解開(unwrap)的金鑰明碼，Base64 編碼；留空則
               acctNumberHashed 不會計算
