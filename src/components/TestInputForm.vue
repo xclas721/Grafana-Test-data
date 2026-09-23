@@ -182,6 +182,28 @@ function base64ToBytes(base64: string): Uint8Array {
   return bytes
 }
 
+// 批量生成時每筆都要算一次雜湊，重複 importKey 對 Web Crypto 開銷很大
+// （2000 筆會明顯卡住），同一把金鑰只匯入一次快取起來
+let cachedHmacKeyBase64: string | null = null
+let cachedHmacCryptoKey: CryptoKey | null = null
+
+async function getHmacCryptoKey(keyBase64: string): Promise<CryptoKey> {
+  if (cachedHmacKeyBase64 === keyBase64 && cachedHmacCryptoKey) {
+    return cachedHmacCryptoKey
+  }
+  const keyBytes = base64ToBytes(keyBase64)
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyBytes,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  cachedHmacKeyBase64 = keyBase64
+  cachedHmacCryptoKey = cryptoKey
+  return cryptoKey
+}
+
 async function calculateAcctNumberHashed(acctNumber: string) {
   // 暫時比照後端 HashUtil 的兩種演算法，用 formState.hashMode 切換：
   // - 'salt'：single 模式、無啟用中 HMAC CEK 時的降級路徑
@@ -199,14 +221,7 @@ async function calculateAcctNumberHashed(acctNumber: string) {
       return
     }
     try {
-      const keyBytes = base64ToBytes(formState.hmacKeyBase64)
-      const cryptoKey = await crypto.subtle.importKey(
-        'raw',
-        keyBytes,
-        { name: 'HMAC', hash: 'SHA-256' },
-        false,
-        ['sign']
-      )
+      const cryptoKey = await getHmacCryptoKey(formState.hmacKeyBase64)
       const signature = await crypto.subtle.sign('HMAC', cryptoKey, dataBytes)
       setField('acctNumberHashed', btoa(String.fromCharCode(...new Uint8Array(signature))))
     } catch (e) {

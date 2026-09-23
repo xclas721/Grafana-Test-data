@@ -336,7 +336,10 @@ export async function runBatchInsert(params: BatchInsertRunParams): Promise<void
           { itemCount: 1, dateStr }
         )
         if (bulkRecords.length >= BULK_RECORD_LIMIT) await flushBulk()
-        if (iTask > 0 && iTask % 50 === 0) await Promise.resolve()
+        // Promise.resolve() 只讓微任務排隊，畫面不會真的重繪；批次每筆都要算
+        // acctNumberHashed（Web Crypto，非同步）後，光靠微任務讓不出主執行緒，
+        // 大量資料會整頁卡住沒反應，改用 setTimeout 讓出巨任務給瀏覽器重繪
+        if (iTask > 0 && iTask % 50 === 0) await new Promise((resolve) => setTimeout(resolve, 0))
       } catch {
         errorCount++
         errorDetails.push(`日期 ${dateStr}：索引失敗`)
